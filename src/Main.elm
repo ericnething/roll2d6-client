@@ -248,14 +248,17 @@ type Msg
 
     -- Stress
     | ToggleStressBox Int Int StressBox
-    -- | NewStressTrack
-    -- | AddStressTrack StressTrack
+    | AddNewStressTrack StressTrack
+    | RemoveStressTrack Int
 
     -- Consequences
     | UpdateConsequence Int Consequence
 
     -- Conditions
     | ToggleCondition Int Int StressBox
+    | UpdateCondition Int Condition
+    | AddNewCondition Condition
+    | RemoveCondition Int
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -356,19 +359,24 @@ update msg model =
             in
                 (update, Cmd.none)
 
+        AddNewStressTrack stressTrack ->
+            ({ model
+                 | stress
+                   = Array.push stressTrack model.stress
+             }, Cmd.none)
+
+        RemoveStressTrack index ->
+            ({ model
+                 | stress
+                   = removeIndexFromArray index model.stress
+             }, Cmd.none)
+
         UpdateConsequence index consequence ->
             ({ model
                  | consequences
                    = Array.set index consequence model.consequences
              }
             , Cmd.none)
-
-        -- ToggleCondition index condition ->
-        --     ({ model
-        --          | conditions
-        --            = Array.set index condition model.conditions
-        --     }
-        --     , Cmd.none)
 
         ToggleCondition trackIndex index stressBox ->
             let 
@@ -388,6 +396,24 @@ update msg model =
                             }
             in
                 (update, Cmd.none)
+                    
+        UpdateCondition trackIndex condition ->
+            ({ model
+                 | conditions
+                   = Array.set trackIndex condition model.conditions
+             }, Cmd.none)
+
+        AddNewCondition condition ->
+            ({ model
+                 | conditions
+                   = Array.push condition model.conditions
+             }, Cmd.none)
+
+        RemoveCondition index ->
+            ({ model
+                 | conditions
+                   = removeIndexFromArray index model.conditions
+             }, Cmd.none)
 
 
 removeIndexFromArray : Int -> Array a -> Array a
@@ -748,7 +774,16 @@ conditionView trackIndex (Condition title stressBoxes) =
               "condition"
               trackIndex
               stressBoxes
-        , span [] [ text title ]
+        , input [ type_ "text"
+                , onInput
+                      (\newTitle ->
+                           UpdateCondition
+                           trackIndex
+                           (Condition newTitle stressBoxes))
+                , value title
+                , css [ inputStyles ]
+                ]
+            [ text title ]
         ]
 
 -- Subscriptions

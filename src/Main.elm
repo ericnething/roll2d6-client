@@ -41,7 +41,15 @@ type alias CharacterSheet =
     , stunts : Array Stunt
     , stress : Array StressTrack
     , consequences : Array Consequence
+    , conditions : Array Condition
     }
+
+-- Aspects
+
+type Aspect
+    = Aspect String
+
+-- Consequences
 
 type Severity
     = Mild
@@ -55,22 +63,88 @@ showSeverity severity =
         Moderate -> "Moderate (-4)"
         Severe   -> "Severe (-6)"
 
-type Aspect
-    = Aspect String
-
 type Consequence
     = Consequence Severity String
 
-type Skill = Skill String
+-- Skills
+
+type SkillRating
+    = Legendary
+    | Epic
+    | Fantastic
+    | Superb
+    | Great
+    | Good
+    | Fair
+    | Average
+    -- | Mediocre
+    | Poor
+    | Terrible
+
+skillRatingList =
+    [ Legendary
+    , Epic
+    , Fantastic
+    , Superb
+    , Great
+    , Good
+    , Fair
+    , Average
+    , Poor
+    , Terrible
+    ]
+
+skillRatingToInt : SkillRating -> Int
+skillRatingToInt rating =
+    case rating of
+        Legendary ->  8
+        Epic      ->  7
+        Fantastic ->  6
+        Superb    ->  5
+        Great     ->  4
+        Good      ->  3
+        Fair      ->  2
+        Average   ->  1
+        -- Mediocre  ->  0
+        Poor      -> -1
+        Terrible  -> -2
+
+showSkillRating : SkillRating -> String
+showSkillRating rating =
+    case rating of
+        Legendary -> "Legendary (+8)"
+        Epic      -> "Epic (+7)"
+        Fantastic -> "Fantastic (+6)"
+        Superb    -> "Superb (+5)"
+        Great     -> "Great (+4)"
+        Good      -> "Good (+3)"
+        Fair      -> "Fair (+2)"
+        Average   -> "Average (+1)"
+        -- Mediocre  -> "Mediocre (+0)"
+        Poor      -> "Poor (-1)"
+        Terrible  -> "Terrible (-2)"
+
+type Skill = Skill SkillRating String
+          
+-- Stunts
 
 type Stunt = Stunt String String
 -- type Stunt = Stunt String TextArea
+
+-- Stress
 
 type StressBox
     = StressBox Int Bool
 
 type StressTrack
     = StressTrack String (Array StressBox)
+
+-- Conditions
+
+type Condition
+    = Condition String (Array StressBox)
+
+
 
 type alias Model = CharacterSheet
 
@@ -87,10 +161,10 @@ initialModel =
             ]
     , skills
           = Array.fromList
-            [ Skill "Great (+4) Fight"
-            , Skill "Good (+3) Athletics, Physique"
-            , Skill "Fair (+2) Stealth, Provoke, Rapport"
-            , Skill "Average (+1) Crafts, Shoot, Deceive, Will"
+            [ Skill Great "Fight"
+            , Skill Good "Athletics, Physique"
+            , Skill Fair "Stealth, Provoke, Rapport"
+            , Skill Average  "Crafts, Shoot, Deceive, Will"
             ]
     , refresh = 3
     , fatePoints = 0
@@ -128,6 +202,23 @@ initialModel =
             , Consequence Moderate ""
             , Consequence Severe ""
             ]
+    , conditions =
+        Array.fromList
+            [ Condition
+              "Bruised"
+              (Array.fromList [ StressBox 2 False])
+            , Condition
+              "In Peril"
+              (Array.fromList [ StressBox 4 False ])
+            , Condition
+              "Indebted"
+              (Array.fromList
+                   [ StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   ])
+            ]
     }
 
 init : (Model, Cmd Msg)
@@ -146,8 +237,8 @@ type Msg
     | RemoveAspect Int
 
     -- Skills
-    | UpdateSkill Int String
-    | AddNewSkill String
+    | UpdateSkill Int Skill
+    | AddNewSkill Skill
     | RemoveSkill Int
 
     -- Stunts
@@ -157,9 +248,14 @@ type Msg
 
     -- Stress
     | ToggleStressBox Int Int StressBox
+    -- | NewStressTrack
+    -- | AddStressTrack StressTrack
 
     -- Consequences
     | UpdateConsequence Int Consequence
+
+    -- Conditions
+    | ToggleCondition Int Int StressBox
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -192,17 +288,23 @@ update msg model =
              }
             , Cmd.none)
 
-        UpdateSkill index title ->
+        UpdateSkill index skill ->
             ({ model
                  | skills
-                   = Array.set index (Skill title) model.skills
+                   = Array.set index skill model.skills
              }
             , Cmd.none)
 
-        AddNewSkill title ->
+        AddNewSkill skill ->
             ({ model
                  | skills
-                   = Array.push (Skill title) model.skills
+                   = Array.push skill model.skills
+                       |> Array.toList
+                       |> List.sortBy
+                          (\(Skill rating _) ->
+                               skillRatingToInt rating)
+                       |> List.reverse
+                       |> Array.fromList                    
              }
             , Cmd.none)
 
@@ -261,6 +363,32 @@ update msg model =
              }
             , Cmd.none)
 
+        -- ToggleCondition index condition ->
+        --     ({ model
+        --          | conditions
+        --            = Array.set index condition model.conditions
+        --     }
+        --     , Cmd.none)
+
+        ToggleCondition trackIndex index stressBox ->
+            let 
+                update =
+                    case Array.get trackIndex model.conditions of
+                        Nothing ->
+                            model
+                        Just (Condition title boxes) ->
+                            { model
+                                | conditions
+                                  = Array.set
+                                  trackIndex
+                                  (Condition
+                                       title
+                                       (Array.set index stressBox boxes))
+                                  model.conditions
+                            }
+            in
+                (update, Cmd.none)
+
 
 removeIndexFromArray : Int -> Array a -> Array a
 removeIndexFromArray index array =
@@ -287,21 +415,8 @@ view model =
         , stuntView model.stunts
         , stressView model.stress
         , consequenceView model.consequences
+        , conditionsView model.conditions
         ]
-
-inputStyles =
-    [ Css.width (pct 100)
-    , border3 (px 1) solid transparent
-    , borderRadius (px 4)
-    , padding (Css.em 0.25)
-    , flex (int 1)
-    , focus
-        [ border3 (px 1) solid (hex "888")
-        ]
-    , hover
-        [ border3 (px 1) solid (hex "888")
-        ]
-    ]
 
 textInput : String -> (String -> Msg) -> String -> Html Msg
 textInput title msg currentValue =
@@ -332,7 +447,7 @@ aspectInput : Int -> Aspect -> Html Msg
 aspectInput index (Aspect title) =
     div []
         [ input [ type_ "text"
-                , css inputStyles
+                , css [ inputStyles ]
                 , onInput (UpdateAspect index)
                 , value title
                 , placeholder <| "Aspect #" ++ toString (index + 1)
@@ -359,20 +474,44 @@ skillView skills =
                 <| Array.indexedMap
                     skillInput
                     skills
-        , button
-              [ onClick (AddNewSkill "") ]
-              [ text "New Skill Rating" ]
+        , div []
+            <| List.map
+                skillRatingButton
+                (List.filter
+                     (\rating ->
+                          skills
+                            |> Array.toList
+                            |> List.map (\(Skill a _) -> a)
+                            |> List.member rating
+                            |> not)
+                     skillRatingList)
+        --, button
+        --  [ onClick (AddNewSkill (Skill Superb "")) ]
+        --  [ text "New Skill Rating" ]
         ]
 
+skillRatingButton : SkillRating -> Html Msg
+skillRatingButton rating =
+    button
+    [ onClick (AddNewSkill (Skill rating ""))]
+    [ text (showSkillRating rating) ]
+
 skillInput : Int -> Skill -> Html Msg
-skillInput index (Skill title) =
+skillInput index (Skill rating title) =
     div [ css [ displayFlex ]]
-        [ input [ type_ "text"
-                , css (inputStyles ++
-                       [ flex (int 1)
-                        
-                       ])
-                , onInput (UpdateSkill index)
+        [ span
+              [ css [ fontWeight bold ] ]
+              [ text (showSkillRating rating) ]
+        , input [ type_ "text"
+                , css
+                      [ flex (int 1)
+                      , inputStyles
+                      ]
+                , onInput
+                      (\newTitle ->
+                           UpdateSkill
+                           index
+                           (Skill rating newTitle))
                 , value title
                ] []
         , button
@@ -401,10 +540,11 @@ stuntInput : Int -> Stunt -> Html Msg
 stuntInput index (Stunt title description) =
     div []
         [ input [ type_ "text"
-                , css (inputStyles ++
-                       [ display block
-                       , fontWeight bold
-                       ])
+                , css
+                      [ display block
+                      , fontWeight bold
+                      , inputStyles
+                      ]
                 , onInput
                       (\newTitle ->
                            UpdateStunt
@@ -419,19 +559,20 @@ stuntInput index (Stunt title description) =
                          index
                          (Stunt title newDescription))
               , value description
-              , rows 1
+              , rows 5
               , css [ display block
                     , resize none
-                    , border3 (px 1) solid transparent
+                    -- , border3 (px 1) solid transparent
+                    , border3 (px 1) solid (hex "888")
                     , borderRadius (px 4)
                     , padding (Css.em 0.25)
                     , Css.width (pct 100)
-                    , focus
-                        [ border3 (px 1) solid (hex "888")
-                        ]
-                    , hover
-                          [ border3 (px 1) solid (hex "888")
-                          ]
+                    -- , focus
+                    --       [ border3 (px 1) solid (hex "888")
+                    --     ]
+                    -- , hover
+                    --       [ border3 (px 1) solid (hex "888")
+                    --       ]
                     ]
               ]
               []
@@ -456,23 +597,39 @@ stressTrackView : Int -> StressTrack -> Html Msg
 stressTrackView trackIndex (StressTrack title stressBoxes) =
     div []
         [ div [] [ text title ]
-        , stressBoxView trackIndex stressBoxes
+        , stressBoxView
+            ToggleStressBox
+            "stress-track"
+            trackIndex
+            stressBoxes
         ]
         
 
-stressBoxView : Int -> Array StressBox -> Html Msg
-stressBoxView trackIndex stressBoxes =
+stressBoxView : (Int -> Int -> StressBox -> Msg)
+              -> String -> Int -> Array StressBox
+              -> Html Msg
+stressBoxView toggleStressBox trackPrefix trackIndex stressBoxes =
     div [ css [ displayFlex ] ]
         (Array.toList
              (Array.indexedMap
-                  (stressInput trackIndex)
+                  (stressInput toggleStressBox trackPrefix trackIndex)
                   stressBoxes))
 
-stressInput : Int -> Int -> StressBox -> Html Msg
-stressInput trackIndex index (StressBox points isChecked) =
+stressInput : (Int -> Int -> StressBox -> Msg)
+            -> String
+            -> Int
+            -> Int
+            -> StressBox
+            -> Html Msg
+stressInput
+    toggleStressBox
+    trackPrefix
+    trackIndex
+    index
+    (StressBox points isChecked) =
     let
         identifier =
-            "stress-track-" ++ toString trackIndex ++
+            trackPrefix ++ "-" ++ toString trackIndex ++
             "-box-" ++ toString index ++
             "-points-" ++ toString points
 
@@ -510,7 +667,7 @@ stressInput trackIndex index (StressBox points isChecked) =
                     , HA.checked isChecked
                     , onCheck
                           (always
-                               (ToggleStressBox
+                               (toggleStressBox
                                     trackIndex index
                                     (StressBox
                                          points
@@ -548,7 +705,7 @@ consequenceInput index (Consequence severity title) =
     div [ css [ displayFlex ] ]
         [ span [] [ text (showSeverity severity) ]
         , input [ type_ "text"
-                , css inputStyles
+                , css [ inputStyles ]
                 , onInput
                       (\newTitle ->
                            (UpdateConsequence
@@ -568,6 +725,32 @@ consequenceInput index (Consequence severity title) =
         ]
 
 
+-- Conditions
+
+conditionsView : Array Condition -> Html Msg
+conditionsView conditions =
+    div []
+        ([ h2 [] [ text "Conditions" ] ]
+           ++ Array.toList
+               (Array.indexedMap
+                    conditionView
+                    conditions))
+
+conditionView : Int -> Condition -> Html Msg
+conditionView trackIndex (Condition title stressBoxes) =
+    div [ css [ displayFlex
+              , alignItems center
+              , marginTop (Css.em 0.5)
+              ]
+        ]
+        [ stressBoxView
+              ToggleCondition
+              "condition"
+              trackIndex
+              stressBoxes
+        , span [] [ text title ]
+        ]
+
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
@@ -584,4 +767,22 @@ userSelect_none =
         , Css.property "-khtml-user-select" "none" -- Konqueror HTML
         , Css.property "-moz-user-select" "none" -- Firefox
         , Css.property "-ms-user-select" "none" -- Internet Explorer/Edge
-        , Css.property "user-select" "none"]
+        , Css.property "user-select" "none"
+        ]
+
+inputStyles : Css.Style
+inputStyles =
+    batch
+    [ Css.width (pct 100)
+    -- , border3 (px 1) solid transparent
+    , border3 (px 1) solid (hex "888")
+    , borderRadius (px 4)
+    , padding (Css.em 0.25)
+    , flex (int 1)
+    -- , focus
+    --     [ border3 (px 1) solid (hex "888")
+    --     ]
+    -- , hover
+    --     [ border3 (px 1) solid (hex "888")
+    --     ]
+    ]

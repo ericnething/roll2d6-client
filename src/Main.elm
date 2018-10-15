@@ -788,93 +788,71 @@ stressTrackView trackIndex (StressTrack title stressBoxes) =
         [ div [] [ text title ]
         , stressBoxView
             ToggleStressBox
-            "stress-track"
             trackIndex
             stressBoxes
         ]
 
 stressBoxView : (Int -> Int -> StressBox -> Msg)
-              -> String -> Int -> Array StressBox
+              -> Int -> Array StressBox
               -> Html Msg
-stressBoxView toggleStressBox trackPrefix trackIndex stressBoxes =
+stressBoxView toggleStressBox trackIndex stressBoxes =
     div [ css [ displayFlex
               , flexWrap Css.wrap
               ]
         ]
         (Array.toList
              (Array.indexedMap
-                  (stressInput toggleStressBox trackPrefix trackIndex)
+                  (stressInput toggleStressBox trackIndex)
                   stressBoxes))
 
 stressInput : (Int -> Int -> StressBox -> Msg)
-            -> String
             -> Int
             -> Int
             -> StressBox
             -> Html Msg
-stressInput
-    toggleStressBox
-    trackPrefix
-    trackIndex
-    index
-    (StressBox points isChecked) =
-    let
-        identifier =
-            trackPrefix ++ "-" ++ toString trackIndex ++
-            "-box-" ++ toString index ++
-            "-points-" ++ toString points
-
-        checkedStyles =
-            batch <|
-                if
-                    isChecked
-                then
-                    [ backgroundColor (hex "333")
-                    , color (hex "fff")
-                    ]
-                else
-                    [ backgroundColor (hex "fff")
-                    , color (hex "333")
-                    ]
-    in
-        div []
-            [ label
-                  [ for identifier
-                  , css
-                        [ fontSize (Css.em 1.1)
-                        , border3 (px 2) solid (hex "333")
-                        , padding2 (Css.em 0.25) (Css.em 0.75)
-                        , display inlineBlock
-                        , margin2 (px 0) (Css.em 0.25)
-                        , borderRadius (px 4)
-                        , fontWeight bold
-                        , userSelect_none
-                        , checkedStyles
-                        ]
+stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
+    label
+    [ css
+      [ fontSize (Css.em 1.1)
+      , border3 (px 2) solid (hex "333")
+      , padding2 (Css.em 0.25) (Css.em 0.75)
+      , display inlineBlock
+      , margin2 (px 0) (Css.em 0.25)
+      , borderRadius (px 4)
+      , fontWeight bold
+      , userSelect_none
+      , if
+            isChecked
+       then
+           batch
+           [ backgroundColor (hex "333")
+           , color (hex "fff")
+           ]
+       else
+           batch
+           [ backgroundColor (hex "fff")
+           , color (hex "333")
+           ]
+      ]
+    ]
+    [ text (toString points)
+    , input [ type_ "checkbox"
+            , HA.checked isChecked
+            , onCheck
+                  (always
+                       (toggleStressBox
+                            trackIndex index
+                            (StressBox
+                                 points
+                                 (not isChecked))))
+            , css
+                  [ position absolute
+                  , opacity (num 0)
+                  , Css.height (px 0)
+                  , Css.width (px 0)
                   ]
-                  [ text (toString points) ]
-            , input [ type_ "checkbox"
-                    , id identifier
-                    , HA.checked isChecked
-                    , onCheck
-                          (always
-                               (toggleStressBox
-                                    trackIndex index
-                                    (StressBox
-                                         points
-                                         (not isChecked))))
-                    , css
-                          [ position absolute
-                          , opacity (num 0)
-                          , Css.height (px 0)
-                          , Css.width (px 0)
-                          ]
-                    ] []
-            -- , button
-            --       [ onClick (RemoveSkill index)]
-            --       [ text "Remove" ]
-            ]
-
+            ] []
+    ]
 
 
 editStressTrackView : Int -> StressTrack -> Html Msg
@@ -1131,7 +1109,6 @@ conditionView trackIndex (Condition title stressBoxes) =
         ]
         [ stressBoxView
               ToggleCondition
-              "condition"
               trackIndex
               stressBoxes
         , input [ type_ "text"

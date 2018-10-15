@@ -59,9 +59,9 @@ type Severity
 showSeverity : Severity -> String
 showSeverity severity =
     case severity of
-        Mild     -> "Mild (-2)"
-        Moderate -> "Moderate (-4)"
-        Severe   -> "Severe (-6)"
+        Mild     -> "Mild (2)"
+        Moderate -> "Moderate (4)"
+        Severe   -> "Severe (6)"
 
 type Consequence
     = Consequence Severity String
@@ -112,24 +112,23 @@ skillRatingToInt rating =
 showSkillRating : SkillRating -> String
 showSkillRating rating =
     case rating of
-        Legendary -> "Legendary (+8)"
-        Epic      -> "Epic (+7)"
-        Fantastic -> "Fantastic (+6)"
-        Superb    -> "Superb (+5)"
-        Great     -> "Great (+4)"
-        Good      -> "Good (+3)"
-        Fair      -> "Fair (+2)"
-        Average   -> "Average (+1)"
+        Legendary -> "Legendary +8"
+        Epic      -> "Epic +7"
+        Fantastic -> "Fantastic +6"
+        Superb    -> "Superb +5"
+        Great     -> "Great +4"
+        Good      -> "Good +3"
+        Fair      -> "Fair +2"
+        Average   -> "Average +1"
         -- Mediocre  -> "Mediocre (+0)"
-        Poor      -> "Poor (-1)"
-        Terrible  -> "Terrible (-2)"
+        Poor      -> "Poor -1"
+        Terrible  -> "Terrible -2"
 
 type Skill = Skill SkillRating String
           
 -- Stunts
 
 type Stunt = Stunt String String
--- type Stunt = Stunt String TextArea
 
 -- Stress
 
@@ -145,11 +144,24 @@ type Condition
     = Condition String (Array StressBox)
 
 
+type EditMode
+    = EditModeNone
+    | EditModeStress
+    | EditModeConditions
 
-type alias Model = CharacterSheet
+type alias Model =
+    { characterSheet : CharacterSheet
+    , editMode : EditMode
+    }
 
 initialModel : Model
 initialModel =
+    { characterSheet = initialCharacterSheet
+    , editMode = EditModeStress
+    }
+
+initialCharacterSheet : CharacterSheet
+initialCharacterSheet =
     { name = ""
     , aspects
           = Array.fromList
@@ -171,13 +183,13 @@ initialModel =
     , stunts =
         Array.fromList
             [ Stunt
-              "Fire Blast (Forceful)"
+              "Fire Blast"
               "You can shoot or exhale fire. Whenever you succeed with style on a Forceful attack, you may forgo the boost to place an On Fire aspect with a free invoke on the defender or a nearby object. This effect only works if the target could believably catch fire. In addition, you can never become Unarmed."
             , Stunt
-                "Poisoned Weapon (Sneaky/Quick)"
+                "Poisoned Weapon"
                 "You use a poisoned weapon such as dagger, arrows, or darts. Once per scene, when you Sneakily or Quickly attack and deal 2 stress or more, you can force the defender to absorb 2 stress from your attack as a mild consequence. Some targets—robots, inanimate objects, and so on—are immune to poison."
             , Stunt
-                "Strong Legs (Quick)"
+                "Strong Legs"
                 "You have powerful legs that are especially suited for running or jumping. During contests and cliffhangers, +2 when Quickly over-coming physical obstacles or creating advantages."
             ]
     , stress =
@@ -227,6 +239,8 @@ init = (initialModel, Cmd.none)
 
 -- Update
 
+type alias Index = Int
+
 type Msg
     = NoOp
     | UpdateName String
@@ -250,6 +264,9 @@ type Msg
     | ToggleStressBox Int Int StressBox
     | AddNewStressTrack StressTrack
     | RemoveStressTrack Int
+    | UpdateStressTrack Index StressTrack
+    | AddStressBox Index StressBox
+    | RemoveStressBox Index
 
     -- Consequences
     | UpdateConsequence Int Consequence
@@ -260,9 +277,35 @@ type Msg
     | AddNewCondition Condition
     | RemoveCondition Int
 
+    | ToggleEditMode EditMode
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
+    case msg of
+        ToggleEditMode editMode ->
+            ({ model
+                 | editMode
+                   = if
+                       model.editMode /= editMode
+                     then
+                         editMode
+                     else
+                         EditModeNone
+                         
+             }, Cmd.none)
+
+        msg0 ->
+            let
+                (characterSheet, cmd) =
+                    updateCharacterSheet msg0 model.characterSheet
+            in
+                ({ model | characterSheet = characterSheet }
+                , cmd)
+
+updateCharacterSheet : Msg -> CharacterSheet
+                     -> (CharacterSheet, Cmd Msg)
+updateCharacterSheet msg model =
     case msg of
         NoOp -> (model, Cmd.none)
 
@@ -371,6 +414,50 @@ update msg model =
                    = removeIndexFromArray index model.stress
              }, Cmd.none)
 
+        UpdateStressTrack index stressTrack ->
+            ({ model
+                 | stress
+                   = Array.set index stressTrack model.stress
+             }, Cmd.none)
+
+        AddStressBox trackIndex stressBox ->
+            let
+                update =
+                    case Array.get trackIndex model.stress of
+                        Nothing ->
+                            model
+                        Just (StressTrack title boxes) ->
+                            { model
+                                | stress
+                                  = Array.set
+                                  trackIndex
+                                  (StressTrack
+                                       title
+                                       (Array.push stressBox boxes))
+                                  model.stress
+                            }
+            in
+                (update, Cmd.none)
+
+        RemoveStressBox trackIndex ->
+            let
+                update =
+                    case Array.get trackIndex model.stress of
+                        Nothing ->
+                            model
+                        Just (StressTrack title boxes) ->
+                            { model
+                                | stress
+                                  = Array.set
+                                  trackIndex
+                                  (StressTrack
+                                       title
+                                       (Array.slice 0 -1 boxes))
+                                  model.stress
+                            }
+            in
+                (update, Cmd.none)
+
         UpdateConsequence index consequence ->
             ({ model
                  | consequences
@@ -415,6 +502,7 @@ update msg model =
                    = removeIndexFromArray index model.conditions
              }, Cmd.none)
 
+        _ -> (model, Cmd.none)
 
 removeIndexFromArray : Int -> Array a -> Array a
 removeIndexFromArray index array =
@@ -432,16 +520,15 @@ view model =
           [ maxWidth (Css.em 32)
           ]
         ]
-        [ textInput
-              "Name"
-              UpdateName
-              model.name
-        , aspectView model.aspects
-        , skillView model.skills
-        , stuntView model.stunts
-        , stressView model.stress
-        , consequenceView model.consequences
-        , conditionsView model.conditions
+        [ nameView model.characterSheet.name
+        , aspectView model.characterSheet.aspects
+        , skillView model.characterSheet.skills
+        , stuntView model.characterSheet.stunts
+        , stressView
+            model.characterSheet.stress
+            (EditModeStress == model.editMode)
+        , consequenceView model.characterSheet.consequences
+        , conditionsView model.characterSheet.conditions
         ]
 
 textInput : String -> (String -> Msg) -> String -> Html Msg
@@ -454,6 +541,10 @@ textInput title msg currentValue =
                 , value currentValue
                ] []
         ]
+
+nameView : String -> Html Msg
+nameView name =
+    textInput "Name" UpdateName name
 
 aspectView : Array Aspect -> Html Msg
 aspectView aspects =
@@ -500,33 +591,61 @@ skillView skills =
                 <| Array.indexedMap
                     skillInput
                     skills
-        , div []
-            <| List.map
-                skillRatingButton
-                (List.filter
-                     (\rating ->
-                          skills
-                            |> Array.toList
-                            |> List.map (\(Skill a _) -> a)
-                            |> List.member rating
-                            |> not)
-                     skillRatingList)
-        --, button
-        --  [ onClick (AddNewSkill (Skill Superb "")) ]
-        --  [ text "New Skill Rating" ]
+        , skillRatingButtonList skills
         ]
+
+skillRatingButtonList : Array Skill -> Html Msg
+skillRatingButtonList skills =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , flexWrap Css.wrap
+          , marginTop (Css.em 1)
+          ]
+        ]
+        <| List.map
+            skillRatingButton
+            (List.filter
+                 (\rating ->
+                      skills
+                        |> Array.toList
+                        |> List.map (\(Skill a _) -> a)
+                        |> List.member rating
+                        |> not)
+                 skillRatingList)
 
 skillRatingButton : SkillRating -> Html Msg
 skillRatingButton rating =
     button
-    [ onClick (AddNewSkill (Skill rating ""))]
+    [ css
+      [ whiteSpace noWrap
+      , padding2 (Css.em 0.1) (Css.em 0.5)
+      , backgroundColor (hex "fff")
+      , border3 (px 1) solid (hex "ccc")
+      , borderRadius (px 4)
+      , cursor pointer
+      , hover
+          [ backgroundColor (hex "eee") ]
+      , marginBottom (Css.em 0.5)
+      , marginRight (Css.em 0.5)
+      ]
+    , onClick (AddNewSkill (Skill rating ""))
+    ]
     [ text (showSkillRating rating) ]
 
 skillInput : Int -> Skill -> Html Msg
 skillInput index (Skill rating title) =
-    div [ css [ displayFlex ]]
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
         [ span
-              [ css [ fontWeight bold ] ]
+              [ css
+                [ fontWeight bold
+                , marginRight (Css.em 0.5)
+                ]
+              ]
               [ text (showSkillRating rating) ]
         , input [ type_ "text"
                 , css
@@ -610,14 +729,53 @@ stuntInput index (Stunt title description) =
 
 -- Stress View
 
-stressView : Array StressTrack -> Html Msg
-stressView stressTracks =
-    div []
-        ([ h2 [] [ text "Stress" ] ]
-           ++ Array.toList
-               (Array.indexedMap
-                    stressTrackView
-                    stressTracks))
+stressView : Array StressTrack -> Bool -> Html Msg
+stressView stressTracks editModeActive =
+    let
+        view =
+            if
+                editModeActive
+            then
+                [ 
+                -- , button
+                --       [ onClick (ToggleEditMode EditModeStress) ]
+                --       [ text "Toggle Edit Mode" ]
+                div [] (Array.toList
+                            (Array.indexedMap
+                                 editStressTrackView
+                                 stressTracks))
+                , button
+                      [ onClick
+                            (AddNewStressTrack
+                                 (StressTrack
+                                      "New Stress Track"
+                                      (Array.fromList
+                                           [ StressBox 1 False ])))
+                      ]
+                      [ text "Add new stress track" ]
+                ]
+            else
+                [ div [] (Array.toList
+                              (Array.indexedMap
+                                   stressTrackView
+                                   stressTracks))
+                ]
+    in
+        div []
+            ([ div [ css
+                    [ displayFlex
+                    , alignItems center
+                    ]
+                  ]
+                  [ div [ css
+                          [ fontWeight bold
+                          , fontSize (Css.em 1.1)
+                          ]
+                        ] [ text "Stress" ]
+                  , toggleSwitch EditModeStress editModeActive
+                  ]
+             ] ++ view)
+            
 
 stressTrackView : Int -> StressTrack -> Html Msg
 stressTrackView trackIndex (StressTrack title stressBoxes) =
@@ -629,13 +787,15 @@ stressTrackView trackIndex (StressTrack title stressBoxes) =
             trackIndex
             stressBoxes
         ]
-        
 
 stressBoxView : (Int -> Int -> StressBox -> Msg)
               -> String -> Int -> Array StressBox
               -> Html Msg
 stressBoxView toggleStressBox trackPrefix trackIndex stressBoxes =
-    div [ css [ displayFlex ] ]
+    div [ css [ displayFlex
+              , flexWrap Css.wrap
+              ]
+        ]
         (Array.toList
              (Array.indexedMap
                   (stressInput toggleStressBox trackPrefix trackIndex)
@@ -711,6 +871,198 @@ stressInput
             ]
 
 
+
+editStressTrackView : Int -> StressTrack -> Html Msg
+editStressTrackView trackIndex (StressTrack title stressBoxes) =
+    div []
+        [ input
+              [ type_ "text"
+              , css [ inputStyles ]
+              , value title
+              , onInput
+                    (\newTitle ->
+                         UpdateStressTrack
+                         trackIndex
+                         (StressTrack newTitle stressBoxes))
+              ] []
+        , editStressBoxView
+            "stress-track"
+            trackIndex
+            stressBoxes
+        , button
+              [ onClick (RemoveStressTrack trackIndex)
+              ]
+              [ text "Remove" ]
+        ]
+
+editStressBoxView : String -> Int -> Array StressBox -> Html Msg
+editStressBoxView trackPrefix trackIndex stressBoxes =
+    div [ css [ displayFlex
+              , flexWrap Css.wrap
+              , alignItems center
+              ]
+        ]
+        (Array.toList
+             (Array.indexedMap
+                  (editStressInput trackPrefix trackIndex)
+                  stressBoxes) ++
+        [ button
+              [ onClick (RemoveStressBox trackIndex)
+              , css
+                    [ backgroundColor (hex "eee")
+                    , border (px 0)
+                    , color (hex "888")
+                    , borderRadius (px 4)
+                    , display inlineBlock
+                    , padding2 (Css.em 0.5) (Css.em 1)
+                    , cursor pointer
+                    , marginRight (Css.em 0.5)
+                    , hover
+                        [ backgroundColor (hex "DC143C")
+                        , color (hex "fff")
+                        ]
+                    , Css.property
+                        "transition"
+                        "background-color 0.2s, color 0.2s"
+                    ]
+              ]
+              [ text "✕" ]
+        , button
+              [ onClick (AddStressBox trackIndex (StressBox 1 False))
+              , css
+                    [ backgroundColor (hex "eee")
+                    -- , border3 (px 1) dashed (hex "888")
+                    , border (px 0)
+                    , color (hex "888")
+                    , borderRadius (px 4)
+                    , display inlineBlock
+                    , padding2 (Css.em 0.5) (Css.em 1)
+                    , cursor pointer
+                    , marginRight (Css.em 0.5)
+                    , hover
+                        [ backgroundColor (hex "1E90FF")
+                        , color (hex "fff")
+                        -- , borderColor transparent
+                        ]
+                    , Css.property
+                        "transition"
+                        "background-color 0.2s, color 0.2s"
+                    ]
+              ]
+              [ text "+" ]
+        ])
+
+editStressInput : String -> Int -> Int -> StressBox -> Html Msg
+editStressInput _ trackIndex index (StressBox points isChecked) =
+    input [ type_ "number"
+          , value (toString points)
+          , onInput
+                (\newPoints ->
+                     (ToggleStressBox
+                          trackIndex index
+                          (StressBox
+                               -- (Result.withDefault
+                               --      points
+                               --      (String.toInt newPoints))
+                               (stringToNatWithDefault
+                                    points
+                                    newPoints)
+                               isChecked)))
+          , css
+                [ fontSize (Css.em 1.1)
+                , border3 (px 2) solid (hex "333")
+                , padding2 (Css.em 0.25) (Css.em 0.75)
+                , display inline
+                , marginRight (Css.em 0.5)
+                , borderRadius (px 4)
+                , fontWeight bold
+                , backgroundColor (hex "fff")
+                , color (hex "333")
+                , Css.width (Css.em 3.5)
+                ]
+          ] []
+
+toggleSwitch : EditMode -> Bool -> Html Msg
+toggleSwitch mode isActive =
+    span [ css
+           [ displayFlex
+           , alignItems center
+           ]
+         ]
+        [ label [ css
+                 [ position relative
+                 , display inlineBlock
+                 , Css.width (px 60)
+                 , Css.height (px 34)
+                 , Css.property "transform" "scale(0.65)"
+                 ]
+                ]
+              [ input
+                    [ type_ "checkbox"
+                    , HA.checked isActive
+                    , onCheck (always (ToggleEditMode mode))
+                    , css [ display none ]
+                    ] []
+              , span
+                    [ css
+                      [ position absolute
+                      , cursor pointer
+                      , top (px 0)
+                      , left (px 0)
+                      , right (px 0)
+                      , bottom (px 0)
+                      , if isActive
+                        then
+                            batch
+                            [ backgroundColor (hex "2196F3")
+                            , before
+                                  [ Css.property
+                                        "-webkit-transform"
+                                        "translateX(26px)"
+                                  , Css.property
+                                      "-ms-transform"
+                                      "translateX(26px)"
+                                  , Css.property
+                                      "transform"
+                                      "translateX(26px)"
+                                  ]
+                            ]
+                        else backgroundColor (hex "ccc")
+                      , Css.property "-webkit-transition" "0.2s"
+                      , Css.property "transition" "0.2s ease"
+                      , borderRadius (px 34)
+                      , before
+                            [ position absolute
+                            , Css.property "content" "\"\""
+                            , Css.height (px 26)
+                            , Css.width (px 26)
+                            , left (px 4)
+                            , bottom (px 4)
+                            , backgroundColor (hex "fff")
+                            , Css.property "-webkit-transition" "0.2s"
+                            , Css.property "transition" "0.2s ease"
+                            , borderRadius (pct 50)
+                            ]
+                      ]
+                    ] []
+              ]
+        , span [ css
+                     [ fontSize (pct 80)
+                     , color (hex ("888"))
+                     ]
+               ]
+            [ text (if isActive
+                    then "Unlocked"
+                    else "Locked")
+            ]
+        ]
+
+stringToNatWithDefault : Int -> String -> Int
+stringToNatWithDefault default value =
+    (String.toInt value)
+        |> Result.withDefault default
+        |> Basics.max 1
+
 -- Consequences
 consequenceView : Array Consequence -> Html Msg
 consequenceView consequences =
@@ -728,7 +1080,10 @@ consequenceView consequences =
 
 consequenceInput : Int -> Consequence -> Html Msg
 consequenceInput index (Consequence severity title) =
-    div [ css [ displayFlex ] ]
+    div [ css [ displayFlex
+              , alignItems center
+              ]
+        ]
         [ span [] [ text (showSeverity severity) ]
         , input [ type_ "text"
                 , css [ inputStyles ]

@@ -555,14 +555,21 @@ aspectView aspects =
                 <| Array.indexedMap
                     aspectInput
                     aspects
-        , button
-              [ onClick (AddNewAspect "") ]
+        , defaultButton
+              [ onClick (AddNewAspect "")
+              , css
+                  [ marginTop (Css.em 1) ]
+              ]
               [ text "New Aspect" ]
         ]
 
 aspectInput : Int -> Aspect -> Html Msg
 aspectInput index (Aspect title) =
-    div []
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
         [ input [ type_ "text"
                 , css [ inputStyles ]
                 , onInput (UpdateAspect index)
@@ -572,8 +579,11 @@ aspectInput index (Aspect title) =
         , if
               index >= 5
           then
-              button
-              [ onClick (RemoveAspect index)]
+              defaultButton
+              [ onClick (RemoveAspect index)
+              , css
+                    [ marginLeft (Css.em 0.5) ]
+              ]
               [ text "Remove" ]
           else
               span [] []
@@ -616,18 +626,10 @@ skillRatingButtonList skills =
 
 skillRatingButton : SkillRating -> Html Msg
 skillRatingButton rating =
-    button
+    defaultButton
     [ css
-      [ whiteSpace noWrap
-      , padding2 (Css.em 0.1) (Css.em 0.5)
-      , backgroundColor (hex "fff")
-      , border3 (px 1) solid (hex "ccc")
-      , borderRadius (px 4)
-      , cursor pointer
-      , hover
-          [ backgroundColor (hex "eee") ]
-      , marginBottom (Css.em 0.5)
-      , marginRight (Css.em 0.5)
+      [ marginBottom (Css.em 0.5)
+      , marginRight (Css.em 0.5)   
       ]
     , onClick (AddNewSkill (Skill rating ""))
     ]
@@ -659,8 +661,11 @@ skillInput index (Skill rating title) =
                            (Skill rating newTitle))
                 , value title
                ] []
-        , button
-              [ onClick (RemoveSkill index)]
+        , defaultButton
+              [ onClick (RemoveSkill index)
+              , css
+                  [ marginLeft (Css.em 0.5) ]
+              ]
               [ text "Remove" ]
         ]
 
@@ -676,7 +681,7 @@ stuntView stunts =
                 <| Array.indexedMap
                     stuntInput
                     stunts
-        , button
+        , defaultButton
               [ onClick (AddNewStunt "" "") ]
               [ text "New Stunt" ]
         ]
@@ -721,7 +726,7 @@ stuntInput index (Stunt title description) =
                     ]
               ]
               []
-        , button
+        , defaultButton
               [ onClick (RemoveStunt index)]
               [ text "Remove" ]
         ]
@@ -744,7 +749,7 @@ stressView stressTracks editModeActive =
                             (Array.indexedMap
                                  editStressTrackView
                                  stressTracks))
-                , button
+                , defaultButton
                       [ onClick
                             (AddNewStressTrack
                                  (StressTrack
@@ -889,7 +894,7 @@ editStressTrackView trackIndex (StressTrack title stressBoxes) =
             "stress-track"
             trackIndex
             stressBoxes
-        , button
+        , defaultButton
               [ onClick (RemoveStressTrack trackIndex)
               ]
               [ text "Remove" ]
@@ -1176,3 +1181,16 @@ inputStyles =
     --     [ border3 (px 1) solid (hex "888")
     --     ]
     ]
+
+
+defaultButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor (hex "fff")
+        , border3 (px 1) solid (hex "ccc")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+              [ backgroundColor (hex "eee") ]
+        ]

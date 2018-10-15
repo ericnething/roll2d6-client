@@ -6,7 +6,7 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
 import Array exposing (Array)
-import List.Extra exposing (stableSortWith)
+import List.Extra exposing (takeWhile, dropWhile, stableSortWith)
 
 main =
     Html.program
@@ -38,36 +38,6 @@ listDifference xs ys =
             (List.drop 1 <| dropWhile (\b -> b /= a) bs)
     in
         List.foldl (\y acc -> removeFirst y acc) xs ys
-
-takeWhile : (a -> Bool) -> List a -> List a
-takeWhile predicate =
-    let
-        takeWhileMemo memo list =
-            case list of
-                [] ->
-                    List.reverse memo
-
-                x :: xs ->
-                    if predicate x then
-                        takeWhileMemo (x :: memo) xs
-
-                    else
-                        List.reverse memo
-    in
-    takeWhileMemo []
-
-dropWhile : (a -> Bool) -> List a -> List a
-dropWhile predicate list =
-    case list of
-        [] ->
-            []
-
-        x :: xs ->
-            if predicate x then
-                dropWhile predicate xs
-
-            else
-                list
         
 
 -- Model

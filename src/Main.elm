@@ -4,9 +4,9 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
--- import EveryDict exposing (EveryDict)
 import Css exposing (..)
 import Array exposing (Array)
+import List.Extra exposing (stableSortWith)
 
 main =
     Html.program
@@ -29,6 +29,46 @@ catMaybes =
     in
         List.foldr g []
 
+listDifference : List a -> List a -> List a
+listDifference xs ys =
+    let             
+        removeFirst a bs =
+            List.append
+            (takeWhile (\b -> b /= a) bs)
+            (List.drop 1 <| dropWhile (\b -> b /= a) bs)
+    in
+        List.foldl (\y acc -> removeFirst y acc) xs ys
+
+takeWhile : (a -> Bool) -> List a -> List a
+takeWhile predicate =
+    let
+        takeWhileMemo memo list =
+            case list of
+                [] ->
+                    List.reverse memo
+
+                x :: xs ->
+                    if predicate x then
+                        takeWhileMemo (x :: memo) xs
+
+                    else
+                        List.reverse memo
+    in
+    takeWhileMemo []
+
+dropWhile : (a -> Bool) -> List a -> List a
+dropWhile predicate list =
+    case list of
+        [] ->
+            []
+
+        x :: xs ->
+            if predicate x then
+                dropWhile predicate xs
+
+            else
+                list
+        
 
 -- Model
 
@@ -55,13 +95,31 @@ type Severity
     = Mild
     | Moderate
     | Severe
+    | Extreme
 
 showSeverity : Severity -> String
 showSeverity severity =
     case severity of
-        Mild     -> "Mild (2)"
-        Moderate -> "Moderate (4)"
-        Severe   -> "Severe (6)"
+        Mild     -> "Mild -2"
+        Moderate -> "Moderate -4"
+        Severe   -> "Severe -6"
+        Extreme  -> "Extreme -8"
+
+consequenceSeverityList =
+    [ Mild
+    , Mild
+    , Moderate
+    , Severe
+    , Extreme
+    ]
+
+severityToInt : Severity -> Int
+severityToInt severity =
+    case severity of
+        Mild     -> -2
+        Moderate -> -4
+        Severe   -> -6
+        Extreme  -> -8
 
 type Consequence
     = Consequence Severity String
@@ -157,7 +215,7 @@ type alias Model =
 initialModel : Model
 initialModel =
     { characterSheet = initialCharacterSheet
-    , editMode = EditModeStress
+    , editMode = EditModeNone
     }
 
 initialCharacterSheet : CharacterSheet
@@ -260,23 +318,30 @@ type Msg
     | AddNewStunt String String
     | RemoveStunt Int
 
-    -- Stress
-    | ToggleStressBox Int Int StressBox
+    -- Stress Tracks
+    | UpdateStressTrack Index StressTrack
     | AddNewStressTrack StressTrack
     | RemoveStressTrack Int
-    | UpdateStressTrack Index StressTrack
+
+    -- Stress Boxes
+    | UpdateStressBox Int Int StressBox
     | AddStressBox Index StressBox
     | RemoveStressBox Index
 
     -- Consequences
     | UpdateConsequence Int Consequence
+    | AddNewConsequence Consequence
+    | RemoveConsequence Int
 
     -- Conditions
-    | ToggleCondition Int Int StressBox
     | UpdateCondition Int Condition
     | AddNewCondition Condition
     | RemoveCondition Int
+    | UpdateConditionBox Int Int StressBox
+    | AddConditionBox Index StressBox
+    | RemoveConditionBox Index
 
+    -- Edit Mode
     | ToggleEditMode EditMode
 
 
@@ -350,7 +415,7 @@ updateCharacterSheet msg model =
                           (\(Skill rating _) ->
                                skillRatingToInt rating)
                        |> List.reverse
-                       |> Array.fromList                    
+                       |> Array.fromList
              }
             , Cmd.none)
 
@@ -383,7 +448,7 @@ updateCharacterSheet msg model =
              }
             , Cmd.none)
 
-        ToggleStressBox trackIndex index stressBox ->
+        UpdateStressBox trackIndex index stressBox ->
             let 
                 update =
                     case Array.get trackIndex model.stress of
@@ -465,7 +530,26 @@ updateCharacterSheet msg model =
              }
             , Cmd.none)
 
-        ToggleCondition trackIndex index stressBox ->
+        AddNewConsequence newConsequence ->
+            ({ model
+                 | consequences
+                   = Array.push newConsequence model.consequences
+                       |> Array.toList
+                       |> stableSortWith
+                          (\(Consequence a _) (Consequence b _) ->
+                               Basics.compare
+                               (severityToInt b)
+                               (severityToInt a))
+                       |> Array.fromList
+             }, Cmd.none)
+
+        RemoveConsequence index ->
+            ({ model
+                 | consequences
+                   = removeIndexFromArray index model.consequences
+            }, Cmd.none)
+
+        UpdateConditionBox trackIndex index stressBox ->
             let 
                 update =
                     case Array.get trackIndex model.conditions of
@@ -479,6 +563,44 @@ updateCharacterSheet msg model =
                                   (Condition
                                        title
                                        (Array.set index stressBox boxes))
+                                  model.conditions
+                            }
+            in
+                (update, Cmd.none)
+
+        AddConditionBox trackIndex stressBox ->
+            let
+                update =
+                    case Array.get trackIndex model.conditions of
+                        Nothing ->
+                            model
+                        Just (Condition title boxes) ->
+                            { model
+                                | conditions
+                                  = Array.set
+                                  trackIndex
+                                  (Condition
+                                       title
+                                       (Array.push stressBox boxes))
+                                  model.conditions
+                            }
+            in
+                (update, Cmd.none)
+
+        RemoveConditionBox trackIndex ->
+            let
+                update =
+                    case Array.get trackIndex model.conditions of
+                        Nothing ->
+                            model
+                        Just (Condition title boxes) ->
+                            { model
+                                | conditions
+                                  = Array.set
+                                  trackIndex
+                                  (Condition
+                                       title
+                                       (Array.slice 0 -1 boxes))
                                   model.conditions
                             }
             in
@@ -528,7 +650,9 @@ view model =
             model.characterSheet.stress
             (EditModeStress == model.editMode)
         , consequenceView model.characterSheet.consequences
-        , conditionsView model.characterSheet.conditions
+        , conditionsView
+            model.characterSheet.conditions
+            (EditModeConditions == model.editMode)
         ]
 
 textInput : String -> (String -> Msg) -> String -> Html Msg
@@ -646,6 +770,7 @@ skillInput index (Skill rating title) =
               [ css
                 [ fontWeight bold
                 , marginRight (Css.em 0.5)
+                , whiteSpace noWrap
                 ]
               ]
               [ text (showSkillRating rating) ]
@@ -787,7 +912,7 @@ stressTrackView trackIndex (StressTrack title stressBoxes) =
     div []
         [ div [] [ text title ]
         , stressBoxView
-            ToggleStressBox
+            UpdateStressBox
             trackIndex
             stressBoxes
         ]
@@ -869,7 +994,9 @@ editStressTrackView trackIndex (StressTrack title stressBoxes) =
                          (StressTrack newTitle stressBoxes))
               ] []
         , editStressBoxView
-            "stress-track"
+            AddStressBox
+            RemoveStressBox
+            UpdateStressBox
             trackIndex
             stressBoxes
         , defaultButton
@@ -878,8 +1005,13 @@ editStressTrackView trackIndex (StressTrack title stressBoxes) =
               [ text "Remove" ]
         ]
 
-editStressBoxView : String -> Int -> Array StressBox -> Html Msg
-editStressBoxView trackPrefix trackIndex stressBoxes =
+editStressBoxView : (Int -> StressBox -> Msg)
+                  -> (Int -> Msg)
+                  -> (Int -> Int -> StressBox -> Msg)
+                  -> Int
+                  -> Array StressBox
+                  -> Html Msg
+editStressBoxView addBox removeBox updateBox trackIndex stressBoxes =
     div [ css [ displayFlex
               , flexWrap Css.wrap
               , alignItems center
@@ -887,61 +1019,67 @@ editStressBoxView trackPrefix trackIndex stressBoxes =
         ]
         (Array.toList
              (Array.indexedMap
-                  (editStressInput trackPrefix trackIndex)
+                  (editStressInput updateBox trackIndex)
                   stressBoxes) ++
-        [ button
-              [ onClick (RemoveStressBox trackIndex)
-              , css
-                    [ backgroundColor (hex "eee")
-                    , border (px 0)
-                    , color (hex "888")
-                    , borderRadius (px 4)
-                    , display inlineBlock
-                    , padding2 (Css.em 0.5) (Css.em 1)
-                    , cursor pointer
-                    , marginRight (Css.em 0.5)
-                    , hover
-                        [ backgroundColor (hex "DC143C")
-                        , color (hex "fff")
-                        ]
-                    , Css.property
-                        "transition"
-                        "background-color 0.2s, color 0.2s"
-                    ]
-              ]
+        [ removeBoxButton
+              [ onClick (removeBox trackIndex) ]
               [ text "✕" ]
-        , button
-              [ onClick (AddStressBox trackIndex (StressBox 1 False))
-              , css
-                    [ backgroundColor (hex "eee")
-                    -- , border3 (px 1) dashed (hex "888")
-                    , border (px 0)
-                    , color (hex "888")
-                    , borderRadius (px 4)
-                    , display inlineBlock
-                    , padding2 (Css.em 0.5) (Css.em 1)
-                    , cursor pointer
-                    , marginRight (Css.em 0.5)
-                    , hover
-                        [ backgroundColor (hex "1E90FF")
-                        , color (hex "fff")
-                        -- , borderColor transparent
-                        ]
-                    , Css.property
-                        "transition"
-                        "background-color 0.2s, color 0.2s"
-                    ]
-              ]
+        , addNewBoxButton
+              [ onClick (addBox trackIndex (StressBox 1 False)) ]
               [ text "+" ]
         ])
 
-editStressInput : String -> Int -> Int -> StressBox -> Html Msg
-editStressInput _ trackIndex index (StressBox points isChecked) =
+removeBoxButton =
+    styled button
+        [ backgroundColor (hex "eee")
+        , border (px 0)
+        , color (hex "888")
+        , borderRadius (px 4)
+        , display inlineBlock
+        , padding2 (Css.em 0.5) (Css.em 1)
+        , cursor pointer
+        , marginRight (Css.em 0.5)
+        , hover
+              [ backgroundColor (hex "DC143C")
+              , color (hex "fff")
+              ]
+        , Css.property
+            "transition"
+            "background-color 0.2s, color 0.2s"
+        ]
+        
+addNewBoxButton =
+    styled button
+        [ backgroundColor (hex "eee")
+        -- , border3 (px 1) dashed (hex "888")
+        , border (px 0)
+        , color (hex "888")
+        , borderRadius (px 4)
+        , display inlineBlock
+        , padding2 (Css.em 0.5) (Css.em 1)
+        , cursor pointer
+        , marginRight (Css.em 0.5)
+        , hover
+              [ backgroundColor (hex "1E90FF")
+              , color (hex "fff")
+              -- , borderColor transparent
+              ]
+        , Css.property
+            "transition"
+            "background-color 0.2s, color 0.2s"
+        ]
+        
+editStressInput : (Int -> Int -> StressBox -> Msg)
+                -> Int
+                -> Int
+                -> StressBox
+                -> Html Msg
+editStressInput updateBox trackIndex index (StressBox points isChecked) =
     input [ type_ "number"
           , value (toString points)
           , onInput
                 (\newPoints ->
-                     (ToggleStressBox
+                     (updateBox
                           trackIndex index
                           (StressBox
                                -- (Result.withDefault
@@ -1056,9 +1194,7 @@ consequenceView consequences =
                 <| Array.indexedMap
                     consequenceInput
                     consequences
-        -- , button
-        --       [ onClick (AddNewAspect "") ]
-        --       [ text "New Aspect" ]
+        , consequenceButtonList consequences
         ]
 
 consequenceInput : Int -> Consequence -> Html Msg
@@ -1067,38 +1203,114 @@ consequenceInput index (Consequence severity title) =
               , alignItems center
               ]
         ]
-        [ span [] [ text (showSeverity severity) ]
+        [ span [ css
+                 [ fontWeight bold
+                 , marginRight (Css.em 0.5)
+                 , whiteSpace noWrap
+                 ]
+               ]
+              [ text (showSeverity severity) ]
         , input [ type_ "text"
-                , css [ inputStyles ]
+                , css [ flex (int 1)
+                      , inputStyles
+                      ]
                 , onInput
                       (\newTitle ->
                            (UpdateConsequence
                             index
                             (Consequence severity newTitle)))
                 , value title
-                -- , placeholder <| "Aspect #" ++ toString (index + 1)
                ] []
-        -- , if
-        --       index >= 5
-        --   then
-        --       button
-        --       [ onClick (RemoveAspect index)]
-        --       [ text "Remove" ]
-        --   else
-        --       span [] []
+        , defaultButton
+              [ onClick (RemoveConsequence index)
+              , css
+                  [ marginLeft (Css.em 0.5) ]
+              ]
+              [ text "Remove" ]
         ]
+
+consequenceButtonList : Array Consequence -> Html Msg
+consequenceButtonList consequences =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , flexWrap Css.wrap
+          , marginTop (Css.em 1)
+          ]
+        ]
+        <| List.map
+            consequenceSeverityButton
+            (listDifference
+                 consequenceSeverityList
+                 (List.map
+                      (\(Consequence a _) -> a)
+                      (Array.toList consequences)))
+            -- (List.filter
+            --      (\severity ->
+            --           consequences
+            --             |> Array.toList
+            --             |> List.map (\(Consequence a _) -> a)
+            --             |> List.member severity
+            --             |> not)
+            --      consequenceSeverityList)
+
+consequenceSeverityButton : Severity -> Html Msg
+consequenceSeverityButton severity =
+    defaultButton
+    [ css
+      [ marginBottom (Css.em 0.5)
+      , marginRight (Css.em 0.5)   
+      ]
+    , onClick (AddNewConsequence (Consequence severity ""))
+    ]
+    [ text (showSeverity severity) ]
 
 
 -- Conditions
 
-conditionsView : Array Condition -> Html Msg
-conditionsView conditions =
-    div []
-        ([ h2 [] [ text "Conditions" ] ]
-           ++ Array.toList
-               (Array.indexedMap
-                    conditionView
-                    conditions))
+conditionsView : Array Condition -> Bool -> Html Msg
+conditionsView conditions editModeActive =
+    let
+        view =
+            if
+                editModeActive
+            then
+                [ div [] (Array.toList
+                            (Array.indexedMap
+                                 editConditionView
+                                 conditions))
+                , defaultButton
+                      [ onClick
+                            (AddNewCondition
+                                 (Condition
+                                      "New Condition"
+                                      (Array.fromList
+                                           [ StressBox 1 False ])))
+                      ]
+                      [ text "Add New Condition" ]
+                ]
+            else
+                [ div [] (Array.toList
+                              (Array.indexedMap
+                                   conditionView
+                                   conditions))
+                ]
+    in
+        div []
+            ([ div [ css
+                    [ displayFlex
+                    , alignItems center
+                    ]
+                  ]
+                  [ div [ css
+                          [ fontWeight bold
+                          , fontSize (Css.em 1.1)
+                          ]
+                        ] [ text "Conditions" ]
+                  , toggleSwitch EditModeConditions editModeActive
+                  ]
+             ] ++ view)
+
 
 conditionView : Int -> Condition -> Html Msg
 conditionView trackIndex (Condition title stressBoxes) =
@@ -1108,19 +1320,36 @@ conditionView trackIndex (Condition title stressBoxes) =
               ]
         ]
         [ stressBoxView
-              ToggleCondition
+              UpdateConditionBox
               trackIndex
               stressBoxes
-        , input [ type_ "text"
-                , onInput
-                      (\newTitle ->
-                           UpdateCondition
-                           trackIndex
-                           (Condition newTitle stressBoxes))
-                , value title
-                , css [ inputStyles ]
-                ]
+        , div []
             [ text title ]
+        ]
+
+editConditionView : Int -> Condition -> Html Msg
+editConditionView trackIndex (Condition title stressBoxes) =
+    div []
+        [ input
+              [ type_ "text"
+              , css [ inputStyles ]
+              , value title
+              , onInput
+                    (\newTitle ->
+                         UpdateCondition
+                         trackIndex
+                         (Condition newTitle stressBoxes))
+              ] []
+        , editStressBoxView
+            AddConditionBox
+            RemoveConditionBox
+            UpdateConditionBox
+            trackIndex
+            stressBoxes
+        , defaultButton
+              [ onClick (RemoveCondition trackIndex)
+              ]
+              [ text "Remove" ]
         ]
 
 -- Subscriptions

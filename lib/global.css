@@ -6,6 +6,7 @@
 
 html {
     /* font-size: 2.2vw; */
+    font-size: 18px;
     font-family: "Fira Sans", sans-serif;
 }
 
@@ -15,10 +16,50 @@ body {
     line-height: 1.4;
     max-width: 1440px;
     margin: 0px auto 0px auto;
-    padding: 0 4.8vw;
+    padding: 4.8vh 4.8vw;
     text-rendering: optimizeLegibility;
     -webkit-font-feature-settings: "kern" 1;
     -moz-font-feature-settings:    "kern" 1;
     -ms-font-feature-settings:     "kern" 1;
     font-feature-settings:         "kern" 1;
+}
+
+input, textarea, button {
+    font-family: "Fira Sans", sans-serif;
+    font-size: 1em;
+}
+
+h1, h2, h3 {
+    font-family: "Fira Sans", sans-serif;
+    font-weight: 600;
+}
+h1 {
+    font-size: 1.25em;
+    margin-top: 0;
+    margin-bottom: 0.15em;
+}
+h1 small {
+    font-size: 60%;
+    display: block;
+    font-variant: small-caps;
+    margin-bottom: 0.5em;
+}
+h2 {
+    font-size: 1.1em;
+    margin-top: 1em;
+    margin-bottom: 0.25em;
+}
+p, ol, ul {
+    font-size: 1em;
+    line-height: 1.35;
+    margin-top: 0;
+    margin-bottom: 0.75em;
+}
+ol, ul {
+    margin-left: 1em;
+    padding-left: 0;
+}
+li {
+    list-style-position: outside;
+    margin-bottom: 0.5em;
 }

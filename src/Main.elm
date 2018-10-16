@@ -276,6 +276,8 @@ type Msg
     = NoOp
     | UpdateName String
     | UpdateDescription String
+    | UpdateRefresh Int
+    | UpdateFatePoints Int
       
     -- Aspects
     | UpdateAspect Int String
@@ -354,6 +356,14 @@ updateCharacterSheet msg model =
 
         UpdateDescription description ->
             ({ model | description = description }
+            , Cmd.none)
+
+        UpdateRefresh points ->
+            ({ model | refresh = points }
+            , Cmd.none)
+
+        UpdateFatePoints points ->
+            ({ model | fatePoints = points }
             , Cmd.none)
 
         UpdateAspect index title ->
@@ -632,10 +642,75 @@ view model =
         , conditionsView
             model.characterSheet.conditions
             (EditModeConditions == model.editMode)
+        , refreshView model.characterSheet.refresh
+        , fatePointsView model.characterSheet.fatePoints
         ]
 
-sectionTitle : String -> Html Msg
-sectionTitle title = div [] []
+refreshView : Int -> Html Msg
+refreshView points =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , marginTop (Css.em 1)
+          ]
+        ]
+        [ label
+              [ css
+                [ display block
+                , fontSize (Css.em 1.1)
+                , fontWeight bold
+                , marginRight (Css.em 0.5)
+                ]
+              ]
+              [ text "Refresh" ]
+        , input
+              [ type_ "number"
+              , css [ inputStyles
+                    , Css.width (Css.em 3)
+                    , flex none
+                    ]
+              , onInput
+                    (\newPoints ->
+                         UpdateRefresh
+                         (stringToNatWithDefaultNonZero
+                              points
+                              newPoints))
+              , value (toString points)
+              ] []
+        ]
+
+fatePointsView : Int -> Html Msg
+fatePointsView points =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , marginTop (Css.em 1)
+          ]
+        ]
+        [ label
+              [ css
+                [ display block
+                , fontSize (Css.em 1.1)
+                , fontWeight bold
+                , marginRight (Css.em 0.5)
+                ]
+              ]
+              [ text "Fate Points" ]
+        , input
+              [ type_ "number"
+              , css [ inputStyles
+                    , Css.width (Css.em 3)
+                    , flex none
+                    ]
+              , onInput
+                    (\newPoints ->
+                         UpdateFatePoints
+                         (stringToNatWithDefault
+                              points
+                              newPoints))
+              , value (toString points)
+              ] []
+        ]        
 
 nameView : String -> Html Msg
 nameView name =
@@ -1083,7 +1158,7 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
                      (updateBox
                           trackIndex index
                           (StressBox
-                               (stringToNatWithDefault
+                               (stringToNatWithDefaultNonZero
                                     points
                                     newPoints)
                                isChecked)))
@@ -1180,6 +1255,11 @@ stringToNatWithDefault : Int -> String -> Int
 stringToNatWithDefault default value =
     (String.toInt value)
         |> Result.withDefault default
+        |> Basics.max 0
+
+stringToNatWithDefaultNonZero : Int -> String -> Int
+stringToNatWithDefaultNonZero default value =
+    stringToNatWithDefault default value
         |> Basics.max 1
 
 -- Consequences
@@ -1407,6 +1487,8 @@ readOnlyView model =
         , readOnlyStressView model.characterSheet.stress
         , readOnlyConsequencesView model.characterSheet.consequences
         , readOnlyConditionsView model.characterSheet.conditions
+        , readOnlyRefreshView model.characterSheet.refresh
+        , fatePointsView model.characterSheet.fatePoints
         ]
 
 readOnlyAspectView : Array Aspect -> Html Msg
@@ -1424,18 +1506,16 @@ readOnlySkillsView : Array Skill -> Html Msg
 readOnlySkillsView skills =
     let
         skillView (Skill rating title) =
-            div [ css
-                  [ displayFlex
-                  , alignItems center
-                  ]
-                ]
-                [ div [ css
+            div []
+                [ span
+                      [ css
                         [ fontWeight bold
                         , marginRight (Css.em 0.5)
+                        , whiteSpace noWrap
                         ]
                       ]
                       [ text (showSkillRating rating) ]
-                , div []
+                , span []
                     [ text title ]
                 ]
     in
@@ -1541,4 +1621,22 @@ readOnlyConditionsView conditions =
                                conditionView
                                    conditions))
             ]
+
+
+readOnlyRefreshView : Int -> Html Msg
+readOnlyRefreshView points =
+    div [ css
+              [ marginTop (Css.em 1)]
+        ]
+        [ span
+              [ css
+                [ fontSize (Css.em 1.1)
+                , fontWeight bold
+                ]
+              ]
+              [ text "Refresh: " ]
+        , span
+              []
+              [ text (toString points) ]
+        ]
 

@@ -6,7 +6,12 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
 import Array exposing (Array)
-import List.Extra exposing (takeWhile, dropWhile, stableSortWith)
+import List.Extra exposing (stableSortWith)
+import Util exposing
+    ( listDifference
+    , stringToNatWithDefaultNonZero
+    , stringToNatWithDefault
+    )
 
 main =
     Html.program
@@ -17,29 +22,6 @@ main =
         , subscriptions = subscriptions
         }
 
-
--- Utility
-
-catMaybes : List (Maybe a) -> List a
-catMaybes =
-    let
-        g ma acc =
-            case ma of
-                Just a  -> a :: acc
-                Nothing -> acc
-    in
-        List.foldr g []
-
-listDifference : List a -> List a -> List a
-listDifference xs ys =
-    let             
-        removeFirst a bs =
-            List.append
-            (takeWhile (\b -> b /= a) bs)
-            (List.drop 1 <| dropWhile (\b -> b /= a) bs)
-    in
-        List.foldl (\y acc -> removeFirst y acc) xs ys
-        
 
 -- Model
 
@@ -1250,17 +1232,6 @@ toggleSwitch mode isActive =
                     else "Locked")
             ]
         ]
-
-stringToNatWithDefault : Int -> String -> Int
-stringToNatWithDefault default value =
-    (String.toInt value)
-        |> Result.withDefault default
-        |> Basics.max 0
-
-stringToNatWithDefaultNonZero : Int -> String -> Int
-stringToNatWithDefaultNonZero default value =
-    stringToNatWithDefault default value
-        |> Basics.max 1
 
 -- Consequences
 consequenceView : Array Consequence -> Html Msg

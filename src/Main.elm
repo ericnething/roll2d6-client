@@ -670,17 +670,12 @@ aspectInput index (Aspect title) =
                 , value title
                 , placeholder <| "Aspect #" ++ toString (index + 1)
                ] []
-        , if
-              index >= 5
-          then
-              defaultButton
+        , defaultButton
               [ onClick (RemoveAspect index)
               , css
                     [ marginLeft (Css.em 0.5) ]
               ]
               [ text "Remove" ]
-          else
-              span [] []
         ]
 
 
@@ -991,9 +986,13 @@ editStressBoxView addBox removeBox updateBox trackIndex stressBoxes =
              (Array.indexedMap
                   (editStressInput updateBox trackIndex)
                   stressBoxes) ++
-        [ removeBoxButton
+        [ if Array.length stressBoxes > 1
+          then
+              removeBoxButton
               [ onClick (removeBox trackIndex) ]
               [ text "✕" ]
+          else
+              div [] []
         , addNewBoxButton
               [ onClick (addBox trackIndex (StressBox 1 False)) ]
               [ text "+" ]

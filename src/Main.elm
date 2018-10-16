@@ -11,6 +11,7 @@ import List.Extra exposing (takeWhile, dropWhile, stableSortWith)
 main =
     Html.program
         { init = init
+        -- , view = readOnlyView >> toUnstyled
         , view = view >> toUnstyled
         , update = update
         , subscriptions = subscriptions
@@ -44,6 +45,7 @@ listDifference xs ys =
 
 type alias CharacterSheet = 
     { name : String
+    , description : String
     , aspects : Array Aspect
     , skills : Array Skill
     , refresh : Int
@@ -190,7 +192,8 @@ initialModel =
 
 initialCharacterSheet : CharacterSheet
 initialCharacterSheet =
-    { name = ""
+    { name = "Geronimo"
+    , description = "A mundane human who constantly finds himself at the center of mysteries involving horror and the occult."
     , aspects
           = Array.fromList
             [ Aspect "Disciple of the Ivory Shroud"
@@ -272,6 +275,7 @@ type alias Index = Int
 type Msg
     = NoOp
     | UpdateName String
+    | UpdateDescription String
       
     -- Aspects
     | UpdateAspect Int String
@@ -346,6 +350,10 @@ updateCharacterSheet msg model =
 
         UpdateName name ->
             ({ model | name = name }
+            , Cmd.none)
+
+        UpdateDescription description ->
+            ({ model | description = description }
             , Cmd.none)
 
         UpdateAspect index title ->
@@ -613,6 +621,7 @@ view model =
           ]
         ]
         [ nameView model.characterSheet.name
+        , descriptionView model.characterSheet.description
         , aspectView model.characterSheet.aspects
         , skillView model.characterSheet.skills
         , stuntView model.characterSheet.stunts
@@ -625,20 +634,45 @@ view model =
             (EditModeConditions == model.editMode)
         ]
 
-textInput : String -> (String -> Msg) -> String -> Html Msg
-textInput title msg currentValue =
-    div []
-        [ label [] [ text title ]
-        , input [ type_ "text"
-                , css []
-                , onInput msg
-                , value currentValue
-               ] []
-        ]
+sectionTitle : String -> Html Msg
+sectionTitle title = div [] []
 
 nameView : String -> Html Msg
 nameView name =
-    textInput "Name" UpdateName name
+    div []
+        [ label [ css
+                  [ display block
+                  , fontSize (Css.em 1.1)
+                  , fontWeight (int 500)
+                  , marginTop (Css.em 1)
+                  ]
+                ]
+              [ text "Name" ]
+        , input [ type_ "text"
+                , css [ inputStyles ]
+                , onInput UpdateName
+                , value name
+               ] []
+        ]
+
+descriptionView : String -> Html Msg
+descriptionView description =
+    div []
+        [ label [ css
+                  [ display block
+                  , fontSize (Css.em 1.1)
+                  , fontWeight (int 500)
+                  , marginTop (Css.em 1)
+                  ]
+                ]
+              [ text "Description" ]
+        , textarea
+              [ rows 5
+              , css [ inputStyles ]
+              , onInput UpdateDescription
+              , value description
+              ] []
+        ]
 
 aspectView : Array Aspect -> Html Msg
 aspectView aspects =
@@ -654,7 +688,7 @@ aspectView aspects =
               , css
                   [ marginTop (Css.em 1) ]
               ]
-              [ text "New Aspect" ]
+              [ text "Add New Aspect" ]
         ]
 
 aspectInput : Int -> Aspect -> Html Msg
@@ -773,16 +807,18 @@ stuntView stunts =
                     stunts
         , defaultButton
               [ onClick (AddNewStunt "" "") ]
-              [ text "New Stunt" ]
+              [ text "Add New Stunt" ]
         ]
 
 stuntInput : Int -> Stunt -> Html Msg
 stuntInput index (Stunt title description) =
-    div []
+    div [ css
+          [ marginBottom (Css.em 1.25)
+          ]
+        ]
         [ input [ type_ "text"
                 , css
                       [ display block
-                      , fontWeight bold
                       , inputStyles
                       ]
                 , onInput
@@ -801,23 +837,19 @@ stuntInput index (Stunt title description) =
               , value description
               , rows 5
               , css [ display block
-                    , resize none
-                    -- , border3 (px 1) solid transparent
                     , border3 (px 1) solid (hex "888")
                     , borderRadius (px 4)
                     , padding (Css.em 0.25)
                     , Css.width (pct 100)
-                    -- , focus
-                    --       [ border3 (px 1) solid (hex "888")
-                    --     ]
-                    -- , hover
-                    --       [ border3 (px 1) solid (hex "888")
-                    --       ]
                     ]
               ]
               []
         , defaultButton
-              [ onClick (RemoveStunt index)]
+              [ onClick (RemoveStunt index)
+              , css
+                  [ marginTop (Css.em 0.5)
+                  ]
+              ]
               [ text "Remove" ]
         ]
 
@@ -831,14 +863,12 @@ stressView stressTracks editModeActive =
             if
                 editModeActive
             then
-                [ 
-                -- , button
-                --       [ onClick (ToggleEditMode EditModeStress) ]
-                --       [ text "Toggle Edit Mode" ]
-                div [] (Array.toList
-                            (Array.indexedMap
-                                 editStressTrackView
-                                 stressTracks))
+                [ p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a stress box." ]
+                , div []
+                    (Array.toList
+                         (Array.indexedMap
+                              editStressTrackView
+                              stressTracks))
                 , defaultButton
                       [ onClick
                             (AddNewStressTrack
@@ -860,6 +890,7 @@ stressView stressTracks editModeActive =
             ([ div [ css
                     [ displayFlex
                     , alignItems center
+                    , marginTop (Css.em 1)
                     ]
                   ]
                   [ div [ css
@@ -903,7 +934,7 @@ stressInput : (Int -> Int -> StressBox -> Msg)
 stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
     label
     [ css
-      [ fontSize (Css.em 1.1)
+      [ fontSize (Css.em 1)
       , border3 (px 2) solid (hex "333")
       , padding2 (Css.em 0.25) (Css.em 0.75)
       , display inlineBlock
@@ -947,7 +978,9 @@ stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
 
 editStressTrackView : Int -> StressTrack -> Html Msg
 editStressTrackView trackIndex (StressTrack title stressBoxes) =
-    div []
+    div [ css
+          [ marginBottom (Css.em 1) ]
+        ]
         [ input
               [ type_ "text"
               , css [ inputStyles ]
@@ -980,6 +1013,7 @@ editStressBoxView addBox removeBox updateBox trackIndex stressBoxes =
     div [ css [ displayFlex
               , flexWrap Css.wrap
               , alignItems center
+              , margin2 (Css.em 0.5) (px 0)
               ]
         ]
         (Array.toList
@@ -992,7 +1026,7 @@ editStressBoxView addBox removeBox updateBox trackIndex stressBoxes =
               [ onClick (removeBox trackIndex) ]
               [ text "✕" ]
           else
-              div [] []
+              text ""
         , addNewBoxButton
               [ onClick (addBox trackIndex (StressBox 1 False)) ]
               [ text "+" ]
@@ -1005,7 +1039,7 @@ removeBoxButton =
         , color (hex "888")
         , borderRadius (px 4)
         , display inlineBlock
-        , padding2 (Css.em 0.5) (Css.em 1)
+        , padding2 (Css.em 0.35) (Css.em 0.8)
         , cursor pointer
         , marginRight (Css.em 0.5)
         , hover
@@ -1020,18 +1054,16 @@ removeBoxButton =
 addNewBoxButton =
     styled button
         [ backgroundColor (hex "eee")
-        -- , border3 (px 1) dashed (hex "888")
         , border (px 0)
         , color (hex "888")
         , borderRadius (px 4)
         , display inlineBlock
-        , padding2 (Css.em 0.5) (Css.em 1)
+        , padding2 (Css.em 0.35) (Css.em 0.8)
         , cursor pointer
         , marginRight (Css.em 0.5)
         , hover
               [ backgroundColor (hex "1E90FF")
               , color (hex "fff")
-              -- , borderColor transparent
               ]
         , Css.property
             "transition"
@@ -1051,15 +1083,12 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
                      (updateBox
                           trackIndex index
                           (StressBox
-                               -- (Result.withDefault
-                               --      points
-                               --      (String.toInt newPoints))
                                (stringToNatWithDefault
                                     points
                                     newPoints)
                                isChecked)))
           , css
-                [ fontSize (Css.em 1.1)
+                [ fontSize (Css.em 1)
                 , border3 (px 2) solid (hex "333")
                 , padding2 (Css.em 0.25) (Css.em 0.75)
                 , display inline
@@ -1214,14 +1243,6 @@ consequenceButtonList consequences =
                  (List.map
                       (\(Consequence a _) -> a)
                       (Array.toList consequences)))
-            -- (List.filter
-            --      (\severity ->
-            --           consequences
-            --             |> Array.toList
-            --             |> List.map (\(Consequence a _) -> a)
-            --             |> List.member severity
-            --             |> not)
-            --      consequenceSeverityList)
 
 consequenceSeverityButton : Severity -> Html Msg
 consequenceSeverityButton severity =
@@ -1244,10 +1265,12 @@ conditionsView conditions editModeActive =
             if
                 editModeActive
             then
-                [ div [] (Array.toList
-                            (Array.indexedMap
-                                 editConditionView
-                                 conditions))
+                [ p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a shift box." ]
+                , div []
+                    (Array.toList
+                         (Array.indexedMap
+                              editConditionView
+                              conditions))
                 , defaultButton
                       [ onClick
                             (AddNewCondition
@@ -1269,6 +1292,7 @@ conditionsView conditions editModeActive =
             ([ div [ css
                     [ displayFlex
                     , alignItems center
+                    , marginTop (Css.em 1)
                     ]
                   ]
                   [ div [ css
@@ -1298,7 +1322,9 @@ conditionView trackIndex (Condition title stressBoxes) =
 
 editConditionView : Int -> Condition -> Html Msg
 editConditionView trackIndex (Condition title stressBoxes) =
-    div []
+    div [ css
+          [ marginBottom (Css.em 1) ]
+        ]
         [ input
               [ type_ "text"
               , css [ inputStyles ]
@@ -1344,17 +1370,10 @@ inputStyles : Css.Style
 inputStyles =
     batch
     [ Css.width (pct 100)
-    -- , border3 (px 1) solid transparent
     , border3 (px 1) solid (hex "888")
     , borderRadius (px 4)
     , padding (Css.em 0.25)
     , flex (int 1)
-    -- , focus
-    --     [ border3 (px 1) solid (hex "888")
-    --     ]
-    -- , hover
-    --     [ border3 (px 1) solid (hex "888")
-    --     ]
     ]
 
 
@@ -1369,3 +1388,157 @@ defaultButton =
         , hover
               [ backgroundColor (hex "eee") ]
         ]
+
+
+
+-- Read Only Views
+
+readOnlyView : Model -> Html Msg
+readOnlyView model =
+    div []
+        [ div [ css
+                [ fontWeight bold ]
+              ]
+              [ text model.characterSheet.name ]
+        , div [] [ text model.characterSheet.description ]
+        , readOnlyAspectView model.characterSheet.aspects
+        , readOnlySkillsView model.characterSheet.skills
+        , readOnlyStuntsView model.characterSheet.stunts
+        , readOnlyStressView model.characterSheet.stress
+        , readOnlyConsequencesView model.characterSheet.consequences
+        , readOnlyConditionsView model.characterSheet.conditions
+        ]
+
+readOnlyAspectView : Array Aspect -> Html Msg
+readOnlyAspectView aspects =
+    div []
+        [ h2 [] [ text "Aspects" ]
+        , div []
+            <| Array.toList
+                <| Array.map
+                    (\(Aspect title) -> div [] [ text title ])
+                    aspects
+        ]
+
+readOnlySkillsView : Array Skill -> Html Msg
+readOnlySkillsView skills =
+    let
+        skillView (Skill rating title) =
+            div [ css
+                  [ displayFlex
+                  , alignItems center
+                  ]
+                ]
+                [ div [ css
+                        [ fontWeight bold
+                        , marginRight (Css.em 0.5)
+                        ]
+                      ]
+                      [ text (showSkillRating rating) ]
+                , div []
+                    [ text title ]
+                ]
+    in
+        div []
+            [ h2 [] [ text "Skills" ]
+            , div []
+                <| Array.toList
+                    <| Array.map
+                        skillView
+                            skills
+            ]
+
+readOnlyStuntsView : Array Stunt -> Html Msg
+readOnlyStuntsView stunts =
+    let
+        stuntView (Stunt title description) =
+            div [ css
+                  [ marginBottom (Css.em 0.5)
+                  ]
+                ]
+                [ span [ css
+                         [ fontWeight bold
+                         ]
+                       ]
+                      [ text (title ++ ": ")]
+                , span [] [ text description ]
+                ]
+    in
+        div []
+            [ h2 [] [ text "Stunts" ]
+            , div []
+                <| Array.toList
+                    <| Array.map
+                        stuntView
+                        stunts
+            ]
+
+readOnlyStressView : Array StressTrack -> Html Msg
+readOnlyStressView stressTracks =
+    div []
+        [ div [ css
+                [ fontWeight bold
+                , fontSize (Css.em 1.1)
+                , marginTop (Css.em 1)
+                ]
+              ] [ text "Stress" ]
+        , div [] (Array.toList
+                      (Array.indexedMap
+                           stressTrackView
+                           stressTracks))
+        ]
+
+readOnlyConsequencesView : Array Consequence -> Html Msg
+readOnlyConsequencesView consequences =
+    let
+        consequenceView (Consequence severity title) =
+            div [ css
+                  [ displayFlex
+                  , alignItems center
+                  ]
+                ]
+                [ div [ css
+                        [ fontWeight bold
+                        , marginRight (Css.em 0.5)
+                        ]
+                      ]
+                      [ text (showSeverity severity) ]
+                , div []
+                    [ text title ]
+                ]
+    in
+        if
+            Array.isEmpty consequences
+        then
+            text ""
+        else
+            div []
+                [ h2 [] [ text "Consequences" ]
+                , div []
+                    <| Array.toList
+                        <| Array.map
+                            consequenceView
+                            consequences
+                ]
+
+
+readOnlyConditionsView : Array Condition -> Html Msg
+readOnlyConditionsView conditions =
+    if
+        Array.isEmpty conditions
+    then
+        text ""
+    else
+        div []
+            [ div [ css
+                    [ fontWeight bold
+                    , fontSize (Css.em 1.1)
+                    , marginTop (Css.em 1)
+                    ]
+                  ] [ text "Conditions" ]
+            , div [] (Array.toList
+                          (Array.indexedMap
+                               conditionView
+                                   conditions))
+            ]
+

@@ -122,7 +122,7 @@ editCharacterSheetView index mmodel =
             div [] [ text "Not Found" ]
         Just characterSheet ->
             div []
-                [ button
+                [ CharacterSheet.defaultButton
                       [ onClick (ChangeViewMode ReadOnlyView)
                       , css
                             [ display block ]
@@ -138,7 +138,7 @@ characterSheetWrapper : Int
                       -> Html Msg
 characterSheetWrapper index characterSheet =
     div []
-        [ button
+        [ CharacterSheet.defaultButton
               [ onClick (ChangeViewMode (EditView index))
               , css
                     [ display block ]

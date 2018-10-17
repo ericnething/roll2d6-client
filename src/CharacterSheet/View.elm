@@ -412,6 +412,7 @@ stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
       , borderRadius (px 4)
       , fontWeight bold
       , userSelect_none
+      , cursor pointer
       , if
             isChecked
        then

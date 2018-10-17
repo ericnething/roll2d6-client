@@ -869,14 +869,19 @@ readOnlyView model =
 
 readOnlyAspectView : Array Aspect -> Html Msg
 readOnlyAspectView aspects =
-    div []
-        [ h2 [] [ text "Aspects" ]
-        , div []
-            <| Array.toList
-                <| Array.map
-                    (\(Aspect title) -> div [] [ text title ])
-                    aspects
-        ]
+    if
+        Array.isEmpty aspects
+    then
+        text ""
+    else
+        div []
+            [ h2 [] [ text "Aspects" ]
+            , div []
+                <| Array.toList
+                    <| Array.map
+                        (\(Aspect title) -> div [] [ text title ])
+                            aspects
+            ]
 
 readOnlySkillsView : Array Skill -> Html Msg
 readOnlySkillsView skills =
@@ -895,14 +900,19 @@ readOnlySkillsView skills =
                     [ text title ]
                 ]
     in
-        div []
-            [ h2 [] [ text "Skills" ]
-            , div []
-                <| Array.toList
-                    <| Array.map
-                        skillView
-                            skills
-            ]
+        if
+            Array.isEmpty skills
+        then
+            text ""
+        else
+            div []
+                [ h2 [] [ text "Skills" ]
+                , div []
+                    <| Array.toList
+                        <| Array.map
+                            skillView
+                                skills
+                ]
 
 readOnlyStuntsView : Array Stunt -> Html Msg
 readOnlyStuntsView stunts =
@@ -920,29 +930,39 @@ readOnlyStuntsView stunts =
                 , span [] [ text description ]
                 ]
     in
-        div []
-            [ h2 [] [ text "Stunts" ]
-            , div []
-                <| Array.toList
-                    <| Array.map
-                        stuntView
-                        stunts
-            ]
+        if
+            Array.isEmpty stunts
+        then
+            text ""
+        else
+            div []
+                [ h2 [] [ text "Stunts" ]
+                , div []
+                    <| Array.toList
+                        <| Array.map
+                            stuntView
+                                stunts
+                ]
 
 readOnlyStressView : Array StressTrack -> Html Msg
 readOnlyStressView stressTracks =
-    div []
-        [ div [ css
-                [ fontWeight bold
-                , fontSize (Css.em 1.1)
-                , marginTop (Css.em 1)
-                ]
-              ] [ text "Stress" ]
-        , div [] (Array.toList
-                      (Array.indexedMap
-                           stressTrackView
-                           stressTracks))
-        ]
+    if
+        Array.isEmpty stressTracks
+    then
+        text ""
+    else
+        div []
+            [ div [ css
+                    [ fontWeight bold
+                    , fontSize (Css.em 1.1)
+                    , marginTop (Css.em 1)
+                    ]
+                  ] [ text "Stress" ]
+            , div [] (Array.toList
+                          (Array.indexedMap
+                               stressTrackView
+                               stressTracks))
+            ]
 
 readOnlyConsequencesView : Array Consequence -> Html Msg
 readOnlyConsequencesView consequences =

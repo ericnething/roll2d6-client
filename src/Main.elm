@@ -13,6 +13,7 @@ import CharacterSheet.Template exposing
     ( initialCharacterSheet
     , fateCore
     , dresdenFilesAccelerated
+    , tachyonSquadronShip
     )
 
 main =
@@ -41,7 +42,7 @@ initialModel =
               [ CharacterSheet.initialModel
                     initialCharacterSheet
               , CharacterSheet.initialModel
-                    dresdenFilesAccelerated
+                    tachyonSquadronShip
               ]
     , viewMode = ReadOnlyView
     }

@@ -18,7 +18,7 @@ type alias CharacterSheet =
 -- Aspects
 
 type Aspect
-    = Aspect String
+    = Aspect String Int
 
 -- Consequences
 

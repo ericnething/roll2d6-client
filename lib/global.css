@@ -63,3 +63,7 @@ li {
     list-style-position: outside;
     margin-bottom: 0.5em;
 }
+
+.read-only-aspect-view:hover button {
+    opacity: 1;
+}

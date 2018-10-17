@@ -22,7 +22,7 @@ type Msg
     | UpdateFatePoints Int
       
     -- Aspects
-    | UpdateAspect Int String
+    | UpdateAspect Int Aspect
     | AddNewAspect String
     | RemoveAspect Int
 
@@ -108,17 +108,17 @@ updateCharacterSheet msg model =
             ({ model | fatePoints = points }
             , Cmd.none)
 
-        UpdateAspect index title ->
+        UpdateAspect index aspect ->
             ({ model
                  | aspects
-                   = Array.set index (Aspect title) model.aspects
+                   = Array.set index aspect model.aspects
              }
             , Cmd.none)
 
         AddNewAspect title ->
             ({ model
                  | aspects
-                   = Array.push (Aspect title) model.aspects
+                   = Array.push (Aspect title 0) model.aspects
              }
             , Cmd.none)
 

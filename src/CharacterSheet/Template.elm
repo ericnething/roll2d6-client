@@ -3,17 +3,20 @@ module CharacterSheet.Template exposing (..)
 import Array exposing (Array)
 import CharacterSheet.Model exposing (..)
 
+emptyAspect : Aspect
+emptyAspect = Aspect "" 0
+
 initialCharacterSheet : CharacterSheet
 initialCharacterSheet =
     { name = "Geronimo"
     , description = "A mundane human who constantly finds himself at the center of mysteries involving horror and the occult."
     , aspects
           = Array.fromList
-            [ Aspect "Disciple of the Ivory Shroud"
-            , Aspect "The Manners of a Goat"
-            , Aspect "I Owe Old Finn Everything"
-            , Aspect "Smashing is Always an Option"
-            , Aspect "An Eye for an Eye"
+            [ Aspect "Disciple of the Ivory Shroud" 1
+            , Aspect "The Manners of a Goat" 0
+            , Aspect "I Owe Old Finn Everything" 0
+            , Aspect "Smashing is Always an Option" 1
+            , Aspect "An Eye for an Eye" 0
             ]
     , skills
           = Array.fromList
@@ -83,13 +86,7 @@ fateCore =
     { name = ""
     , description = ""
     , aspects
-          = Array.fromList
-            [ Aspect ""
-            , Aspect ""
-            , Aspect ""
-            , Aspect ""
-            , Aspect ""
-            ]
+          = Array.repeat 5 emptyAspect
     , skills
           = Array.fromList
             [ Skill Great ""
@@ -132,13 +129,7 @@ dresdenFilesAccelerated =
     { name = ""
     , description = ""
     , aspects
-          = Array.fromList
-            [ Aspect ""
-            , Aspect ""
-            , Aspect ""
-            , Aspect ""
-            , Aspect ""
-            ]
+          = Array.repeat 5 emptyAspect
     , skills
           = Array.fromList
             [ Skill Good ""
@@ -182,4 +173,41 @@ dresdenFilesAccelerated =
                    , StressBox 1 False
                    ])
             ]
+    }
+
+tachyonSquadronShip : CharacterSheet
+tachyonSquadronShip =
+    { name = "SF-46 D \"Blackfish\" Starfighter"
+    , description = "Well Armed: Gain Weapon:1 to Gunnery attacks.\nAutomated Ejection System: see page 46"
+    , aspects
+        = Array.fromList
+            [ Aspect "Old but Reliable" 0 ]
+    , skills
+        = Array.fromList
+            [ Skill Great "Maneuver"
+            , Skill Good "Attack"
+            , Skill Fair "Detection"
+            , Skill Average "Defend"
+            ]
+    , refresh = 3
+    , fatePoints = 0
+    , stunts =
+        Array.fromList []
+    , stress =
+        Array.fromList
+            [ StressTrack
+              "Shields"
+              (Array.fromList
+                   [ StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   , StressBox 1 False
+                   ])
+            ]
+    , consequences =
+        Array.fromList []
+    , conditions =
+        Array.fromList []
     }

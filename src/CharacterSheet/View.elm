@@ -158,7 +158,7 @@ aspectView aspects =
         ]
 
 aspectInput : Int -> Aspect -> Html Msg
-aspectInput index (Aspect title) =
+aspectInput index (Aspect title invokes) =
     div [ css
           [ displayFlex
           , alignItems center
@@ -166,7 +166,11 @@ aspectInput index (Aspect title) =
         ]
         [ input [ type_ "text"
                 , css [ inputStyles ]
-                , onInput (UpdateAspect index)
+                , onInput
+                      (\newTitle ->
+                           UpdateAspect
+                           index
+                           (Aspect newTitle invokes))
                 , value title
                 , placeholder <| "Aspect #" ++ toString (index + 1)
                ] []
@@ -869,19 +873,84 @@ readOnlyView model =
 
 readOnlyAspectView : Array Aspect -> Html Msg
 readOnlyAspectView aspects =
-    if
-        Array.isEmpty aspects
-    then
-        text ""
-    else
-        div []
-            [ h2 [] [ text "Aspects" ]
-            , div []
-                <| Array.toList
-                    <| Array.map
-                        (\(Aspect title) -> div [] [ text title ])
-                            aspects
+    let
+        aspectView index (Aspect title invokes) =
+            div
+            [ css
+              [ displayFlex
+              , alignItems center
+              ]
+            , class "read-only-aspect-view"
             ]
+            [ span [] [ text title ]
+            , invokesView index (Aspect title invokes)
+            ]
+    in
+        if
+            Array.isEmpty aspects
+        then
+            text ""
+        else
+            div []
+                [ h2 [] [ text "Aspects" ]
+                , div []
+                    <| Array.toList
+                        <| Array.indexedMap
+                            aspectView
+                            aspects
+                ]
+
+invokesView : Int -> Aspect -> Html Msg
+invokesView index (Aspect title invokes) =
+    let
+        invokeButton =
+            styled defaultButton
+                [ opacity (int 0)
+                , hover
+                      [ opacity (int 1) ]
+                ]
+
+        addInvokeButton =
+            invokeButton
+            [ onClick
+                  (UpdateAspect
+                       index
+                       (Aspect title (invokes + 1)))
+            ]
+            [ text "+" ]
+
+        removeInvokeButton =
+            invokeButton
+            [ onClick
+                  (UpdateAspect
+                       index
+                       (Aspect title (invokes - 1)))
+            ]
+            [ text "-" ]
+    in
+        if
+            invokes > 0
+        then
+            span
+            []
+            [ removeInvokeButton
+            , span
+                  [ css
+                    [ backgroundColor (hex "663399")
+                    , color (hex "fff")
+                    , borderRadius (px 999)
+                    , padding2 (Css.em 0.25) (Css.em 0.6)
+                    , fontSize (Css.em 0.75)
+                    ]
+                  ]
+                  [ text (toString invokes) ]
+            , addInvokeButton
+            ]
+        else
+            span
+            []
+            [ addInvokeButton ]
+
 
 readOnlySkillsView : Array Skill -> Html Msg
 readOnlySkillsView skills =

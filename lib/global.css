@@ -19,6 +19,7 @@ body {
     /* padding: 4.8vh 4.8vw; */
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;
+    scroll-behavior: smooth;
 }
 
 input, textarea, button {

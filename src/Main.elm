@@ -14,6 +14,8 @@ import CharacterSheet.Template exposing
     , fateCore
     , dresdenFilesAccelerated
     , tachyonSquadronShip
+    , sarissa_dfa
+    , harryDresden_dfa
     )
 
 main =
@@ -42,11 +44,13 @@ initialModel =
               [ CharacterSheet.initialModel
                     initialCharacterSheet
               , CharacterSheet.initialModel
+                    harryDresden_dfa
+              , CharacterSheet.initialModel
+                    sarissa_dfa
+              , CharacterSheet.initialModel
                     tachyonSquadronShip
               , CharacterSheet.initialModel
                     initialCharacterSheet
-              , CharacterSheet.initialModel
-                    dresdenFilesAccelerated
               , CharacterSheet.initialModel
                     initialCharacterSheet
               ]
@@ -102,7 +106,7 @@ view model =
        
       ]
     ]
-    [ h1 [] [ text "Fate RPG" ]
+    [ topNavigation
     , case model.viewMode of
           ReadOnlyView ->
               characterSheetsView
@@ -111,6 +115,21 @@ view model =
               editCharacterSheetView
               index
               (Array.get index model.characterSheets)
+    ]
+
+topNavigation : Html Msg
+topNavigation =
+    header
+    [ css
+      [ backgroundColor (hex "0079bf")
+      , Css.height (Css.rem 3)
+      , color (hex "fff")
+      , position sticky
+      , top (px 0)
+      , left (px 0)
+      ]
+    ]
+    [ h1 [] [ text "Fate RPG" ]
     ]
 
 characterSheetsView : Array CharacterSheet.Model -> Html Msg
@@ -125,6 +144,7 @@ characterSheetsView characterSheets =
           , Css.property "grid-auto-columns" "23rem"
           , Css.property "grid-auto-flow" "column"
           , Css.property "grid-column-gap" "1rem"
+          , backgroundColor (hex "0079bf")
           ]
         ]
         (Array.toList
@@ -141,7 +161,10 @@ editCharacterSheetView index mmodel =
         Nothing ->
             div [] [ text "Not Found" ]
         Just characterSheet ->
-            div []
+            div [ css
+                  [ margin2 (px 0) auto
+                  ]
+                ]
                 [ CharacterSheet.defaultButton
                       [ onClick (ChangeViewMode ReadOnlyView)
                       , css
@@ -153,31 +176,60 @@ editCharacterSheetView index mmodel =
                     (CharacterSheet.editView characterSheet)
                 ]
 
+characterSheetColumn =
+    styled div
+        [ displayFlex
+        , Css.property "flex-direction" "column"
+        , Css.property "max-height" "calc(100vh - 3.8rem)"
+        -- , borderRadius (Css.rem 0.3)
+        , Css.property "display" "grid"
+        , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+        , Css.property "flex" "0 0 23rem"
+        , overflowY auto
+        ]
+
+characterSheetList =
+    styled div
+        [ displayFlex
+        , flex (int 1)
+        , Css.property "flex-direction" "column"
+        , Css.property "align-content" "start"
+        -- , padding3 (px 0) (Css.rem 0.6) (Css.rem 0.5)
+        -- , overflowY auto
+        , Css.property "display" "grid"
+        , Css.property "grid-row-gap" "0.6rem"
+        ]
+
+characterSheetCard : Int -> CharacterSheet.Model -> Html Msg
+characterSheetCard index characterSheet =
+    div [ css
+          [ borderRadius (Css.em 0.2)
+          , backgroundColor (hex "fff")
+          ]
+        ]
+    [ div
+      []
+      [ CharacterSheet.defaultButton
+            [ onClick (ChangeViewMode (EditView index))
+            , css
+                  [ display block ]
+            ]
+            [ text "Edit" ]
+      ]
+    , Html.Styled.map
+        (CharacterSheetMsg index)
+        (CharacterSheet.readOnlyView characterSheet)
+    ]
+
+
 characterSheetWrapper : Int
                       -> CharacterSheet.Model
                       -> Html Msg
 characterSheetWrapper index characterSheet =
-    div [ css
-          [ displayFlex
-          , Css.property "flex-direction" "column"
-          -- , backgroundColor (hex "efefef")
-          , Css.property "max-height" "calc(100vh - 3.8rem)"
-          , borderRadius (Css.rem 0.3)
-          , Css.property "display" "grid"
-          , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-          , Css.property "flex" "0 0 27rem"
-          , overflowY auto
+    characterSheetColumn []
+        [ characterSheetList []
+          [ characterSheetCard index characterSheet 
           ]
-        ]
-        [ CharacterSheet.defaultButton
-              [ onClick (ChangeViewMode (EditView index))
-              , css
-                    [ display block ]
-              ]
-              [ text "Edit" ]
-        , Html.Styled.map
-              (CharacterSheetMsg index)
-              (CharacterSheet.readOnlyView characterSheet)
         ]
 
 -- Subscriptions

@@ -405,12 +405,12 @@ stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
     label
     [ css
       [ fontSize (Css.em 1)
-      , border3 (px 2) solid (hex "333")
-      , padding2 (Css.em 0.25) (Css.em 0.75)
+      , border3 (px 1) solid (hex "333")
+      , padding2 (Css.em 0.1) (Css.em 0.6)
       , display inlineBlock
-      , margin2 (px 0) (Css.em 0.25)
+      , marginRight (Css.em 0.2)
       , borderRadius (px 4)
-      , fontWeight bold
+      , fontWeight (int 500)
       , userSelect_none
       , cursor pointer
       , if
@@ -868,12 +868,12 @@ readOnlyView model =
         , div [] [ text model.characterSheet.description ]
         , readOnlyAspectView model.characterSheet.aspects
         , readOnlySkillsView model.characterSheet.skills
-        , readOnlyStuntsView model.characterSheet.stunts
         , readOnlyStressView model.characterSheet.stress
         , readOnlyConsequencesView model.characterSheet.consequences
         , readOnlyConditionsView model.characterSheet.conditions
         , readOnlyRefreshView model.characterSheet.refresh
         , fatePointsView model.characterSheet.fatePoints
+        , readOnlyStuntsView model.characterSheet.stunts
         ]
 
 readOnlySectionLabel : String -> Html Msg

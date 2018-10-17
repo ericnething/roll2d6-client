@@ -1,6 +1,7 @@
 module Util exposing (..)
 
 import List.Extra exposing (takeWhile, dropWhile)
+import Array exposing (Array)
 
 catMaybes : List (Maybe a) -> List a
 catMaybes =
@@ -32,3 +33,11 @@ stringToNatWithDefaultNonZero : Int -> String -> Int
 stringToNatWithDefaultNonZero default value =
     stringToNatWithDefault default value
         |> Basics.max 1
+
+removeIndexFromArray : Int -> Array a -> Array a
+removeIndexFromArray index array =
+    array
+        |> Array.toIndexedList
+        |> List.filter (\(idx, _) -> idx /= index)
+        |> List.map Tuple.second
+        |> Array.fromList

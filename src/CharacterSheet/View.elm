@@ -439,7 +439,8 @@ stressInput toggleStressBox trackIndex index (StressBox points isChecked) =
                                  (not isChecked))))
             , css
                   [ position absolute
-                  , opacity (num 0)
+                  , appearance_none
+                  , opacity (int 0)
                   , Css.height (px 0)
                   , Css.width (px 0)
                   ]
@@ -1106,3 +1107,12 @@ readOnlyRefreshView points =
               [ text (toString points) ]
         ]
 
+
+
+appearance_none : Style
+appearance_none =
+    batch
+    [ Css.property "-webkit-appearance" "none"
+    , Css.property "-moz-appearance" "none"
+    , Css.property "appearance" "none"
+    ]

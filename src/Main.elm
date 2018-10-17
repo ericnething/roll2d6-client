@@ -43,6 +43,12 @@ initialModel =
                     initialCharacterSheet
               , CharacterSheet.initialModel
                     tachyonSquadronShip
+              , CharacterSheet.initialModel
+                    initialCharacterSheet
+              , CharacterSheet.initialModel
+                    dresdenFilesAccelerated
+              , CharacterSheet.initialModel
+                    initialCharacterSheet
               ]
     , viewMode = ReadOnlyView
     }
@@ -89,7 +95,13 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div
-    []
+    [ css
+      [ Css.property "display" "grid"
+      , Css.property "grid-template-rows" "2.2rem auto"
+      , Css.property "grid-row-gap" "0.8rem"
+       
+      ]
+    ]
     [ h1 [] [ text "Fate RPG" ]
     , case model.viewMode of
           ReadOnlyView ->
@@ -105,6 +117,14 @@ characterSheetsView : Array CharacterSheet.Model -> Html Msg
 characterSheetsView characterSheets =
     div [ css
           [ displayFlex
+          , alignItems Css.start
+          , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
+          , overflowX auto
+          , Css.property "height" "calc(100vh - 3rem)"
+          , Css.property "display" "grid"
+          , Css.property "grid-auto-columns" "23rem"
+          , Css.property "grid-auto-flow" "column"
+          , Css.property "grid-column-gap" "1rem"
           ]
         ]
         (Array.toList
@@ -137,7 +157,18 @@ characterSheetWrapper : Int
                       -> CharacterSheet.Model
                       -> Html Msg
 characterSheetWrapper index characterSheet =
-    div []
+    div [ css
+          [ displayFlex
+          , Css.property "flex-direction" "column"
+          -- , backgroundColor (hex "efefef")
+          , Css.property "max-height" "calc(100vh - 3.8rem)"
+          , borderRadius (Css.rem 0.3)
+          , Css.property "display" "grid"
+          , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+          , Css.property "flex" "0 0 27rem"
+          , overflowY auto
+          ]
+        ]
         [ CharacterSheet.defaultButton
               [ onClick (ChangeViewMode (EditView index))
               , css

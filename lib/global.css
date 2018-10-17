@@ -5,8 +5,8 @@
 }
 
 html {
-    /* font-size: 2.2vw; */
-    font-size: 18px;
+    /* font-size: 18px; */
+    font-size: 15px;
     font-family: "Fira Sans", sans-serif;
 }
 
@@ -14,14 +14,11 @@ body {
     background-color: #ffffff;
     color: #333333;
     line-height: 1.4;
-    max-width: 1440px;
-    margin: 0px auto 0px auto;
-    padding: 4.8vh 4.8vw;
+    /* max-width: 1440px; */
+    /* margin: 0px auto 0px auto; */
+    /* padding: 4.8vh 4.8vw; */
     text-rendering: optimizeLegibility;
-    -webkit-font-feature-settings: "kern" 1;
-    -moz-font-feature-settings:    "kern" 1;
-    -ms-font-feature-settings:     "kern" 1;
-    font-feature-settings:         "kern" 1;
+    font-feature-settings: "kern" 1;
 }
 
 input, textarea, button {

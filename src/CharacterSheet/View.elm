@@ -775,6 +775,7 @@ conditionView : Int -> Condition -> Html Msg
 conditionView trackIndex (Condition title stressBoxes) =
     div [ css [ displayFlex
               , alignItems center
+              , flexWrap Css.wrap
               , marginTop (Css.em 0.5)
               ]
         ]
@@ -856,7 +857,9 @@ defaultButton =
 readOnlyView : Model -> Html Msg
 readOnlyView model =
     div [ css
-          [ maxWidth (Css.em 24) ]
+          [ padding (Css.em 1)
+          -- , maxWidth (Css.em 24)
+          ]
         ]
         [ div [ css
                 [ fontWeight bold ]
@@ -873,6 +876,21 @@ readOnlyView model =
         , fatePointsView model.characterSheet.fatePoints
         ]
 
+readOnlySectionLabel : String -> Html Msg
+readOnlySectionLabel title =
+    div
+    [ css
+      [ fontSize (Css.em 1)
+      , color (hex "555")
+      , Css.property "font-variant" "small-caps"
+      , Css.property "letter-spacing" "0.1em"
+      , marginTop (Css.em 1)
+      , marginBottom (Css.em 0.25)
+      , fontWeight bold
+      ]
+    ]
+    [ text title ]
+
 readOnlyAspectView : Array Aspect -> Html Msg
 readOnlyAspectView aspects =
     let
@@ -881,6 +899,7 @@ readOnlyAspectView aspects =
             [ css
               [ displayFlex
               , alignItems center
+              , justifyContent spaceBetween
               ]
             , class "read-only-aspect-view"
             ]
@@ -894,7 +913,8 @@ readOnlyAspectView aspects =
             text ""
         else
             div []
-                [ h2 [] [ text "Aspects" ]
+                [ readOnlySectionLabel "Aspects"
+                -- h2 [] [ text "Aspects" ]
                 , div []
                     <| Array.toList
                         <| Array.indexedMap
@@ -929,29 +949,34 @@ invokesView index (Aspect title invokes) =
                        (Aspect title (invokes - 1)))
             ]
             [ text "-" ]
+
+        content =
+            if
+                invokes > 0
+            then
+                [ removeInvokeButton
+                , span
+                      [ css
+                        [ backgroundColor (hex "663399")
+                        , color (hex "fff")
+                        , borderRadius (px 999)
+                        , padding2 (Css.em 0.25) (Css.em 0.6)
+                        , fontSize (Css.em 0.75)
+                        ]
+                      ]
+                      [ text (toString invokes) ]
+                , addInvokeButton
+                ]
+            else
+                [ addInvokeButton ]
+
     in
-        if
-            invokes > 0
-        then
-            span
-            []
-            [ removeInvokeButton
-            , span
-                  [ css
-                    [ backgroundColor (hex "663399")
-                    , color (hex "fff")
-                    , borderRadius (px 999)
-                    , padding2 (Css.em 0.25) (Css.em 0.6)
-                    , fontSize (Css.em 0.75)
-                    ]
-                  ]
-                  [ text (toString invokes) ]
-            , addInvokeButton
-            ]
-        else
-            span
-            []
-            [ addInvokeButton ]
+        span
+        [ css
+          [ whiteSpace noWrap
+          ]
+        ]
+        content
 
 
 readOnlySkillsView : Array Skill -> Html Msg
@@ -977,7 +1002,8 @@ readOnlySkillsView skills =
             text ""
         else
             div []
-                [ h2 [] [ text "Skills" ]
+                [ readOnlySectionLabel "Skills"
+                -- h2 [] [ text "Skills" ]
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1007,7 +1033,8 @@ readOnlyStuntsView stunts =
             text ""
         else
             div []
-                [ h2 [] [ text "Stunts" ]
+                [ readOnlySectionLabel "Stunts"
+                -- h2 [] [ text "Stunts" ]
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1023,12 +1050,13 @@ readOnlyStressView stressTracks =
         text ""
     else
         div []
-            [ div [ css
-                    [ fontWeight bold
-                    , fontSize (Css.em 1.1)
-                    , marginTop (Css.em 1)
-                    ]
-                  ] [ text "Stress" ]
+            [ readOnlySectionLabel "Stress"
+            -- div [ css
+              --       [ fontWeight bold
+              --       , fontSize (Css.em 1.1)
+              --       , marginTop (Css.em 1)
+              --       ]
+              --     ] [ text "Stress" ]
             , div [] (Array.toList
                           (Array.indexedMap
                                stressTrackView
@@ -1060,7 +1088,8 @@ readOnlyConsequencesView consequences =
             text ""
         else
             div []
-                [ h2 [] [ text "Consequences" ]
+                [ readOnlySectionLabel "Consequences"
+                -- h2 [] [ text "Consequences" ]
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1077,12 +1106,13 @@ readOnlyConditionsView conditions =
         text ""
     else
         div []
-            [ div [ css
-                    [ fontWeight bold
-                    , fontSize (Css.em 1.1)
-                    , marginTop (Css.em 1)
-                    ]
-                  ] [ text "Conditions" ]
+            [ readOnlySectionLabel "Conditions"
+            -- div [ css
+              --       [ fontWeight bold
+              --       , fontSize (Css.em 1.1)
+              --       , marginTop (Css.em 1)
+              --       ]
+              --     ] [ text "Conditions" ]
             , div [] (Array.toList
                           (Array.indexedMap
                                conditionView

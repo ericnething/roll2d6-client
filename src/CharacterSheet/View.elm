@@ -25,7 +25,6 @@ editView model =
         , descriptionView model.characterSheet.description
         , aspectView model.characterSheet.aspects
         , skillView model.characterSheet.skills
-        , stuntView model.characterSheet.stunts
         , stressView
             model.characterSheet.stress
             (EditModeStress == model.editMode)
@@ -35,6 +34,7 @@ editView model =
             (EditModeConditions == model.editMode)
         , refreshView model.characterSheet.refresh
         , fatePointsView model.characterSheet.fatePoints
+        , stuntView model.characterSheet.stunts
         ]
 
 refreshView : Int -> Html Msg
@@ -72,12 +72,32 @@ refreshView points =
 
 fatePointsView : Int -> Html Msg
 fatePointsView points =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          , marginTop (Css.em 1)
-          ]
-        ]
+    let
+        decrementButton =
+            defaultButton
+            [ onClick
+                  (UpdateFatePoints
+                       (Basics.max 0 (points - 1)))
+            , if points < 1
+              then css [ Css.property "visibility" "hidden" ]
+              else css [ opacity (int 0) ]
+            ]
+            [ text "-" ]
+
+        incrementButton =
+            defaultButton
+            [ onClick (UpdateFatePoints (points + 1))
+            , css [ opacity (int 0) ]
+            ]
+            [ text "+" ]
+    in
+        div [ css
+              [ displayFlex
+              , alignItems center
+              , marginTop (Css.em 1)
+              ]
+            , class "reveal-buttons-on-hover"
+            ]
         [ label
               [ css
                 [ display block
@@ -87,21 +107,36 @@ fatePointsView points =
                 ]
               ]
               [ text "Fate Points" ]
-        , input
-              [ type_ "number"
-              , css [ inputStyles
-                    , Css.width (Css.em 3)
-                    , flex none
+        , span [ css
+                 [ whiteSpace noWrap
+                 , Css.property "transform" "translateX(-1.6em)"
+                 ]
+               ]
+            [ decrementButton
+            , span
+                  [ css
+                    [ fontSize (Css.em 1.3)
+                    , margin2 (px 0) (Css.em 0.25)
                     ]
-              , onInput
-                    (\newPoints ->
-                         UpdateFatePoints
-                         (stringToNatWithDefault
-                              points
-                              newPoints))
-              , value (toString points)
-              ] []
-        ]        
+                  ]
+                  [ text (toString points) ]
+            , incrementButton
+            ]
+        -- , input
+        --       [ type_ "number"
+        --       , css [ inputStyles
+        --             , Css.width (Css.em 3)
+        --             , flex none
+        --             ]
+        --       , onInput
+        --             (\newPoints ->
+        --                  UpdateFatePoints
+        --                  (stringToNatWithDefault
+        --                       points
+        --                       newPoints))
+        --       , value (toString points)
+        --       ] []
+        ]
 
 nameView : String -> Html Msg
 nameView name =
@@ -861,11 +896,8 @@ readOnlyView model =
           -- , maxWidth (Css.em 24)
           ]
         ]
-        [ div [ css
-                [ fontWeight bold ]
-              ]
-              [ text model.characterSheet.name ]
-        , div [] [ text model.characterSheet.description ]
+        [ readOnlyNameView model.characterSheet.name
+        , readOnlyDescriptionView model.characterSheet.description
         , readOnlyAspectView model.characterSheet.aspects
         , readOnlySkillsView model.characterSheet.skills
         , readOnlyStressView model.characterSheet.stress
@@ -891,6 +923,19 @@ readOnlySectionLabel title =
     ]
     [ text title ]
 
+readOnlyNameView : String -> Html Msg
+readOnlyNameView name =
+    div [ css
+          [ fontWeight bold
+          , fontSize (Css.em 1.2)
+          ]
+        ]
+    [ text name ]
+
+readOnlyDescriptionView : String -> Html Msg
+readOnlyDescriptionView description =
+    div [] [ text description ]
+
 readOnlyAspectView : Array Aspect -> Html Msg
 readOnlyAspectView aspects =
     let
@@ -901,7 +946,7 @@ readOnlyAspectView aspects =
               , alignItems center
               , justifyContent spaceBetween
               ]
-            , class "read-only-aspect-view"
+            , class "reveal-buttons-on-hover"
             ]
             [ span [] [ text title ]
             , invokesView index (Aspect title invokes)
@@ -974,6 +1019,7 @@ invokesView index (Aspect title invokes) =
         span
         [ css
           [ whiteSpace noWrap
+          , userSelect_none
           ]
         ]
         content

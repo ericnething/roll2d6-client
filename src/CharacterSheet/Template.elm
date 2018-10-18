@@ -6,6 +6,27 @@ import CharacterSheet.Model exposing (..)
 emptyAspect : Aspect
 emptyAspect = Aspect "" 0
 
+blank : CharacterSheet
+blank =
+    { name = ""
+    , description = ""
+    , aspects
+          = Array.fromList []
+    , skills
+          = Array.fromList []
+    , refresh = 3
+    , fatePoints = 0
+    , stunts =
+        Array.fromList []
+    , stress =
+        Array.fromList []
+    , consequences =
+        Array.fromList []
+    , conditions =
+        Array.fromList []
+    }
+
+
 initialCharacterSheet : CharacterSheet
 initialCharacterSheet =
     { name = "Geronimo"

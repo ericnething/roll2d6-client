@@ -6,6 +6,8 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
 import Array exposing (Array)
+import Task
+import Util exposing (removeIndexFromArray)
 import CharacterSheet.Model as CharacterSheet
 import CharacterSheet.Update as CharacterSheet
 import CharacterSheet.View as CharacterSheet
@@ -65,6 +67,8 @@ init = (initialModel, Cmd.none)
 type Msg
     = CharacterSheetMsg Int CharacterSheet.Msg
     | ChangeViewMode ViewMode
+    | AddNewCharacterSheet
+    | RemoveCharacterSheet Int
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -94,6 +98,31 @@ update msg model =
              }
             , Cmd.none)
 
+        AddNewCharacterSheet ->
+            ({ model
+                 | characterSheets
+                   = Array.push
+                     (CharacterSheet.initialModel
+                          CharacterSheet.Template.blank)
+                     model.characterSheets
+             }
+            , Task.perform
+                ChangeViewMode
+                (Task.succeed
+                     (EditView
+                          (Array.length
+                               model.characterSheets))))
+
+        RemoveCharacterSheet index ->
+            ({ model
+                 | characterSheets
+                   = removeIndexFromArray index model.characterSheets
+             }
+            , Task.perform
+                ChangeViewMode
+                (Task.succeed ReadOnlyView))
+
+
 -- View
 
 view : Model -> Html Msg
@@ -121,7 +150,9 @@ topNavigation : Html Msg
 topNavigation =
     header
     [ css
-      [ backgroundColor (hex "0079bf")
+      [ displayFlex
+      , alignItems center
+      , backgroundColor (hex "0079bf")
       , Css.height (Css.rem 3)
       , color (hex "fff")
       , position sticky
@@ -130,6 +161,8 @@ topNavigation =
       ]
     ]
     [ h1 [] [ text "Fate RPG" ]
+    , button [ onClick AddNewCharacterSheet ]
+        [ text "Add New Character Sheet" ]
     ]
 
 characterSheetsView : Array CharacterSheet.Model -> Html Msg
@@ -165,16 +198,33 @@ editCharacterSheetView index mmodel =
                   [ margin2 (px 0) auto
                   ]
                 ]
-                [ CharacterSheet.defaultButton
-                      [ onClick (ChangeViewMode ReadOnlyView)
-                      , css
-                            [ display block ]
-                      ]
-                      [ text "Done" ]
+                [ editCharacterSheetToolbarView index
                 , Html.Styled.map
                     (CharacterSheetMsg index)
                     (CharacterSheet.editView characterSheet)
                 ]
+
+editCharacterSheetToolbarView : Int -> Html Msg
+editCharacterSheetToolbarView index =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+        [ CharacterSheet.defaultButton
+              [ onClick (ChangeViewMode ReadOnlyView) ]
+              [ text "Done" ]
+        , CharacterSheet.defaultButton
+              [ onClick (RemoveCharacterSheet index)
+              , css
+                    [ backgroundColor (hex "ff0000")
+                    , color (hex "fff")
+                    , hover
+                        [ backgroundColor (hex "ee0000") ]
+                    ]
+              ]
+              [ text "Delete" ]
+        ]
 
 characterSheetColumn =
     styled div

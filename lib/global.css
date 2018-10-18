@@ -62,6 +62,6 @@ li {
     margin-bottom: 0.5em;
 }
 
-.read-only-aspect-view:hover button {
+.reveal-buttons-on-hover:hover button {
     opacity: 1;
 }

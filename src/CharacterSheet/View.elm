@@ -32,43 +32,82 @@ editView model =
         , conditionsView
             model.characterSheet.conditions
             (EditModeConditions == model.editMode)
-        , refreshView model.characterSheet.refresh
-        , fatePointsView model.characterSheet.fatePoints
+        , div
+              [ css
+                [ displayFlex
+                , justifyContent spaceAround
+                ]
+              ]
+              [ refreshView model.characterSheet.refresh
+              , fatePointsView model.characterSheet.fatePoints
+              ]
         , stuntView model.characterSheet.stunts
         ]
 
 refreshView : Int -> Html Msg
 refreshView points =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          , marginTop (Css.em 1)
-          ]
-        ]
-        [ label
-              [ css
-                [ display block
-                , fontSize (Css.em 1.1)
-                , fontWeight bold
-                , marginRight (Css.em 0.5)
-                ]
+        let
+        decrementButton =
+            defaultButton
+            [ onClick
+                  (UpdateRefresh
+                       (Basics.max 1 (points - 1)))
+            , if points <= 1              then css [ Css.property "visibility" "hidden" ]
+              else css [ opacity (int 0) ]
+            ]
+            [ text "-" ]
+
+        incrementButton =
+            defaultButton
+            [ onClick (UpdateRefresh (points + 1))
+            , css [ opacity (int 0) ]
+            ]
+            [ text "+" ]
+    in
+        div [ css
+              [ Css.width (pct 50)
+              , marginTop (Css.em 1)
               ]
-              [ text "Refresh" ]
-        , input
-              [ type_ "number"
-              , css [ inputStyles
-                    , Css.width (Css.em 3)
-                    , flex none
+            , class "reveal-buttons-on-hover"
+            ]
+        [ sectionLabel "Refresh"
+        , div [ css
+                 [ whiteSpace noWrap
+                 ]
+               ]
+            [ decrementButton
+            , span
+                  [ css
+                    [ fontSize (Css.em 1.3)
+                    , margin2 (px 0) (Css.em 0.25)
                     ]
-              , onInput
-                    (\newPoints ->
-                         UpdateRefresh
-                         (stringToNatWithDefaultNonZero
-                              points
-                              newPoints))
-              , value (toString points)
-              ] []
+                  ]
+                  [ text (toString points) ]
+            , incrementButton
+            ]
         ]
+    -- div [ css
+    --       [ displayFlex
+    --       , alignItems center
+    --       , marginTop (Css.em 1)
+    --       ]
+    --     ]
+    --     [ sectionLabel "Refresh"
+    --     , input
+    --           [ type_ "number"
+    --           , css [ inputStyles
+    --                 , Css.width (Css.em 3)
+    --                 , flex none
+    --                 ]
+    --           , onInput
+    --                 (\newPoints ->
+    --                      UpdateRefresh
+    --                      (stringToNatWithDefaultNonZero
+    --                           points
+    --                           newPoints))
+    --           , value (toString points)
+    --           ] []
+    --     ]
 
 fatePointsView : Int -> Html Msg
 fatePointsView points =
@@ -92,24 +131,16 @@ fatePointsView points =
             [ text "+" ]
     in
         div [ css
-              [ displayFlex
-              , alignItems center
+              [ Css.width (pct 50)
               , marginTop (Css.em 1)
               ]
             , class "reveal-buttons-on-hover"
             ]
-        [ label
-              [ css
-                [ display block
-                , fontSize (Css.em 1.1)
-                , fontWeight bold
-                , marginRight (Css.em 0.5)
-                ]
-              ]
-              [ text "Fate Points" ]
-        , span [ css
+        [ sectionLabel "Fate Points"
+        , div [ css
                  [ whiteSpace noWrap
-                 , Css.property "transform" "translateX(-1.6em)"
+                 -- , Css.property "transform" "translateX(-1.6em)"
+                 , marginLeft (Css.em 0.6)
                  ]
                ]
             [ decrementButton
@@ -122,33 +153,14 @@ fatePointsView points =
                   [ text (toString points) ]
             , incrementButton
             ]
-        -- , input
-        --       [ type_ "number"
-        --       , css [ inputStyles
-        --             , Css.width (Css.em 3)
-        --             , flex none
-        --             ]
-        --       , onInput
-        --             (\newPoints ->
-        --                  UpdateFatePoints
-        --                  (stringToNatWithDefault
-        --                       points
-        --                       newPoints))
-        --       , value (toString points)
-        --       ] []
         ]
 
 nameView : String -> Html Msg
 nameView name =
-    div []
-        [ label [ css
-                  [ display block
-                  , fontSize (Css.em 1.1)
-                  , fontWeight (int 500)
-                  , marginTop (Css.em 1)
-                  ]
-                ]
-              [ text "Name" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Name"
         , input [ type_ "text"
                 , css [ inputStyles ]
                 , onInput UpdateName
@@ -158,15 +170,10 @@ nameView name =
 
 descriptionView : String -> Html Msg
 descriptionView description =
-    div []
-        [ label [ css
-                  [ display block
-                  , fontSize (Css.em 1.1)
-                  , fontWeight (int 500)
-                  , marginTop (Css.em 1)
-                  ]
-                ]
-              [ text "Description" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Description"
         , textarea
               [ rows 5
               , css [ inputStyles ]
@@ -177,8 +184,10 @@ descriptionView description =
 
 aspectView : Array Aspect -> Html Msg
 aspectView aspects =
-    div []
-        [ h2 [] [ text "Aspects" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Aspects"
         , div []
             <| Array.toList
                 <| Array.indexedMap
@@ -222,8 +231,10 @@ aspectInput index (Aspect title invokes) =
 
 skillView : Array Skill -> Html Msg
 skillView skills =
-    div []
-        [ h2 [] [ text "Skills" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Skills"
         , div []
             <| Array.toList
                 <| Array.indexedMap
@@ -303,8 +314,10 @@ skillInput index (Skill rating title) =
 
 stuntView : Array Stunt -> Html Msg
 stuntView stunts =
-    div []
-        [ h2 [] [ text "Stunts" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Stunts"
         , div []
             <| Array.toList
                 <| Array.indexedMap
@@ -398,11 +411,7 @@ stressView stressTracks editModeActive =
                     , marginTop (Css.em 1)
                     ]
                   ]
-                  [ div [ css
-                          [ fontWeight bold
-                          , fontSize (Css.em 1.1)
-                          ]
-                        ] [ text "Stress" ]
+                  [ sectionLabel "Stress"
                   , toggleSwitch EditModeStress editModeActive
                   ]
              ] ++ view)
@@ -686,8 +695,10 @@ toggleSwitch mode isActive =
 -- Consequences
 consequenceView : Array Consequence -> Html Msg
 consequenceView consequences =
-    div []
-        [ h2 [] [ text "Consequences" ]
+    div [ css
+          [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Consequences"
         , div []
             <| Array.toList
                 <| Array.indexedMap
@@ -796,11 +807,7 @@ conditionsView conditions editModeActive =
                     , marginTop (Css.em 1)
                     ]
                   ]
-                  [ div [ css
-                          [ fontWeight bold
-                          , fontSize (Css.em 1.1)
-                          ]
-                        ] [ text "Conditions" ]
+                  [ sectionLabel "Conditions"
                   , toggleSwitch EditModeConditions editModeActive
                   ]
              ] ++ view)
@@ -892,8 +899,7 @@ defaultButton =
 readOnlyView : Model -> Html Msg
 readOnlyView model =
     div [ css
-          [ padding (Css.em 1)
-          -- , maxWidth (Css.em 24)
+          [ padding3 (px 0) (Css.em 1) (Css.em 1)
           ]
         ]
         [ readOnlyNameView model.characterSheet.name
@@ -903,21 +909,26 @@ readOnlyView model =
         , readOnlyStressView model.characterSheet.stress
         , readOnlyConsequencesView model.characterSheet.consequences
         , readOnlyConditionsView model.characterSheet.conditions
-        , readOnlyRefreshView model.characterSheet.refresh
-        , fatePointsView model.characterSheet.fatePoints
+        , div
+              [ css
+                [ displayFlex
+                , justifyContent spaceAround
+                ]
+              ]
+              [ readOnlyRefreshView model.characterSheet.refresh
+              , fatePointsView model.characterSheet.fatePoints
+              ]
         , readOnlyStuntsView model.characterSheet.stunts
         ]
 
-readOnlySectionLabel : String -> Html Msg
-readOnlySectionLabel title =
+sectionLabel : String -> Html Msg
+sectionLabel title =
     div
     [ css
       [ fontSize (Css.em 1)
       , color (hex "555")
       , Css.property "font-variant" "small-caps"
       , Css.property "letter-spacing" "0.1em"
-      , marginTop (Css.em 1)
-      , marginBottom (Css.em 0.25)
       , fontWeight bold
       ]
     ]
@@ -928,6 +939,12 @@ readOnlyNameView name =
     div [ css
           [ fontWeight bold
           , fontSize (Css.em 1.2)
+          , position sticky
+          , top (px 0)
+          , backgroundColor (hex "fff")
+          , borderBottom3 (px 1) solid (hex "ccc")
+          , marginBottom (Css.em 0.25)
+          , padding3 (Css.em 0.5) (px 0) (Css.em 0.25)
           ]
         ]
     [ text name ]
@@ -957,9 +974,10 @@ readOnlyAspectView aspects =
         then
             text ""
         else
-            div []
-                [ readOnlySectionLabel "Aspects"
-                -- h2 [] [ text "Aspects" ]
+            div [ css
+                  [ marginTop (Css.em 1) ]
+                ]
+                [ sectionLabel "Aspects"
                 , div []
                     <| Array.toList
                         <| Array.indexedMap
@@ -1047,9 +1065,10 @@ readOnlySkillsView skills =
         then
             text ""
         else
-            div []
-                [ readOnlySectionLabel "Skills"
-                -- h2 [] [ text "Skills" ]
+            div [ css
+                  [ marginTop (Css.em 1) ]
+                ]
+                [ sectionLabel "Skills"
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1078,9 +1097,10 @@ readOnlyStuntsView stunts =
         then
             text ""
         else
-            div []
-                [ readOnlySectionLabel "Stunts"
-                -- h2 [] [ text "Stunts" ]
+            div [ css
+                  [ marginTop (Css.em 1) ]
+                ]
+                [ sectionLabel "Stunts"
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1095,14 +1115,10 @@ readOnlyStressView stressTracks =
     then
         text ""
     else
-        div []
-            [ readOnlySectionLabel "Stress"
-            -- div [ css
-              --       [ fontWeight bold
-              --       , fontSize (Css.em 1.1)
-              --       , marginTop (Css.em 1)
-              --       ]
-              --     ] [ text "Stress" ]
+        div [ css
+              [ marginTop (Css.em 1) ]
+            ]
+            [ sectionLabel "Stress"
             , div [] (Array.toList
                           (Array.indexedMap
                                stressTrackView
@@ -1133,9 +1149,10 @@ readOnlyConsequencesView consequences =
         then
             text ""
         else
-            div []
-                [ readOnlySectionLabel "Consequences"
-                -- h2 [] [ text "Consequences" ]
+            div [ css
+                  [ marginTop (Css.em 1) ]
+                ]
+                [ sectionLabel "Consequences"
                 , div []
                     <| Array.toList
                         <| Array.map
@@ -1151,14 +1168,10 @@ readOnlyConditionsView conditions =
     then
         text ""
     else
-        div []
-            [ readOnlySectionLabel "Conditions"
-            -- div [ css
-              --       [ fontWeight bold
-              --       , fontSize (Css.em 1.1)
-              --       , marginTop (Css.em 1)
-              --       ]
-              --     ] [ text "Conditions" ]
+        div [ css
+              [ marginTop (Css.em 1) ]
+            ]
+            [ sectionLabel "Conditions"
             , div [] (Array.toList
                           (Array.indexedMap
                                conditionView
@@ -1169,19 +1182,19 @@ readOnlyConditionsView conditions =
 readOnlyRefreshView : Int -> Html Msg
 readOnlyRefreshView points =
     div [ css
-              [ marginTop (Css.em 1)]
-        ]
-        [ span
-              [ css
-                [ fontSize (Css.em 1.1)
-                , fontWeight bold
-                ]
+              [ Css.width (pct 50)
+              , marginTop (Css.em 1)
               ]
-              [ text "Refresh: " ]
-        , span
-              []
-              [ text (toString points) ]
         ]
+    [ sectionLabel "Refresh"
+    , div
+          [ css
+            [ fontSize (Css.em 1.2)
+            , marginLeft (Css.em 1.4)
+            ]
+          ]
+          [ text (toString points) ]
+    ]
 
 
 

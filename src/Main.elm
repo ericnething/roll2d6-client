@@ -130,12 +130,13 @@ view model =
     div
     [ css
       [ Css.property "display" "grid"
-      , Css.property "grid-template-rows" "2.2rem auto"
+      , Css.property "grid-template-rows" "2.2rem 2.2rem auto"
       , Css.property "grid-row-gap" "0.8rem"
        
       ]
     ]
     [ topNavigation
+    , topToolbar
     , case model.viewMode of
           ReadOnlyView ->
               characterSheetsView
@@ -152,16 +153,32 @@ topNavigation =
     [ css
       [ displayFlex
       , alignItems center
-      , backgroundColor (hex "0079bf")
+      , backgroundColor (hex "0067a3")
       , Css.height (Css.rem 3)
       , color (hex "fff")
-      , position sticky
-      , top (px 0)
-      , left (px 0)
+      -- , position sticky
+      -- , top (px 0)
+      , padding2 (px 0) (Css.em 1)
       ]
     ]
     [ h1 [] [ text "Fate RPG" ]
-    , button [ onClick AddNewCharacterSheet ]
+    ]
+
+topToolbar : Html Msg
+topToolbar =
+    div
+    [ css
+      [ displayFlex
+      , alignItems center
+      , backgroundColor (hex "0079bf")
+      , Css.height (Css.rem 3)
+      , color (hex "fff")
+      -- , position sticky
+      -- , top (Css.rem 3)
+      , padding2 (px 0) (Css.em 1)
+      ]
+    ]
+    [ button [ onClick AddNewCharacterSheet ]
         [ text "Add New Character Sheet" ]
     ]
 
@@ -172,7 +189,7 @@ characterSheetsView characterSheets =
           , alignItems Css.start
           , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
           , overflowX auto
-          , Css.property "height" "calc(100vh - 3rem)"
+          , Css.property "height" "calc(100vh - 6rem)"
           , Css.property "display" "grid"
           , Css.property "grid-auto-columns" "23rem"
           , Css.property "grid-auto-flow" "column"
@@ -230,7 +247,7 @@ characterSheetColumn =
     styled div
         [ displayFlex
         , Css.property "flex-direction" "column"
-        , Css.property "max-height" "calc(100vh - 3.8rem)"
+        , Css.property "max-height" "calc(100vh - 6.8rem)"
         -- , borderRadius (Css.rem 0.3)
         , Css.property "display" "grid"
         , Css.property "grid-template-rows" "minmax(auto, 1fr)"
@@ -258,7 +275,12 @@ characterSheetCard index characterSheet =
           ]
         ]
     [ div
-      []
+      [ css
+        [ displayFlex
+        , justifyContent flexStart
+        , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
+        ]
+      ]
       [ CharacterSheet.defaultButton
             [ onClick (ChangeViewMode (EditView index))
             , css

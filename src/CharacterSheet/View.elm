@@ -46,13 +46,14 @@ editView model =
 
 refreshView : Int -> Html Msg
 refreshView points =
-        let
+    let
         decrementButton =
             defaultButton
             [ onClick
                   (UpdateRefresh
                        (Basics.max 1 (points - 1)))
-            , if points <= 1              then css [ Css.property "visibility" "hidden" ]
+            , if points <= 1
+              then css [ Css.property "visibility" "hidden" ]
               else css [ opacity (int 0) ]
             ]
             [ text "-" ]
@@ -86,28 +87,6 @@ refreshView points =
             , incrementButton
             ]
         ]
-    -- div [ css
-    --       [ displayFlex
-    --       , alignItems center
-    --       , marginTop (Css.em 1)
-    --       ]
-    --     ]
-    --     [ sectionLabel "Refresh"
-    --     , input
-    --           [ type_ "number"
-    --           , css [ inputStyles
-    --                 , Css.width (Css.em 3)
-    --                 , flex none
-    --                 ]
-    --           , onInput
-    --                 (\newPoints ->
-    --                      UpdateRefresh
-    --                      (stringToNatWithDefaultNonZero
-    --                           points
-    --                           newPoints))
-    --           , value (toString points)
-    --           ] []
-    --     ]
 
 fatePointsView : Int -> Html Msg
 fatePointsView points =

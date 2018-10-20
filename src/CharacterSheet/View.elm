@@ -118,7 +118,6 @@ fatePointsView points =
         [ sectionLabel "Fate Points"
         , div [ css
                  [ whiteSpace noWrap
-                 -- , Css.property "transform" "translateX(-1.6em)"
                  , marginLeft (Css.em 0.6)
                  ]
                ]

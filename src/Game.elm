@@ -26,7 +26,7 @@ type Overlay
     | OverlayNone
 
 type alias Model =
-    { id : Int
+    { id : String
     , title : String
     , characterSheets : Array CharacterSheet.Model
     , overlay : Overlay
@@ -34,7 +34,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { id = 0
+    { id = "0"
     , title = "My First Game"
     , characterSheets =
           Array.fromList
@@ -54,10 +54,10 @@ initialModel =
     , overlay = OverlayNone
     }
 
-emptyModel : Int -> Model
+emptyModel : String -> Model
 emptyModel id =
     { id = id
-    , title = "New Game #" ++ toString id
+    , title = "New Game #" ++ id
     , characterSheets = Array.fromList []
     , overlay = OverlayNone
     }
@@ -414,6 +414,7 @@ characterSheetCard index characterSheet =
     div [ css
           [ borderRadius (Css.em 0.2)
           , backgroundColor (hex "fff")
+          , Css.maxWidth (Css.em 23)
           ]
         ]
     [ div

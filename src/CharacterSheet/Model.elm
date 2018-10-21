@@ -143,3 +143,9 @@ type alias Model =
     { characterSheet : CharacterSheet
     , editMode : EditMode
     }
+
+defaultModel : CharacterSheet -> Model
+defaultModel sheet =
+    { characterSheet = sheet
+    , editMode = EditModeNone
+    }    

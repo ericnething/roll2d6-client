@@ -5,19 +5,28 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
-import Array exposing (Array)
 import Task
-import Util exposing (removeIndexFromArray)
 import Game
+import Json.Encode
 
 
 type alias Model =
-    { games : Array Game.Model
+    { games : List GameMetadata
+    }
+
+type alias GameMetadata =
+    { id : String
+    , title : String
     }
 
 type ConsumerMsg
-    = EnterGame Int
-    | CreateGame
+    = EnterGame String
+    | SetActiveGame Game.Model
+    | DecodeGameResponse Json.Encode.Value
+    | CreateGame String
+    | GetGameList
+    | DecodeGameListResponse Json.Encode.Value
+    | SetGameList (List GameMetadata)
 
 view : Model -> Html ConsumerMsg
 view model =
@@ -36,17 +45,20 @@ view model =
             ]
           ]
         [ h1 [] [ text "My Games" ]
-        , div [] (Array.toList
-                      <| Array.map
-                          gamePreview
-                          model.games)
+        , div [] (model.games
+                 |> List.reverse
+                 |> List.map gamePreview)
         , button
-            [ onClick CreateGame ]
-            [ text "Create new game" ]
+              [ onClick
+                    (CreateGame
+                         (toString
+                              (List.length model.games)))
+              ]
+              [ text "Create new game" ]
         ]
     ]
 
-gamePreview : Game.Model -> Html ConsumerMsg
+gamePreview : GameMetadata -> Html ConsumerMsg
 gamePreview { id, title } =
     div []
         [ span [] [ text title ]

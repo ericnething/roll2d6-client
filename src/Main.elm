@@ -10,6 +10,16 @@ import Task
 import Util exposing (removeIndexFromArray)
 import Game
 import Lobby
+import PouchDB
+import PouchDB.Encode exposing (encodeGame)
+import PouchDB.Decode exposing (decodeGame, decodeGameList)
+import Debouncer.Messages as Debouncer exposing
+    ( Debouncer
+    , provideInput
+    , debounce
+    , toDebouncer
+    )
+import Time
 
 main =
     Html.program
@@ -21,47 +31,72 @@ main =
 
 -- Subscriptions
 subscriptions : Model -> Sub Msg
-subscriptions _ = Sub.none
+subscriptions _ =
+    Sub.batch
+        [ PouchDB.getResponse
+              (LobbyMsg << Lobby.DecodeGameResponse)
+        , PouchDB.getGameListResponse
+              (LobbyMsg << Lobby.DecodeGameListResponse)
+        ]
 
 -- Model
 
 type alias Model =
     { game : Maybe Game.Model
-    , gamesdb : Array Game.Model
+    , gameList : List Lobby.GameMetadata
+    , debouncer : Debouncer Msg
     }
 
 initialModel : Model
 initialModel =
-    { game = Just Game.initialModel
-    , gamesdb =
-        Array.fromList
-            [ Game.initialModel ]
+    { game =
+          Nothing
+          -- Just Game.initialModel
+    , gameList = []
+    , debouncer =
+        debounce (1 * Time.second)
+            |> toDebouncer
     }
 
 init : (Model, Cmd Msg)
-init = (initialModel, Cmd.none)
+init = (initialModel
+       , Task.perform identity
+           (Task.succeed
+                (LobbyMsg Lobby.GetGameList)))
 
 -- Update
 
 type Msg
     = GameMsg Game.ConsumerMsg
     | LobbyMsg Lobby.ConsumerMsg
+    | WriteToPouchDB Game.Model
+    | DebounceMsg (Debouncer.Msg Msg)
+
+updateDebouncer : Debouncer.UpdateConfig Msg Model
+updateDebouncer =
+    { mapMsg = DebounceMsg
+    , getDebouncer = .debouncer
+    , setDebouncer =
+          \debouncer model ->
+              { model | debouncer = debouncer }
+    }
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
+        DebounceMsg submsg ->
+            Debouncer.update update updateDebouncer submsg model
+
+        WriteToPouchDB game ->
+            (model, PouchDB.put (encodeGame game))
+
         GameMsg submsg ->
             case submsg of
                 Game.ExitToLobby ->
-                    ({ model
-                         | game = Nothing
-                         , gamesdb
-                           = Array.map
-                             (replaceGame model.game)
-                             model.gamesdb
-                                      
-                     }
-                    , Cmd.none)
+                    ({ model | game = Nothing }
+                    , Task.perform identity
+                        (Task.succeed
+                             (LobbyMsg Lobby.GetGameList)))
 
                 Game.LocalMsg msg ->
                     case model.game of
@@ -69,45 +104,81 @@ update msg model =
                             (model, Cmd.none)
                         Just game ->
                             let
-                                (newModel, cmd) =
+                                (newGame, cmd) =
                                     Game.update msg game
                             in
-                                ({ model | game = Just newModel }
-                                , Cmd.map GameMsg cmd)
+                                ({ model | game = Just newGame }
+                                , Cmd.batch
+                                    [ Task.perform identity
+                                          (Task.succeed
+                                               (WriteToPouchDB
+                                                    newGame
+                                               |> provideInput
+                                               |> DebounceMsg))
+                                    , Cmd.map GameMsg cmd
+                                    ])
 
         LobbyMsg submsg ->
             case submsg of
-                Lobby.EnterGame index ->
-                    handleEnterGame model index
+                Lobby.EnterGame id ->
+                    (model
+                    , PouchDB.get id)
 
-                Lobby.CreateGame ->
-                    ({ model
-                         | gamesdb
-                           = Array.push
-                           (Game.emptyModel
-                                (Array.length model.gamesdb))
-                             model.gamesdb
-                     }
+                Lobby.SetActiveGame game ->
+                    ({ model | game = Just game }
                     , Cmd.none)
 
+                Lobby.DecodeGameResponse value ->
+                    case decodeGame value of
+                        Ok game ->
+                            (model
+                            , Task.perform
+                                (LobbyMsg << Lobby.SetActiveGame)
+                                (Task.succeed game))
+                        Err err ->
+                            let _ = Debug.log
+                                    "DecodeGameResponse"
+                                    err
+                            in
+                                (model, Cmd.none)
+                
+                Lobby.CreateGame id ->
+                    let
+                        newGame = Game.emptyModel id
+                        metadata =
+                            Lobby.GameMetadata id newGame.title
+                    in
+                        ({ model
+                             | gameList
+                               = metadata :: model.gameList
+                         }
+                        , Task.perform
+                            WriteToPouchDB
+                            (Task.succeed newGame))
 
-replaceGame : Maybe Game.Model -> Game.Model -> Game.Model
-replaceGame mCurrentGame game =
-    case mCurrentGame of
-        Nothing ->
-            game
-        Just currentGame ->
-            if currentGame.id == game.id
-            then currentGame
-            else game
+                Lobby.GetGameList ->
+                    (model
+                    , PouchDB.allDocs ())
 
-handleEnterGame : Model -> Int -> (Model, Cmd msg)
-handleEnterGame model index =
-    ({ model
-         | game
-           = Array.get index model.gamesdb
-     }
-    , Cmd.none)
+                Lobby.SetGameList gameList ->
+                    ({ model | gameList = gameList }
+                    , Cmd.none)
+
+                Lobby.DecodeGameListResponse value ->
+                    case decodeGameList value of
+                        Ok gameList ->
+                            (model
+                            , Task.perform
+                                (LobbyMsg << Lobby.SetGameList)
+                                (Task.succeed
+                                     (List.reverse gameList)))
+                        Err err ->
+                            let _ = Debug.log
+                                    "DecodeGameListResponse"
+                                    err
+                            in
+                                (model, Cmd.none)
+
 
 -- View
 
@@ -115,9 +186,8 @@ view : Model -> Html Msg
 view model =
     case model.game of
         Nothing ->
-            Lobby.view { games = model.gamesdb }
+            Lobby.view { games = model.gameList }
                 |> Html.Styled.map LobbyMsg
-                     
 
         Just game ->
             Game.view game

@@ -878,6 +878,7 @@ readOnlyView : Model -> Html Msg
 readOnlyView model =
     div [ css
           [ padding3 (px 0) (Css.em 1) (Css.em 1)
+          , overflowWrap breakWord
           ]
         ]
         [ readOnlyNameView model.characterSheet.name

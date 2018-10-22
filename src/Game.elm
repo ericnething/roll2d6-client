@@ -32,6 +32,12 @@ type alias Model =
     , overlay : Overlay
     }
 
+type alias GameData =
+    { id : String
+    , title : String
+    , characterSheets : Array CharacterSheet.Model
+    }
+
 initialModel : Model
 initialModel =
     { id = "0"

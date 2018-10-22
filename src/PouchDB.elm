@@ -7,3 +7,4 @@ port get : String -> Cmd msg
 port getResponse : (Value -> msg) -> Sub msg
 port allDocs : () -> Cmd msg
 port getGameListResponse : (Value -> msg) -> Sub msg
+port changesReceived : (Value -> msg) -> Sub msg

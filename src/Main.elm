@@ -37,6 +37,7 @@ subscriptions _ =
               (LobbyMsg << Lobby.DecodeGameResponse)
         , PouchDB.getGameListResponse
               (LobbyMsg << Lobby.DecodeGameListResponse)
+        , PouchDB.changesReceived (always ChangesReceived)
         ]
 
 -- Model
@@ -71,6 +72,7 @@ type Msg
     | LobbyMsg Lobby.ConsumerMsg
     | WriteToPouchDB Game.Model
     | DebounceMsg (Debouncer.Msg Msg)
+    | ChangesReceived
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
 updateDebouncer =
@@ -84,6 +86,13 @@ updateDebouncer =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
+        ChangesReceived ->
+            case model.game of
+                Nothing ->
+                    (model, Cmd.none)
+                Just game ->
+                    (model, PouchDB.get game.id)
+
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
@@ -130,11 +139,21 @@ update msg model =
 
                 Lobby.DecodeGameResponse value ->
                     case decodeGame value of
-                        Ok game ->
-                            (model
-                            , Task.perform
-                                (LobbyMsg << Lobby.SetActiveGame)
-                                (Task.succeed game))
+                        Ok newGame ->
+                            let
+                                game =
+                                    case model.game of
+                                        Nothing ->
+                                            newGame
+                                        Just game ->
+                                            { newGame
+                                                | overlay
+                                                  = game.overlay }
+                            in
+                                (model
+                                , Task.perform
+                                    (LobbyMsg << Lobby.SetActiveGame)
+                                    (Task.succeed game))
                         Err err ->
                             let _ = Debug.log
                                     "DecodeGameResponse"

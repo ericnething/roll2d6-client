@@ -8,79 +8,21 @@ import Css exposing (..)
 import Array exposing (Array)
 import Task
 import Util exposing (removeIndexFromArray)
+import Json.Decode
+import PouchDB exposing (PouchDBRef)
+import PouchDB.Decode exposing (decodeGameData)
+import Game.Types exposing (..)
 import CharacterSheet
-import CharacterSheet.Template exposing
-    ( initialCharacterSheet
-    , fateCore
-    , dresdenFilesAccelerated
-    , tachyonSquadronShip
-    , sarissa_dfa
-    , harryDresden_dfa
-    )
+import CharacterSheet.Template
 
--- Model
 
-type Overlay
-    = EditCharacterSheet Int
-    | EditGameSettings
-    | OverlayNone
-
-type alias Model =
-    { id : String
-    , title : String
-    , characterSheets : Array CharacterSheet.Model
-    , overlay : Overlay
-    }
-
-type alias GameData =
-    { id : String
-    , title : String
-    , characterSheets : Array CharacterSheet.Model
-    }
-
-initialModel : Model
-initialModel =
-    { id = "0"
-    , title = "My First Game"
-    , characterSheets =
-          Array.fromList
-              [ CharacterSheet.initialModel
-                    initialCharacterSheet
-              , CharacterSheet.initialModel
-                    harryDresden_dfa
-              , CharacterSheet.initialModel
-                    sarissa_dfa
-              , CharacterSheet.initialModel
-                    tachyonSquadronShip
-              , CharacterSheet.initialModel
-                    initialCharacterSheet
-              , CharacterSheet.initialModel
-                    initialCharacterSheet
-              ]
-    , overlay = OverlayNone
-    }
-
-emptyModel : String -> Model
-emptyModel id =
-    { id = id
-    , title = "New Game #" ++ id
-    , characterSheets = Array.fromList []
-    , overlay = OverlayNone
-    }
-
--- Update
-
-type ConsumerMsg
-    = ExitToLobby
-    | LocalMsg Msg
-
-type Msg
-    = CharacterSheetMsg Int CharacterSheet.Msg
-    | AddCharacterSheet
-    | RemoveCharacterSheet Int
-    | UpdateGameTitle String
-    | OpenOverlay Overlay
-    | CloseOverlay
+subscriptions : Model -> Sub ConsumerMsg
+subscriptions _ =
+    Sub.batch
+        [ PouchDB.getResponse (LocalMsg << UpdateCurrentGame)
+        , PouchDB.changesReceived
+            (always (LocalMsg <| ChangesReceived))
+        ]
 
 update : Msg -> Model -> (Model, Cmd ConsumerMsg)
 update msg model =
@@ -138,6 +80,21 @@ update msg model =
         CloseOverlay ->
             ({ model | overlay = OverlayNone }, Cmd.none)
 
+        -- UpdateCurrentGame gameData ->
+        --     (mergeGameData model gameData
+        --     , Cmd.none)
+
+        UpdateCurrentGame value ->
+            case decodeGameData value of
+                Ok gameData ->
+                    (mergeGameData model gameData
+                    , Cmd.none)
+
+                Err err ->
+                    (model, Cmd.none)
+
+        ChangesReceived ->
+            (model, PouchDB.get model.ref)
 
 -- View
 

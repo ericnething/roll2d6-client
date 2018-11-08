@@ -9,10 +9,18 @@ import Array exposing (Array)
 import Task
 import Util exposing (removeIndexFromArray)
 import Game
+import Game.Types as Game exposing (GameId)
 import Lobby
+import Lobby.Types as Lobby
+import Login
+import Login.Types as Login
 import PouchDB
-import PouchDB.Encode exposing (encodeGame)
-import PouchDB.Decode exposing (decodeGame, decodeGameList)
+import PouchDB.Encode exposing (encodeGame, encodeGameData)
+import PouchDB.Decode exposing
+    ( decodeGame
+    , decodeGameData
+    , decodeGameList
+    )
 import Debouncer.Messages as Debouncer exposing
     ( Debouncer
     , provideInput
@@ -20,6 +28,7 @@ import Debouncer.Messages as Debouncer exposing
     , toDebouncer
     )
 import Time
+import Json.Decode
 
 main =
     Html.program
@@ -31,29 +40,32 @@ main =
 
 -- Subscriptions
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
-        [ PouchDB.getResponse
-              (LobbyMsg << Lobby.DecodeGameResponse)
-        , PouchDB.getGameListResponse
-              (LobbyMsg << Lobby.DecodeGameListResponse)
-        , PouchDB.changesReceived (always ChangesReceived)
+        [ PouchDB.gameLoaded GameLoaded
+        , case model.screen of
+              GameScreen game ->
+                  Sub.map GameMsg (Game.subscriptions game)
+              _ ->
+                  Sub.none
         ]
 
 -- Model
 
 type alias Model =
-    { game : Maybe Game.Model
-    , gameList : List Lobby.GameMetadata
+    { screen : Screen
     , debouncer : Debouncer Msg
     }
 
+type Screen
+    = LoginScreen Login.Model
+    | LobbyScreen Lobby.Model
+    | LoadingGameScreen GameId
+    | GameScreen Game.Model
+
 initialModel : Model
 initialModel =
-    { game =
-          Nothing
-          -- Just Game.initialModel
-    , gameList = []
+    { screen = LoginScreen Login.initialModel
     , debouncer =
         debounce (1 * Time.second)
             |> toDebouncer
@@ -63,16 +75,17 @@ init : (Model, Cmd Msg)
 init = (initialModel
        , Task.perform identity
            (Task.succeed
-                (LobbyMsg Lobby.GetGameList)))
+                (LobbyMsg (Lobby.LocalMsg Lobby.GetGameList))))
 
 -- Update
 
 type Msg
     = GameMsg Game.ConsumerMsg
     | LobbyMsg Lobby.ConsumerMsg
+    | LoginMsg Login.ConsumerMsg
     | WriteToPouchDB Game.Model
     | DebounceMsg (Debouncer.Msg Msg)
-    | ChangesReceived
+    | GameLoaded Json.Decode.Value
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
 updateDebouncer =
@@ -86,129 +99,136 @@ updateDebouncer =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        ChangesReceived ->
-            case model.game of
-                Nothing ->
-                    (model, Cmd.none)
-                Just game ->
-                    (model, PouchDB.get game.id)
-
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
         WriteToPouchDB game ->
-            (model, PouchDB.put (encodeGame game))
+            (model, PouchDB.put (game.ref, (encodeGame game)))
+
+        GameLoaded value ->
+            let _ = Debug.log "Game Loaded in Elm" value
+            in
+              case decodeGame value of
+                Ok newGame ->
+                    case model.screen of
+                        LoadingGameScreen id ->
+                            ({ model
+                                 | screen = GameScreen newGame
+                             }
+                            , Cmd.none)
+                        _ ->
+                            (model, Cmd.none)
+
+                Err err ->
+                    (model, Cmd.none)
 
         GameMsg submsg ->
             case submsg of
                 Game.ExitToLobby ->
-                    ({ model | game = Nothing }
+                    ({ model
+                         | screen =
+                             LobbyScreen
+                                 Lobby.initialModel
+                     }
                     , Task.perform identity
                         (Task.succeed
-                             (LobbyMsg Lobby.GetGameList)))
+                             (LobbyMsg
+                                  (Lobby.LocalMsg
+                                       Lobby.GetGameList))))
 
                 Game.LocalMsg msg ->
-                    case model.game of
-                        Nothing ->
-                            (model, Cmd.none)
-                        Just game ->
+                    case model.screen of
+                        GameScreen game ->
                             let
                                 (newGame, cmd) =
                                     Game.update msg game
                             in
-                                ({ model | game = Just newGame }
+                                ({ model
+                                     | screen = GameScreen newGame
+                                 }
                                 , Cmd.batch
-                                    [ Task.perform identity
-                                          (Task.succeed
-                                               (WriteToPouchDB
-                                                    newGame
-                                               |> provideInput
-                                               |> DebounceMsg))
+                                    [ debouncedWriteToPouchDB
+                                          newGame
                                     , Cmd.map GameMsg cmd
                                     ])
+                        _ -> (model, Cmd.none)
 
         LobbyMsg submsg ->
             case submsg of
-                Lobby.EnterGame id ->
-                    (model
-                    , PouchDB.get id)
-
-                Lobby.SetActiveGame game ->
-                    ({ model | game = Just game }
-                    , Cmd.none)
-
-                Lobby.DecodeGameResponse value ->
-                    case decodeGame value of
-                        Ok newGame ->
-                            let
-                                game =
-                                    case model.game of
-                                        Nothing ->
-                                            newGame
-                                        Just game ->
-                                            { newGame
-                                                | overlay
-                                                  = game.overlay }
-                            in
-                                (model
-                                , Task.perform
-                                    (LobbyMsg << Lobby.SetActiveGame)
-                                    (Task.succeed game))
-                        Err err ->
-                            let _ = Debug.log
-                                    "DecodeGameResponse"
-                                    err
-                            in
-                                (model, Cmd.none)
+                Lobby.LoadGame id ->
+                    ({ model | screen = LoadingGameScreen id }
+                    , PouchDB.loadGame
+                        (encodeGameData Game.emptyGameData, id))
                 
-                Lobby.CreateGame id ->
-                    let
-                        newGame = Game.emptyModel id
-                        metadata =
-                            Lobby.GameMetadata id newGame.title
-                    in
-                        ({ model
-                             | gameList
-                               = metadata :: model.gameList
-                         }
-                        , Task.perform
-                            WriteToPouchDB
-                            (Task.succeed newGame))
-
-                Lobby.GetGameList ->
-                    (model
-                    , PouchDB.allDocs ())
-
-                Lobby.SetGameList gameList ->
-                    ({ model | gameList = gameList }
-                    , Cmd.none)
-
-                Lobby.DecodeGameListResponse value ->
-                    case decodeGameList value of
-                        Ok gameList ->
-                            (model
-                            , Task.perform
-                                (LobbyMsg << Lobby.SetGameList)
-                                (Task.succeed
-                                     (List.reverse gameList)))
-                        Err err ->
-                            let _ = Debug.log
-                                    "DecodeGameListResponse"
-                                    err
+                Lobby.LocalMsg msg ->
+                    case model.screen of
+                        LobbyScreen lobby ->
+                            let
+                                (newLobby, cmd) =
+                                    Lobby.update msg lobby
                             in
-                                (model, Cmd.none)
+                                ({ model
+                                     | screen = LobbyScreen newLobby
+                                 }
+                                , Cmd.map
+                                    (LobbyMsg << Lobby.LocalMsg)
+                                        cmd)
+                        _ -> (model, Cmd.none)
+
+        LoginMsg submsg ->
+            case submsg of
+                Login.LoadLobby ->
+                    loadLobby model
+                Login.LocalMsg msg ->
+                    case model.screen of
+                        LoginScreen login ->
+                            let
+                                (newLogin, cmd) =
+                                    Login.update msg login
+                            in
+                                ({ model
+                                     | screen = LoginScreen newLogin
+                                 }
+                                , Cmd.map
+                                    (LoginMsg)
+                                        cmd)
+                        _ -> (model, Cmd.none)
+
+
+loadLobby : Model -> (Model, Cmd Msg)
+loadLobby model =
+    let
+        (lobby, cmd) = Lobby.init
+    in
+        ({ model | screen = LobbyScreen lobby }
+        , Cmd.map LobbyMsg cmd)
+
+debouncedWriteToPouchDB : Game.Model -> Cmd Msg
+debouncedWriteToPouchDB newGame =
+    Task.perform identity
+    (Task.succeed
+         (WriteToPouchDB newGame
+         |> provideInput
+         |> DebounceMsg))
 
 
 -- View
 
 view : Model -> Html Msg
 view model =
-    case model.game of
-        Nothing ->
-            Lobby.view { games = model.gameList }
+    case model.screen of
+        LoginScreen submodel ->
+            Login.view submodel
+                |> Html.Styled.map LoginMsg
+
+        LobbyScreen submodel ->
+            Lobby.view submodel
                 |> Html.Styled.map LobbyMsg
 
-        Just game ->
+        LoadingGameScreen _ ->
+            div [] [ text "Loading game..." ]
+
+        GameScreen game ->
             Game.view game
                 |> Html.Styled.map GameMsg
 

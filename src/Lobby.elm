@@ -6,27 +6,36 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
 import Task
-import Game
-import Json.Encode
+import Game.Types as Game
+import Lobby.Types exposing (..)
+import Json.Encode exposing (Value)
+import Http
+import RemoteData exposing (WebData, RemoteData(..))
+import API
 
 
-type alias Model =
-    { games : List GameMetadata
-    }
+init : (Model, Cmd ConsumerMsg)
+init =
+    ( initialModel
+    , Task.perform
+        LocalMsg
+        (Task.succeed GetGameList)
+    )
 
-type alias GameMetadata =
-    { id : String
-    , title : String
-    }
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+    case msg of
+        NewGame ->
+            ( model
+            , API.newGame "New Game Title")
 
-type ConsumerMsg
-    = EnterGame String
-    | SetActiveGame Game.Model
-    | DecodeGameResponse Json.Encode.Value
-    | CreateGame String
-    | GetGameList
-    | DecodeGameListResponse Json.Encode.Value
-    | SetGameList (List GameMetadata)
+        GetGameList ->
+            ( model
+            , API.getAllGames)
+
+        SetGameList response ->
+            ({ model | games = response }
+            , Cmd.none)
 
 view : Model -> Html ConsumerMsg
 view model =
@@ -43,19 +52,25 @@ view model =
             [ color (hex "fff")
             , padding (Css.em 1)
             ]
-          ]
-        [ h1 [] [ text "My Games" ]
-        , div [] (model.games
-                 |> List.reverse
-                 |> List.map gamePreview)
-        , button
-              [ onClick
-                    (CreateGame
-                         (toString
-                              (List.length model.games)))
-              ]
-              [ text "Create new game" ]
-        ]
+          ] <|
+        case model.games of
+            NotAsked ->
+                [ text "Not Asked" ]
+            Loading ->
+                [ text "Loading" ]
+            Failure err ->
+                [ text "Request Failed" ]
+            Success games ->
+                [ h1 [] [ text "My Games" ]
+                , div [] (games
+                         |> List.reverse
+                         |> List.map gamePreview)
+                , button
+                      [ type_ "button"
+                      , onClick (LocalMsg NewGame)
+                      ]
+                      [ text "Create new game" ]
+                ]
     ]
 
 gamePreview : GameMetadata -> Html ConsumerMsg
@@ -63,7 +78,7 @@ gamePreview { id, title } =
     div []
         [ span [] [ text title ]
         , button
-              [ onClick (EnterGame id)
+              [ onClick (LoadGame id)
               ]
               [ text "Join Game" ]
         ]

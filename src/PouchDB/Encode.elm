@@ -1,8 +1,8 @@
-module PouchDB.Encode exposing (encodeGame)
+module PouchDB.Encode exposing (encodeGame, encodeGameData)
 
 import Json.Encode exposing (..)
 import Array exposing (Array)
-import Game
+import Game.Types as Game
 import CharacterSheet.Model exposing
     ( Aspect(..)
     , Skill(..)
@@ -18,7 +18,16 @@ import CharacterSheet.Model exposing
 encodeGame : Game.Model -> Value
 encodeGame game =
     object
-        [ ( "_id", string game.id )
+        [ ( "_id", string "game" )
+        , ( "title", string game.title )
+        , ( "characterSheets", array (encodeCharacterSheetArray
+                                          game.characterSheets) )
+        ]
+
+encodeGameData : Game.GameData -> Value
+encodeGameData game =
+    object
+        [ ( "_id", string "game" )
         , ( "title", string game.title )
         , ( "characterSheets", array (encodeCharacterSheetArray
                                           game.characterSheets) )

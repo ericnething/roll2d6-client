@@ -1,10 +1,17 @@
-module PouchDB.Decode exposing (decodeGame, decodeGameList)
+module PouchDB.Decode exposing
+    ( decodeGame
+    , decodeGameList
+    , decodeGameId
+    , gameIdDecoder
+    , gameListDecoder
+    , decodeGameData
+    )
 
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Array exposing (Array)
-import Lobby
-import Game
+import Lobby.Types as Lobby
+import Game.Types as Game
 import CharacterSheet.Model exposing
     ( Aspect(..)
     , Skill(..)
@@ -33,10 +40,17 @@ gameListDecoder =
 gameMetadataDecoder : Decoder Lobby.GameMetadata
 gameMetadataDecoder =
     map2 Lobby.GameMetadata
-        (field "_id" string)
+        (field "id" string)
         (field "title" string)
 
 -- Game
+
+decodeGameId : Value -> Result String Game.GameId
+decodeGameId value =
+    decodeValue gameIdDecoder value
+
+gameIdDecoder : Decoder Game.GameId
+gameIdDecoder = string
 
 decodeGame : Value -> Result String Game.Model
 decodeGame value =
@@ -44,8 +58,26 @@ decodeGame value =
 
 gameDecoder : Decoder Game.Model
 gameDecoder =
-    map3 (\a b c -> Game.Model a b c Game.OverlayNone)
-    (field "_id" string)
+    map3
+    (\ref id gameData ->
+             { ref = ref
+             , id = id
+             , title = gameData.title
+             , characterSheets = gameData.characterSheets
+             , overlay = Game.OverlayNone
+             }
+    )
+    (field "ref" value)
+    (field "id" string)
+    (field "game" gameDataDecoder)
+
+decodeGameData : Value -> Result String Game.GameData
+decodeGameData value =
+    decodeValue gameDataDecoder value
+
+gameDataDecoder : Decoder Game.GameData
+gameDataDecoder =
+    map2 Game.GameData
     (field "title" string)
     (field "characterSheets" (array decodeCharacterSheetWrapper))
 

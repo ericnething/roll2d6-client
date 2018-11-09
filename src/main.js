@@ -18,7 +18,7 @@ app.ports.loadGame.subscribe(function (args) {
     skip_setup: true,
     fetch: function (url, opts) {
       return PouchDB.fetch(url, opts).then(function (resp) {
-        console.log("Fetch Response: ", resp);
+        // console.log("Fetch Response: ", resp);
         if (resp.status === 401) {
           console.log("Auth Failed");
           app.ports.authFailed.send(0);

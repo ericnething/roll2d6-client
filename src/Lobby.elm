@@ -1,4 +1,9 @@
-module Lobby exposing (gamePreview, init, topNavigation, topToolbar, update, view)
+module Lobby
+    exposing
+    ( init
+    , update
+    , view
+    )
 
 import API
 import Css exposing (..)

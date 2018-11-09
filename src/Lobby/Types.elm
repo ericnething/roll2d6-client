@@ -22,7 +22,6 @@ type alias GameMetadata =
 
 
 type ConsumerMsg
-    -- = LoadGame Game.GameId
     = LocalMsg Msg
 
 

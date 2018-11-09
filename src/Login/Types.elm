@@ -32,7 +32,6 @@ type Tab
 
 
 type ConsumerMsg
-    -- = LoadLobby
     = LocalMsg Msg
 
 

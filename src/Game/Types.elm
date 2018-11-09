@@ -72,7 +72,6 @@ emptyGameData =
 
 
 type ConsumerMsg
-    -- = ExitToLobby
     = LocalMsg Msg
 
 

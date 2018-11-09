@@ -194,22 +194,6 @@ update msg model =
 
         GameMsg submsg ->
             case submsg of
-                -- Game.ExitToLobby ->
-                --     ( { model
-                --         | screen =
-                --             LobbyScreen
-                --                 Lobby.initialModel
-                --       }
-                --     , Task.perform identity
-                --         (Task.succeed
-                --             (LobbyMsg
-                --                 (Lobby.LocalMsg
-                --                     Lobby.GetGameList
-                --                 )
-                --             )
-                --         )
-                --     )
-
                 Game.LocalMsg localmsg ->
                     case model.screen of
                         GameScreen game ->
@@ -236,12 +220,6 @@ update msg model =
 
         LobbyMsg submsg ->
             case submsg of
-                -- Lobby.LoadGame id ->
-                --     ( { model | screen = LoadingGameScreen id }
-                --     , PouchDB.loadGame
-                --         ( encodeGameData Game.emptyGameData, id )
-                --     )
-
                 Lobby.LocalMsg localmsg ->
                     case model.screen of
                         LobbyScreen lobby ->
@@ -265,9 +243,6 @@ update msg model =
 
         LoginMsg submsg ->
             case submsg of
-                -- Login.LoadLobby ->
-                --     changeRouteTo (Just Route.Lobby) model
-
                 Login.LocalMsg localmsg ->
                     case model.screen of
                         LoginScreen login ->
@@ -314,11 +289,6 @@ changeRouteTo route model =
                 )
                 
         Just (Route.Game gameId) ->
-            -- (model
-            -- , Task.perform
-            --     (LobbyMsg << Lobby.LoadGame)
-            --     (Task.succeed gameId)
-            -- )
             ( { model | screen = LoadingScreen }
             , PouchDB.loadGame
                 ( encodeGameData Game.emptyGameData, gameId )

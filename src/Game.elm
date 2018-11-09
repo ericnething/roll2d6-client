@@ -1,4 +1,9 @@
-module Game exposing (subscriptions, update, view)
+module Game
+    exposing
+    ( subscriptions
+    , update
+    , view
+    )
 
 import Array exposing (Array)
 import CharacterSheet

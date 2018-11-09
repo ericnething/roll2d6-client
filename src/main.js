@@ -1,6 +1,6 @@
 'use strict';
 
-var app = Elm.Main.fullscreen();
+var app = Elm.Main.init();
 
 //----------------------------------------------
 //  Couch DB
@@ -52,7 +52,8 @@ app.ports.loadGame.subscribe(function (args) {
   
   // Sync local and remote databases
   function sync () {
-    local.sync(remote, {
+    // local.sync(remote, {
+    local.replicate.from(remote, {
       live: true,
       retry: true
     }).on("complete", function () {
@@ -62,6 +63,28 @@ app.ports.loadGame.subscribe(function (args) {
       // yo, something changed!
       console.log("Changes Received", change);
       app.ports.changesReceived.send();
+
+    }).on('paused', function (info) {
+      // replication was paused, usually because of a lost connection
+      console.log("Paused", info);
+      
+    }).on('active', function (info) {
+      // replication was resumed
+      console.log("Resumed", info);
+
+    }).on("error", function (err) {
+      console.log("Sync Error", err);
+    });
+
+    local.replicate.to(remote, {
+      live: true,
+      retry: true
+    }).on("complete", function () {
+      console.log("Sync Successful");
+
+    }).on('change', function (change) {
+      // yo, something changed!
+      console.log("Changes sent", change);
 
     }).on('paused', function (info) {
       // replication was paused, usually because of a lost connection
@@ -122,17 +145,17 @@ app.ports.get.subscribe(function (db) {
 });
 
 // Read all documents from database
-app.ports.allDocs.subscribe(function (db) {
-  db.allDocs({ include_docs: true }).then(function (docs) {
-    console.log("Docs: ", docs)
-    return docs.rows.map(
-      object => {
-        const { _id, title } = object.doc;
-        return { _id, title };
-      }
-    )
-  }).then(function (gameList) {
-    console.log("GameMetadataList: ", gameList)
-    app.ports.getGameListResponse.send(gameList);
-  });
-});
+// app.ports.allDocs.subscribe(function (db) {
+//   db.allDocs({ include_docs: true }).then(function (docs) {
+//     console.log("Docs: ", docs)
+//     return docs.rows.map(
+//       object => {
+//         const { _id, title } = object.doc;
+//         return { _id, title };
+//       }
+//     )
+//   }).then(function (gameList) {
+//     console.log("GameMetadataList: ", gameList)
+//     app.ports.getGameListResponse.send(gameList);
+//   });
+// });

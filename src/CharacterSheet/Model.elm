@@ -1,8 +1,9 @@
-module CharacterSheet.Model exposing (..)
+module CharacterSheet.Model exposing (Aspect(..), CharacterSheet, Condition(..), Consequence(..), EditMode(..), Model, Severity(..), Skill(..), SkillRating(..), StressBox(..), StressTrack(..), Stunt(..), consequenceSeverityList, defaultModel, severityToInt, showSeverity, showSkillRating, skillRatingList, skillRatingToInt)
 
 import Array exposing (Array)
 
-type alias CharacterSheet = 
+
+type alias CharacterSheet =
     { name : String
     , description : String
     , aspects : Array Aspect
@@ -15,12 +16,18 @@ type alias CharacterSheet =
     , conditions : Array Condition
     }
 
+
+
 -- Aspects
+
 
 type Aspect
     = Aspect String Int
 
+
+
 -- Consequences
+
 
 type Severity
     = Mild
@@ -28,13 +35,22 @@ type Severity
     | Severe
     | Extreme
 
+
 showSeverity : Severity -> String
 showSeverity severity =
     case severity of
-        Mild     -> "Mild -2"
-        Moderate -> "Moderate -4"
-        Severe   -> "Severe -6"
-        Extreme  -> "Extreme -8"
+        Mild ->
+            "Mild -2"
+
+        Moderate ->
+            "Moderate -4"
+
+        Severe ->
+            "Severe -6"
+
+        Extreme ->
+            "Extreme -8"
+
 
 consequenceSeverityList =
     [ Mild
@@ -44,18 +60,30 @@ consequenceSeverityList =
     , Extreme
     ]
 
+
 severityToInt : Severity -> Int
 severityToInt severity =
     case severity of
-        Mild     -> -2
-        Moderate -> -4
-        Severe   -> -6
-        Extreme  -> -8
+        Mild ->
+            -2
+
+        Moderate ->
+            -4
+
+        Severe ->
+            -6
+
+        Extreme ->
+            -8
+
 
 type Consequence
     = Consequence Severity String
 
+
+
 -- Skills
+
 
 type SkillRating
     = Legendary
@@ -66,9 +94,10 @@ type SkillRating
     | Good
     | Fair
     | Average
-    -- | Mediocre
+      -- | Mediocre
     | Poor
     | Terrible
+
 
 skillRatingList =
     [ Legendary
@@ -83,51 +112,104 @@ skillRatingList =
     , Terrible
     ]
 
+
 skillRatingToInt : SkillRating -> Int
 skillRatingToInt rating =
     case rating of
-        Legendary ->  8
-        Epic      ->  7
-        Fantastic ->  6
-        Superb    ->  5
-        Great     ->  4
-        Good      ->  3
-        Fair      ->  2
-        Average   ->  1
+        Legendary ->
+            8
+
+        Epic ->
+            7
+
+        Fantastic ->
+            6
+
+        Superb ->
+            5
+
+        Great ->
+            4
+
+        Good ->
+            3
+
+        Fair ->
+            2
+
+        Average ->
+            1
+
         -- Mediocre  ->  0
-        Poor      -> -1
-        Terrible  -> -2
+        Poor ->
+            -1
+
+        Terrible ->
+            -2
+
 
 showSkillRating : SkillRating -> String
 showSkillRating rating =
     case rating of
-        Legendary -> "Legendary +8"
-        Epic      -> "Epic +7"
-        Fantastic -> "Fantastic +6"
-        Superb    -> "Superb +5"
-        Great     -> "Great +4"
-        Good      -> "Good +3"
-        Fair      -> "Fair +2"
-        Average   -> "Average +1"
-        -- Mediocre  -> "Mediocre (+0)"
-        Poor      -> "Poor -1"
-        Terrible  -> "Terrible -2"
+        Legendary ->
+            "Legendary +8"
 
-type Skill = Skill SkillRating String
-          
+        Epic ->
+            "Epic +7"
+
+        Fantastic ->
+            "Fantastic +6"
+
+        Superb ->
+            "Superb +5"
+
+        Great ->
+            "Great +4"
+
+        Good ->
+            "Good +3"
+
+        Fair ->
+            "Fair +2"
+
+        Average ->
+            "Average +1"
+
+        -- Mediocre  -> "Mediocre (+0)"
+        Poor ->
+            "Poor -1"
+
+        Terrible ->
+            "Terrible -2"
+
+
+type Skill
+    = Skill SkillRating String
+
+
+
 -- Stunts
 
-type Stunt = Stunt String String
+
+type Stunt
+    = Stunt String String
+
+
 
 -- Stress
+
 
 type StressBox
     = StressBox Int Bool
 
+
 type StressTrack
     = StressTrack String (Array StressBox)
 
+
+
 -- Conditions
+
 
 type Condition
     = Condition String (Array StressBox)
@@ -144,8 +226,9 @@ type alias Model =
     , editMode : EditMode
     }
 
+
 defaultModel : CharacterSheet -> Model
 defaultModel sheet =
     { characterSheet = sheet
     , editMode = EditModeNone
-    }    
+    }

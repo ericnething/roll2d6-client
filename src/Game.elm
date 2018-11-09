@@ -1,19 +1,19 @@
-module Game exposing (..)
+module Game exposing (addNewCharacterSheetButton, appName, characterSheetCard, characterSheetColumn, characterSheetList, characterSheetWrapper, characterSheetsView, editCharacterSheetToolbarView, editCharacterSheetView, gameSettingsButton, gameSettingsView, gameTitle, invitePlayerButton, invitePlayersCircleButton, navigationButton, onlinePlayers, overlay, spacer, subscriptions, toolbarButton, topNavigation, topToolbar, update, view)
 
+import Array exposing (Array)
+import CharacterSheet
+import CharacterSheet.Template
+import Css exposing (..)
+import Game.Types exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
-import Css exposing (..)
-import Array exposing (Array)
-import Task
-import Util exposing (removeIndexFromArray)
 import Json.Decode
 import PouchDB exposing (PouchDBRef)
 import PouchDB.Decode exposing (decodeGameData)
-import Game.Types exposing (..)
-import CharacterSheet
-import CharacterSheet.Template
+import Task
+import Util exposing (removeIndexFromArray)
 
 
 subscriptions : Model -> Sub ConsumerMsg
@@ -24,261 +24,285 @@ subscriptions _ =
             (always (LocalMsg <| ChangesReceived))
         ]
 
-update : Msg -> Model -> (Model, Cmd ConsumerMsg)
+
+update : Msg -> Model -> ( Model, Cmd ConsumerMsg )
 update msg model =
     case msg of
         CharacterSheetMsg index submsg ->
             case Array.get index model.characterSheets of
                 Nothing ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
+
                 Just characterSheet ->
                     let
-                        (updatedCharacterSheet, cmd) =
+                        ( updatedCharacterSheet, cmd ) =
                             CharacterSheet.update
-                            submsg
-                            characterSheet
+                                submsg
+                                characterSheet
                     in
-                        ({ model
-                             | characterSheets
-                               = Array.set
-                                 index
-                                 updatedCharacterSheet
-                                 model.characterSheets
-                         }, Cmd.map (LocalMsg << CharacterSheetMsg index) cmd)
+                    ( { model
+                        | characterSheets =
+                            Array.set
+                                index
+                                updatedCharacterSheet
+                                model.characterSheets
+                      }
+                    , Cmd.map (LocalMsg << CharacterSheetMsg index) cmd
+                    )
 
         AddCharacterSheet ->
-            ({ model
-                 | characterSheets
-                   = Array.push
-                     (CharacterSheet.initialModel
-                          CharacterSheet.Template.blank)
-                     model.characterSheets
-             }
+            ( { model
+                | characterSheets =
+                    Array.push
+                        (CharacterSheet.initialModel
+                            CharacterSheet.Template.blank
+                        )
+                        model.characterSheets
+              }
             , Task.perform
                 (LocalMsg << OpenOverlay)
                 (Task.succeed
-                     (EditCharacterSheet
-                          (Array.length
-                               model.characterSheets))))
+                    (EditCharacterSheet
+                        (Array.length
+                            model.characterSheets
+                        )
+                    )
+                )
+            )
 
         RemoveCharacterSheet index ->
-            ({ model
-                 | characterSheets
-                   = removeIndexFromArray index model.characterSheets
-             }
+            ( { model
+                | characterSheets =
+                    removeIndexFromArray index model.characterSheets
+              }
             , Task.perform
                 LocalMsg
-                (Task.succeed CloseOverlay))
+                (Task.succeed CloseOverlay)
+            )
 
         UpdateGameTitle title ->
-            ({ model | title = title }
-            , Cmd.none)
+            ( { model | title = title }
+            , Cmd.none
+            )
 
-        OpenOverlay overlay ->
-            ({ model | overlay = overlay }, Cmd.none)
+        OpenOverlay overlay_ ->
+            ( { model | overlay = overlay_ }, Cmd.none )
 
         CloseOverlay ->
-            ({ model | overlay = OverlayNone }, Cmd.none)
-
-        -- UpdateCurrentGame gameData ->
-        --     (mergeGameData model gameData
-        --     , Cmd.none)
+            ( { model | overlay = OverlayNone }, Cmd.none )
 
         UpdateCurrentGame value ->
             case decodeGameData value of
                 Ok gameData ->
-                    (mergeGameData model gameData
-                    , Cmd.none)
+                    ( mergeGameData model gameData
+                    , Cmd.none
+                    )
 
                 Err err ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
 
         ChangesReceived ->
-            (model, PouchDB.get model.ref)
+            ( model, PouchDB.get model.ref )
+
+
 
 -- View
+
 
 view : Model -> Html ConsumerMsg
 view model =
     div
-    [ css
-      [ Css.property "display" "grid"
-      , Css.property "grid-template-rows" "2.4rem 2.4rem auto"
-      , Css.property "grid-row-gap" "0.6rem"
-      , backgroundColor (hex "0079bf")
-      ]
-    ]
-    [ topNavigation
-    , topToolbar model
-          |> Html.Styled.map LocalMsg 
-    , characterSheetsView model.characterSheets
-          |> Html.Styled.map LocalMsg
-    , case model.overlay of
-          OverlayNone ->
-              text ""
+        [ css
+            [ Css.property "display" "grid"
+            , Css.property "grid-template-rows" "2.4rem 2.4rem auto"
+            , Css.property "grid-row-gap" "0.6rem"
+            , backgroundColor (hex "0079bf")
+            ]
+        ]
+        [ topNavigation
+        , topToolbar model
+            |> Html.Styled.map LocalMsg
+        , characterSheetsView model.characterSheets
+            |> Html.Styled.map LocalMsg
+        , case model.overlay of
+            OverlayNone ->
+                text ""
 
-          EditCharacterSheet index ->
-              overlay
-              []
-              [ Html.Styled.map LocalMsg <|
-                    editCharacterSheetView
-                    index
-                    (Array.get index model.characterSheets)
-              ]
+            EditCharacterSheet index ->
+                overlay
+                    []
+                    [ Html.Styled.map LocalMsg <|
+                        editCharacterSheetView
+                            index
+                            (Array.get index model.characterSheets)
+                    ]
 
-          EditGameSettings ->
-              overlay
-              []
-              [ gameSettingsView model
-                    |> Html.Styled.map LocalMsg
-              ]
-    ]
+            EditGameSettings ->
+                overlay
+                    []
+                    [ gameSettingsView model
+                        |> Html.Styled.map LocalMsg
+                    ]
+        ]
+
 
 topNavigation : Html ConsumerMsg
 topNavigation =
     header
-    [ css
-      [ displayFlex
-      , alignItems center
-      , justifyContent spaceBetween
-      , backgroundColor (rgba 0 0 0 0.15)
-      , color (hex "fff")
-      , padding2 (px 0) (Css.em 0.2)
-      ]
-    ]
-    [ navigationButton [ onClick ExitToLobby ]
-        [ text "My Games" ]
-    , appName
-    , navigationButton [] [ text "My Account" ]
-    ]
+        [ css
+            [ displayFlex
+            , alignItems center
+            , justifyContent spaceBetween
+            , backgroundColor (rgba 0 0 0 0.15)
+            , color (hex "fff")
+            , padding2 (px 0) (Css.em 0.2)
+            ]
+        ]
+        [ navigationButton [ onClick ExitToLobby ]
+            [ text "My Games" ]
+        , appName
+        , navigationButton [] [ text "My Account" ]
+        ]
+
 
 topToolbar : Model -> Html Msg
 topToolbar model =
     div
-    [ css
-      [ displayFlex
-      , alignItems center
-      , backgroundColor transparent
-      , color (hex "fff")
-      , padding2 (px 0) (Css.em 1)
-      ]
-    ]
-    [ gameTitle model.title
-    , onlinePlayers
-    , addNewCharacterSheetButton
-    , gameSettingsButton
-    , invitePlayerButton
-    ]
+        [ css
+            [ displayFlex
+            , alignItems center
+            , backgroundColor transparent
+            , color (hex "fff")
+            , padding2 (px 0) (Css.em 1)
+            ]
+        ]
+        [ gameTitle model.title
+        , onlinePlayers
+        , addNewCharacterSheetButton
+        , gameSettingsButton
+        , invitePlayerButton
+        ]
+
 
 appName : Html msg
 appName =
-    div [ css
-           [ marginLeft (Css.em 1)
-           , opacity (num 0.8)
-           , Css.property "font-variant" "all-small-caps"
-           , fontWeight (int 500)
-           , fontSize (Css.em 1.2)
-           ]
-         ] 
+    div
+        [ css
+            [ marginLeft (Css.em 1)
+            , opacity (num 0.8)
+            , Css.property "font-variant" "all-small-caps"
+            , fontWeight (int 500)
+            , fontSize (Css.em 1.2)
+            ]
+        ]
         [ text "Fate RPG" ]
+
 
 gameTitle : String -> Html Msg
 gameTitle title =
     div
-    [ css
-      [ marginRight (Css.em 1)
-      ]
-    ]
-    [ text title ]
+        [ css
+            [ marginRight (Css.em 1)
+            ]
+        ]
+        [ text title ]
+
 
 addNewCharacterSheetButton : Html Msg
 addNewCharacterSheetButton =
     toolbarButton
-    [ onClick AddCharacterSheet
-    , css [ marginRight (Css.em 1) ]
-    ]
-    [ text "Add Character Sheet" ]
+        [ onClick AddCharacterSheet
+        , css [ marginRight (Css.em 1) ]
+        ]
+        [ text "Add Character Sheet" ]
 
 
 gameSettingsButton : Html Msg
 gameSettingsButton =
     toolbarButton
-    [ onClick (OpenOverlay EditGameSettings)
-    , css [ marginRight (Css.em 1) ]
-    ]
-    [ text "Game Settings" ]
+        [ onClick (OpenOverlay EditGameSettings)
+        , css [ marginRight (Css.em 1) ]
+        ]
+        [ text "Game Settings" ]
+
 
 gameSettingsView : Model -> Html Msg
 gameSettingsView model =
     div
-    [ css
-      [ margin2 (Css.em 4) auto
-      , backgroundColor (hex "fff")
-      , padding (Css.em 2)
-      , Css.width (Css.em 32)
-      , borderRadius (Css.em 0.2)
-      ]
-    ]
-    [ h1 [] [ text "Game Settings" ]
-    , div []
-        [ label [] [ text "Game Title" ]
-        , input
-              [ type_ "text"
-              , onInput UpdateGameTitle
-              , value model.title
-              ] []
+        [ css
+            [ margin2 (Css.em 4) auto
+            , backgroundColor (hex "fff")
+            , padding (Css.em 2)
+            , Css.width (Css.em 32)
+            , borderRadius (Css.em 0.2)
+            ]
         ]
-    , button
-          [ onClick CloseOverlay ]
-          [ text "Done" ]
-    ]
+        [ h1 [] [ text "Game Settings" ]
+        , div []
+            [ label [] [ text "Game Title" ]
+            , input
+                [ type_ "text"
+                , onInput UpdateGameTitle
+                , value model.title
+                ]
+                []
+            ]
+        , button
+            [ onClick CloseOverlay ]
+            [ text "Done" ]
+        ]
+
 
 invitePlayerButton : Html Msg
 invitePlayerButton =
     toolbarButton
-    [ css [ marginRight (Css.em 1) ]
-    ]
-    [ text "Invite Player" ]
+        [ css [ marginRight (Css.em 1) ]
+        ]
+        [ text "Invite Player" ]
+
 
 invitePlayersCircleButton : Html Msg
 invitePlayersCircleButton =
     button
-    [ css
-      [ borderRadius (px 999)
-      , Css.width (Css.em 1.9)
-      , Css.height (Css.em 1.9)
-      , backgroundColor (rgba 255 255 255 0.2)
-      , color (hex "eee")
-      , textAlign center
-      , marginLeft (Css.em 0.35)
-      , border3 (px 2) solid (hex "eee")
-      ]
-    ] [ text "+" ]
+        [ css
+            [ borderRadius (px 999)
+            , Css.width (Css.em 1.9)
+            , Css.height (Css.em 1.9)
+            , backgroundColor (rgba 255 255 255 0.2)
+            , color (hex "eee")
+            , textAlign center
+            , marginLeft (Css.em 0.35)
+            , border3 (px 2) solid (hex "eee")
+            ]
+        ]
+        [ text "+" ]
+
 
 onlinePlayers : Html Msg
 onlinePlayers =
     let
         avatar name bg =
             div
-            [ css
-              [ borderRadius (px 999)
-              , Css.width (Css.em 1.9)
-              , Css.height (Css.em 1.9)
-              , backgroundColor (hex bg)
-              , color (hex "eee")
-              , textAlign center
-              , marginLeft (Css.em -0.35)
-              , border3 (px 2) solid (hex "eee")
-              ]
-            ]
-            [ text name ]
+                [ css
+                    [ borderRadius (px 999)
+                    , Css.width (Css.em 1.9)
+                    , Css.height (Css.em 1.9)
+                    , backgroundColor (hex bg)
+                    , color (hex "eee")
+                    , textAlign center
+                    , marginLeft (Css.em -0.35)
+                    , border3 (px 2) solid (hex "eee")
+                    ]
+                ]
+                [ text name ]
     in
-        span [ css
-               [ displayFlex
-               , alignItems center
-               , marginRight (Css.em 1)
-               ]
-             ]
+    span
+        [ css
+            [ displayFlex
+            , alignItems center
+            , marginRight (Css.em 1)
+            ]
+        ]
         [ avatar "W" "001f3f"
         , avatar "O" "FF851B"
         , avatar "R" "85144b"
@@ -286,42 +310,48 @@ onlinePlayers =
         , avatar "B" "0074D9"
         ]
 
+
 characterSheetsView : Array CharacterSheet.Model -> Html Msg
 characterSheetsView characterSheets =
-    div [ css
-          [ displayFlex
-          , alignItems Css.start
-          , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
-          , overflowX auto
-          , Css.property "height" "calc(100vh - 6rem)"
-          , Css.property "display" "grid"
-          , Css.property "grid-auto-columns" "23rem"
-          , Css.property "grid-auto-flow" "column"
-          , Css.property "grid-column-gap" "1rem"
-          , backgroundColor (hex "0079bf")
-          ]
+    div
+        [ css
+            [ displayFlex
+            , alignItems Css.start
+            , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
+            , overflowX auto
+            , Css.property "height" "calc(100vh - 6rem)"
+            , Css.property "display" "grid"
+            , Css.property "grid-auto-columns" "23rem"
+            , Css.property "grid-auto-flow" "column"
+            , Css.property "grid-column-gap" "1rem"
+            , backgroundColor (hex "0079bf")
+            ]
         ]
-        (Array.toList
-            <| Array.indexedMap
+        (Array.toList <|
+            Array.indexedMap
                 characterSheetWrapper
-                characterSheets)
+                characterSheets
+        )
 
 
-editCharacterSheetView : Int
-                       -> Maybe CharacterSheet.Model
-                       -> Html Msg
+editCharacterSheetView :
+    Int
+    -> Maybe CharacterSheet.Model
+    -> Html Msg
 editCharacterSheetView index mmodel =
     case mmodel of
         Nothing ->
             div [] [ text "Not Found" ]
+
         Just characterSheet ->
-            div [ css
-                  [ margin2 (Css.em 4) auto
-                  , backgroundColor (hex "fff")
-                  , padding (Css.em 2)
-                  , Css.width (Css.em 32)
-                  , borderRadius (Css.em 0.2)
-                  ]
+            div
+                [ css
+                    [ margin2 (Css.em 4) auto
+                    , backgroundColor (hex "fff")
+                    , padding (Css.em 2)
+                    , Css.width (Css.em 32)
+                    , borderRadius (Css.em 0.2)
+                    ]
                 ]
                 [ editCharacterSheetToolbarView index
                 , Html.Styled.map
@@ -329,27 +359,30 @@ editCharacterSheetView index mmodel =
                     (CharacterSheet.editView characterSheet)
                 ]
 
+
 editCharacterSheetToolbarView : Int -> Html Msg
 editCharacterSheetToolbarView index =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          ]
+    div
+        [ css
+            [ displayFlex
+            , alignItems center
+            ]
         ]
         [ CharacterSheet.defaultButton
-              [ onClick CloseOverlay ]
-              [ text "Done" ]
+            [ onClick CloseOverlay ]
+            [ text "Done" ]
         , CharacterSheet.defaultButton
-              [ onClick (RemoveCharacterSheet index)
-              , css
-                    [ backgroundColor (hex "ff0000")
-                    , color (hex "fff")
-                    , hover
-                        [ backgroundColor (hex "ee0000") ]
-                    ]
-              ]
-              [ text "Delete" ]
+            [ onClick (RemoveCharacterSheet index)
+            , css
+                [ backgroundColor (hex "ff0000")
+                , color (hex "fff")
+                , hover
+                    [ backgroundColor (hex "ee0000") ]
+                ]
+            ]
+            [ text "Delete" ]
         ]
+
 
 characterSheetColumn =
     styled div
@@ -362,6 +395,7 @@ characterSheetColumn =
         , overflowY auto
         ]
 
+
 characterSheetList =
     styled div
         [ displayFlex
@@ -372,50 +406,53 @@ characterSheetList =
         , Css.property "grid-row-gap" "0.6rem"
         ]
 
+
 characterSheetCard : Int -> CharacterSheet.Model -> Html Msg
 characterSheetCard index characterSheet =
-    div [ css
-          [ borderRadius (Css.em 0.2)
-          , backgroundColor (hex "fff")
-          , Css.maxWidth (Css.em 23)
-          ]
-        ]
-    [ div
-      [ css
-        [ displayFlex
-        , justifyContent flexStart
-        , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
-        ]
-      ]
-      [ CharacterSheet.defaultButton
-            [ onClick (OpenOverlay (EditCharacterSheet index))
-            , css
-                  [ display block ]
+    div
+        [ css
+            [ borderRadius (Css.em 0.2)
+            , backgroundColor (hex "fff")
+            , Css.maxWidth (Css.em 23)
             ]
-            [ text "Edit" ]
-      ]
-    , Html.Styled.map
-        (CharacterSheetMsg index)
-        (CharacterSheet.readOnlyView characterSheet)
-    ]
+        ]
+        [ div
+            [ css
+                [ displayFlex
+                , justifyContent flexStart
+                , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
+                ]
+            ]
+            [ CharacterSheet.defaultButton
+                [ onClick (OpenOverlay (EditCharacterSheet index))
+                , css
+                    [ display block ]
+                ]
+                [ text "Edit" ]
+            ]
+        , Html.Styled.map
+            (CharacterSheetMsg index)
+            (CharacterSheet.readOnlyView characterSheet)
+        ]
 
 
 spacer : Html msg
 spacer =
     div [] []
 
-characterSheetWrapper : Int
-                      -> CharacterSheet.Model
-                      -> Html Msg
+
+characterSheetWrapper :
+    Int
+    -> CharacterSheet.Model
+    -> Html Msg
 characterSheetWrapper index characterSheet =
     characterSheetColumn []
         [ characterSheetList []
-          [ characterSheetCard index characterSheet
-          , spacer
-          , spacer
-          ]
+            [ characterSheetCard index characterSheet
+            , spacer
+            , spacer
+            ]
         ]
-
 
 
 toolbarButton =
@@ -428,9 +465,10 @@ toolbarButton =
         , cursor pointer
         , border (px 0)
         , hover
-              [ backgroundColor (rgba 255 255 255 0.3)
-              ]
+            [ backgroundColor (rgba 255 255 255 0.3)
+            ]
         ]
+
 
 navigationButton =
     styled button
@@ -443,8 +481,8 @@ navigationButton =
         , cursor pointer
         , border (px 0)
         , hover
-              [ backgroundColor (rgba 255 255 255 0.2)
-              ]
+            [ backgroundColor (rgba 255 255 255 0.2)
+            ]
         ]
 
 

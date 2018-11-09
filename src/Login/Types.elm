@@ -1,8 +1,9 @@
-module Login.Types exposing (..)
+module Login.Types exposing (Auth, ConsumerMsg(..), Model, Msg(..), Registration, Tab(..), encodeAuth, encodeRegistration, initialModel)
 
-import Json.Encode exposing (Value, object, string)
-import Json.Decode
 import Http
+import Json.Decode
+import Json.Encode exposing (Value, object, string)
+
 
 type alias Model =
     { tab : Tab
@@ -10,6 +11,7 @@ type alias Model =
     , email : String
     , password : String
     }
+
 
 initialModel : Model
 initialModel =
@@ -19,13 +21,16 @@ initialModel =
     , password = ""
     }
 
+
 type Tab
     = LoginTab
     | RegisterTab
 
+
 type ConsumerMsg
     = LoadLobby
     | LocalMsg Msg
+
 
 type Msg
     = Login
@@ -37,10 +42,12 @@ type Msg
     | UpdateUsername String
     | ChangeTab Tab
 
+
 type alias Auth =
     { email : String
     , password : String
     }
+
 
 type alias Registration =
     { username : String
@@ -48,17 +55,19 @@ type alias Registration =
     , password : String
     }
 
+
 encodeAuth : Auth -> Value
 encodeAuth auth =
     object
-        [ ("email", string auth.email)
-        , ("password", string auth.password)
+        [ ( "email", string auth.email )
+        , ( "password", string auth.password )
         ]
+
 
 encodeRegistration : Registration -> Value
 encodeRegistration reg =
     object
-        [ ("username", string reg.username)
-        , ("email", string reg.email)
-        , ("password", string reg.password)
+        [ ( "username", string reg.username )
+        , ( "email", string reg.email )
+        , ( "password", string reg.password )
         ]

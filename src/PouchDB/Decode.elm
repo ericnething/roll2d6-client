@@ -1,41 +1,47 @@
 module PouchDB.Decode exposing
     ( decodeGame
-    , decodeGameList
+    , decodeGameData
     , decodeGameId
+    , decodeGameList
     , gameIdDecoder
     , gameListDecoder
-    , decodeGameData
     )
 
-import Json.Decode exposing (..)
-import Json.Decode.Pipeline exposing (..)
 import Array exposing (Array)
-import Lobby.Types as Lobby
+import CharacterSheet.Model
+    exposing
+        ( Aspect(..)
+        , CharacterSheet
+        , Condition(..)
+        , Consequence(..)
+        , Severity(..)
+        , Skill(..)
+        , SkillRating(..)
+        , StressBox(..)
+        , StressTrack(..)
+        , Stunt(..)
+        , severityToInt
+        , skillRatingToInt
+        )
 import Game.Types as Game
-import CharacterSheet.Model exposing
-    ( Aspect(..)
-    , Skill(..)
-    , SkillRating(..)
-    , skillRatingToInt
-    , Stunt(..)
-    , StressTrack(..)
-    , StressBox(..)
-    , Consequence(..)
-    , Severity(..)
-    , severityToInt
-    , Condition(..)
-    , CharacterSheet
-    )
+import Json.Decode as Decode exposing (..)
+import Json.Decode.Pipeline exposing (..)
+import Lobby.Types as Lobby
+
+
 
 -- Game Metadata List
 
-decodeGameList : Value -> Result String (List Lobby.GameMetadata)
+
+decodeGameList : Value -> Result Error (List Lobby.GameMetadata)
 decodeGameList value =
     decodeValue gameListDecoder value
+
 
 gameListDecoder : Decoder (List Lobby.GameMetadata)
 gameListDecoder =
     list gameMetadataDecoder
+
 
 gameMetadataDecoder : Decoder Lobby.GameMetadata
 gameMetadataDecoder =
@@ -43,47 +49,57 @@ gameMetadataDecoder =
         (field "id" string)
         (field "title" string)
 
+
+
 -- Game
 
-decodeGameId : Value -> Result String Game.GameId
+
+decodeGameId : Value -> Result Error Game.GameId
 decodeGameId value =
     decodeValue gameIdDecoder value
 
-gameIdDecoder : Decoder Game.GameId
-gameIdDecoder = string
 
-decodeGame : Value -> Result String Game.Model
+gameIdDecoder : Decoder Game.GameId
+gameIdDecoder =
+    string
+
+
+decodeGame : Value -> Result Error Game.Model
 decodeGame value =
     decodeValue gameDecoder value
+
 
 gameDecoder : Decoder Game.Model
 gameDecoder =
     map3
-    (\ref id gameData ->
-             { ref = ref
-             , id = id
-             , title = gameData.title
-             , characterSheets = gameData.characterSheets
-             , overlay = Game.OverlayNone
-             }
-    )
-    (field "ref" value)
-    (field "id" string)
-    (field "game" gameDataDecoder)
+        (\ref id gameData ->
+            { ref = ref
+            , id = id
+            , title = gameData.title
+            , characterSheets = gameData.characterSheets
+            , overlay = Game.OverlayNone
+            }
+        )
+        (field "ref" value)
+        (field "id" string)
+        (field "game" gameDataDecoder)
 
-decodeGameData : Value -> Result String Game.GameData
+
+decodeGameData : Value -> Result Error Game.GameData
 decodeGameData value =
     decodeValue gameDataDecoder value
+
 
 gameDataDecoder : Decoder Game.GameData
 gameDataDecoder =
     map2 Game.GameData
-    (field "title" string)
-    (field "characterSheets" (array decodeCharacterSheetWrapper))
+        (field "title" string)
+        (field "characterSheets" (array decodeCharacterSheetWrapper))
+
 
 decodeCharacterSheet : Decoder CharacterSheet
 decodeCharacterSheet =
-    decode CharacterSheet
+    Decode.succeed CharacterSheet
         |> required "name" string
         |> required "description" string
         |> required "aspects" (array decodeAspect)
@@ -99,44 +115,57 @@ decodeCharacterSheet =
 decodeCharacterSheetWrapper : Decoder CharacterSheet.Model.Model
 decodeCharacterSheetWrapper =
     map
-    CharacterSheet.Model.defaultModel
-    decodeCharacterSheet
+        CharacterSheet.Model.defaultModel
+        decodeCharacterSheet
+
+
 
 -- decodeType : String -> Decoder (String)
+
+
 decodeType expectedType =
     string
         |> andThen
-           (\actualType ->
-                if
-                    actualType == expectedType
-                then
+            (\actualType ->
+                if actualType == expectedType then
                     succeed actualType
+
                 else
-                    fail ("Expected type "
-                              ++ expectedType
-                              ++ ", but got type "
-                              ++ actualType ++ ".")
-           )        
+                    fail
+                        ("Expected type "
+                            ++ expectedType
+                            ++ ", but got type "
+                            ++ actualType
+                            ++ "."
+                        )
+            )
+
+
 
 -- decodeConstructor : String -> Decoder String
+
+
 decodeConstructor expectedConstructor =
     string
         |> andThen
-           (\actualConstructor ->
-                if
-                    actualConstructor == expectedConstructor
-                then
+            (\actualConstructor ->
+                if actualConstructor == expectedConstructor then
                     succeed actualConstructor
+
                 else
-                    fail ("Expected constructor "
-                              ++ expectedConstructor
-                              ++ ", but got constructor "
-                              ++ actualConstructor ++ ".")
-           )
+                    fail
+                        ("Expected constructor "
+                            ++ expectedConstructor
+                            ++ ", but got constructor "
+                            ++ actualConstructor
+                            ++ "."
+                        )
+            )
+
 
 decodeAspect : Decoder Aspect
 decodeAspect =
-    decode (\_ _ a b -> Aspect a b)
+    Decode.succeed (\_ _ a b -> Aspect a b)
         |> required "type" (decodeType "Aspect")
         |> required "ctor" (decodeConstructor "Aspect")
         |> required "title" string
@@ -145,7 +174,7 @@ decodeAspect =
 
 decodeSkill : Decoder Skill
 decodeSkill =
-    decode (\_ _ a b -> Skill a b)
+    Decode.succeed (\_ _ a b -> Skill a b)
         |> required "type" (decodeType "Skill")
         |> required "ctor" (decodeConstructor "Skill")
         |> required "rating" (int |> andThen decodeSkillRating)
@@ -154,7 +183,7 @@ decodeSkill =
 
 decodeStunt : Decoder Stunt
 decodeStunt =
-    decode (\_ _ a b -> Stunt a b)
+    Decode.succeed (\_ _ a b -> Stunt a b)
         |> required "type" (decodeType "Stunt")
         |> required "ctor" (decodeConstructor "Stunt")
         |> required "title" string
@@ -163,7 +192,7 @@ decodeStunt =
 
 decodeConsequence : Decoder Consequence
 decodeConsequence =
-    decode (\_ _ a b -> Consequence a b)
+    Decode.succeed (\_ _ a b -> Consequence a b)
         |> required "type" (decodeType "Consequence")
         |> required "ctor" (decodeConstructor "Consequence")
         |> required "severity" (int |> andThen decodeSeverity)
@@ -172,7 +201,7 @@ decodeConsequence =
 
 decodeCondition : Decoder Condition
 decodeCondition =
-    decode (\_ _ a b -> Condition a b)
+    Decode.succeed (\_ _ a b -> Condition a b)
         |> required "type" (decodeType "Condition")
         |> required "ctor" (decodeConstructor "Condition")
         |> required "title" string
@@ -181,7 +210,7 @@ decodeCondition =
 
 decodeStressBox : Decoder StressBox
 decodeStressBox =
-    decode (\_ _ a b -> StressBox a b)
+    Decode.succeed (\_ _ a b -> StressBox a b)
         |> required "type" (decodeType "StressBox")
         |> required "ctor" (decodeConstructor "StressBox")
         |> required "value" int
@@ -190,7 +219,7 @@ decodeStressBox =
 
 decodeStressTrack : Decoder StressTrack
 decodeStressTrack =
-    decode (\_ _ a b -> StressTrack a b)
+    Decode.succeed (\_ _ a b -> StressTrack a b)
         |> required "type" (decodeType "StressTrack")
         |> required "ctor" (decodeConstructor "StressTrack")
         |> required "title" string
@@ -199,26 +228,89 @@ decodeStressTrack =
 
 decodeSeverity : Int -> Decoder Severity
 decodeSeverity int_ =
-    case int_ of
-        (-2) -> succeed Mild
-        (-4) -> succeed Moderate
-        (-6) -> succeed Severe
-        (-8) -> succeed Extreme
-        _    -> fail "Not a valid Severity"
+    -- Case expressions on negative integers are broken in compiler
+    -- 0.19
+    --
+    -- case int_ of
+    --     (-2) ->
+    --         succeed Mild
+
+    --     (-4) ->
+    --         succeed Moderate
+
+    --     (-6) ->
+    --         succeed Severe
+
+    --     (-8) ->
+    --         succeed Extreme
+
+    --     _ ->
+    --         fail "Not a valid Severity"
+
+    if int_ == -2
+    then
+        succeed Mild
+    else
+        if int_ == -4
+        then
+            succeed Moderate
+        else
+            if int_ == -6
+            then
+                succeed Severe
+            else
+                if int_ == -8
+                then
+                    succeed Extreme
+                else
+                    fail "Not a valid Severity"
 
 
 decodeSkillRating : Int -> Decoder SkillRating
 decodeSkillRating int_ =
     case int_ of
-        8    -> succeed Legendary
-        7    -> succeed Epic
-        6    -> succeed Fantastic
-        5    -> succeed Superb
-        4    -> succeed Great
-        3    -> succeed Good
-        2    -> succeed Fair
-        1    -> succeed Average
+        8 ->
+            succeed Legendary
+
+        7 ->
+            succeed Epic
+
+        6 ->
+            succeed Fantastic
+
+        5 ->
+            succeed Superb
+
+        4 ->
+            succeed Great
+
+        3 ->
+            succeed Good
+
+        2 ->
+            succeed Fair
+
+        1 ->
+            succeed Average
+
         -- 0    -> succeed Mediocre
-        (-1) -> succeed Poor
-        (-2) -> succeed Terrible
-        _    -> fail "Not a valid SkillRating"
+
+        -- (-1) ->
+        --     succeed Poor
+
+        -- (-2) ->
+        --     succeed Terrible
+
+        -- _ ->
+        --     fail "Not a valid SkillRating"
+
+        other ->
+            if other == -1
+            then
+                succeed Poor
+            else
+                if other == -2
+                then
+                    succeed Terrible
+                else
+                    fail "Not a valid SkillRating"

@@ -1,20 +1,20 @@
-module Lobby exposing (..)
+module Lobby exposing (gamePreview, init, topNavigation, topToolbar, update, view)
 
+import API
+import Css exposing (..)
+import Game.Types as Game
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
-import Css exposing (..)
-import Task
-import Game.Types as Game
-import Lobby.Types exposing (..)
-import Json.Encode exposing (Value)
 import Http
-import RemoteData exposing (WebData, RemoteData(..))
-import API
+import Json.Encode exposing (Value)
+import Lobby.Types exposing (..)
+import RemoteData exposing (RemoteData(..), WebData)
+import Task
 
 
-init : (Model, Cmd ConsumerMsg)
+init : ( Model, Cmd ConsumerMsg )
 init =
     ( initialModel
     , Task.perform
@@ -22,94 +22,110 @@ init =
         (Task.succeed GetGameList)
     )
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewGame ->
             ( model
-            , API.newGame "New Game Title")
+            , API.newGame "New Game Title"
+            )
 
         GetGameList ->
             ( model
-            , API.getAllGames)
+            , API.getAllGames
+            )
 
         SetGameList response ->
-            ({ model | games = response }
-            , Cmd.none)
+            ( { model | games = response }
+            , Cmd.none
+            )
+
 
 view : Model -> Html ConsumerMsg
 view model =
-    div [ css
-          [ Css.property "display" "grid"
-          , Css.property "grid-template-rows" "2.2rem auto"
-          , Css.property "grid-row-gap" "0.8rem"
-          , backgroundColor (hex "36393f")
-          , Css.minHeight (vh 100)
-          ]
-        ]
-    [ topNavigation
-    , div [ css
-            [ color (hex "fff")
-            , padding (Css.em 1)
+    div
+        [ css
+            [ Css.property "display" "grid"
+            , Css.property "grid-template-rows" "2.2rem auto"
+            , Css.property "grid-row-gap" "0.8rem"
+            , backgroundColor (hex "36393f")
+            , Css.minHeight (vh 100)
             ]
-          ] <|
-        case model.games of
-            NotAsked ->
-                [ text "Not Asked" ]
-            Loading ->
-                [ text "Loading" ]
-            Failure err ->
-                [ text "Request Failed" ]
-            Success games ->
-                [ h1 [] [ text "My Games" ]
-                , div [] (games
-                         |> List.reverse
-                         |> List.map gamePreview)
-                , button
-                      [ type_ "button"
-                      , onClick (LocalMsg NewGame)
-                      ]
-                      [ text "Create new game" ]
+        ]
+        [ topNavigation
+        , div
+            [ css
+                [ color (hex "fff")
+                , padding (Css.em 1)
                 ]
-    ]
+            ]
+          <|
+            case model.games of
+                NotAsked ->
+                    [ text "Not Asked" ]
+
+                Loading ->
+                    [ text "Loading" ]
+
+                Failure err ->
+                    [ text "Request Failed" ]
+
+                Success games ->
+                    [ h1 [] [ text "My Games" ]
+                    , div []
+                        (games
+                            |> List.reverse
+                            |> List.map gamePreview
+                        )
+                    , button
+                        [ type_ "button"
+                        , onClick (LocalMsg NewGame)
+                        ]
+                        [ text "Create new game" ]
+                    ]
+        ]
+
 
 gamePreview : GameMetadata -> Html ConsumerMsg
 gamePreview { id, title } =
     div []
         [ span [] [ text title ]
         , button
-              [ onClick (LoadGame id)
-              ]
-              [ text "Join Game" ]
+            [ onClick (LoadGame id)
+            ]
+            [ text "Join Game" ]
         ]
+
 
 topNavigation : Html msg
 topNavigation =
     header
-    [ css
-      [ displayFlex
-      , alignItems center
-      , backgroundColor (rgba 0 0 0 0.15)
-      , Css.height (Css.rem 3)
-      , color (hex "fff")
-      , padding2 (px 0) (Css.em 1)
-      , position sticky
-      , top (px 0)
-      ]
-    ]
-    [ h1 [] [ text "Fate RPG" ]
-    ]
+        [ css
+            [ displayFlex
+            , alignItems center
+            , backgroundColor (rgba 0 0 0 0.15)
+            , Css.height (Css.rem 3)
+            , color (hex "fff")
+            , padding2 (px 0) (Css.em 1)
+            , position sticky
+            , top (px 0)
+            ]
+        ]
+        [ h1 [] [ text "Fate RPG" ]
+        ]
+
 
 topToolbar : Html msg
 topToolbar =
     div
-    [ css
-      [ displayFlex
-      , alignItems center
-      , backgroundColor (hex "0079bf")
-      , Css.height (Css.rem 3)
-      , color (hex "fff")
-      , padding2 (px 0) (Css.em 1)
-      ]
-    ]
-    [ text "Toolbar" ]
+        [ css
+            [ displayFlex
+            , alignItems center
+            , backgroundColor (hex "0079bf")
+            , Css.height (Css.rem 3)
+            , color (hex "fff")
+            , padding2 (px 0) (Css.em 1)
+            ]
+        ]
+        [ text "Toolbar" ]

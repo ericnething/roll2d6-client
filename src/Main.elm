@@ -1,61 +1,78 @@
-module Main exposing (..)
+module Main exposing (Model, Msg(..), Screen(..), debouncedWriteToPouchDB, init, initialModel, loadLobby, main, subscriptions, update, updateDebouncer, view)
 
+import Browser
+import Array exposing (Array)
+import Css exposing (..)
+import Debouncer.Messages as Debouncer
+    exposing
+        ( Debouncer
+        , debounce
+        , provideInput
+        , toDebouncer
+        , fromSeconds
+        )
+import Game
+import Game.Types as Game exposing (GameId)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
-import Css exposing (..)
-import Array exposing (Array)
-import Task
-import Util exposing (removeIndexFromArray)
-import Game
-import Game.Types as Game exposing (GameId)
+import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
 import Login
 import Login.Types as Login
 import PouchDB
+import PouchDB.Decode
+    exposing
+        ( decodeGame
+        , decodeGameData
+        , decodeGameList
+        )
 import PouchDB.Encode exposing (encodeGame, encodeGameData)
-import PouchDB.Decode exposing
-    ( decodeGame
-    , decodeGameData
-    , decodeGameList
-    )
-import Debouncer.Messages as Debouncer exposing
-    ( Debouncer
-    , provideInput
-    , debounce
-    , toDebouncer
-    )
-import Time
-import Json.Decode
+import Task
+import Util exposing (removeIndexFromArray)
 
+
+main : Program () Model Msg
 main =
-    Html.program
-        { init = init
-        , view = view >> toUnstyled
+    Browser.document
+        { init = \_ -> init
+        , view = view >> toUnstyled >>
+                 \html -> { title = "Fate RPG"
+                          , body = [ html ]
+                          }
         , update = update
         , subscriptions = subscriptions
         }
 
+
+
 -- Subscriptions
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ PouchDB.gameLoaded GameLoaded
         , case model.screen of
-              GameScreen game ->
-                  Sub.map GameMsg (Game.subscriptions game)
-              _ ->
-                  Sub.none
+            GameScreen game ->
+                Sub.map GameMsg (Game.subscriptions game)
+
+            _ ->
+                Sub.none
         ]
 
+
+
 -- Model
+
 
 type alias Model =
     { screen : Screen
     , debouncer : Debouncer Msg
     }
+
 
 type Screen
     = LoginScreen Login.Model
@@ -63,21 +80,29 @@ type Screen
     | LoadingGameScreen GameId
     | GameScreen Game.Model
 
+
 initialModel : Model
 initialModel =
     { screen = LoginScreen Login.initialModel
     , debouncer =
-        debounce (1 * Time.second)
+        debounce (fromSeconds 1)
             |> toDebouncer
     }
 
-init : (Model, Cmd Msg)
-init = (initialModel
-       , Task.perform identity
-           (Task.succeed
-                (LobbyMsg (Lobby.LocalMsg Lobby.GetGameList))))
+
+init : ( Model, Cmd Msg )
+init =
+    ( initialModel
+    , Task.perform identity
+        (Task.succeed
+            (LobbyMsg (Lobby.LocalMsg Lobby.GetGameList))
+        )
+    )
+
+
 
 -- Update
+
 
 type Msg
     = GameMsg Game.ConsumerMsg
@@ -87,132 +112,175 @@ type Msg
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
 
+
 updateDebouncer : Debouncer.UpdateConfig Msg Model
 updateDebouncer =
     { mapMsg = DebounceMsg
     , getDebouncer = .debouncer
     , setDebouncer =
-          \debouncer model ->
-              { model | debouncer = debouncer }
+        \debouncer model ->
+            { model | debouncer = debouncer }
     }
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
         WriteToPouchDB game ->
-            (model, PouchDB.put (game.ref, (encodeGame game)))
+            ( model, PouchDB.put ( game.ref, encodeGame game ) )
 
         GameLoaded value ->
-            let _ = Debug.log "Game Loaded in Elm" value
-            in
-              case decodeGame value of
+            case decodeGame value of
                 Ok newGame ->
                     case model.screen of
                         LoadingGameScreen id ->
-                            ({ model
-                                 | screen = GameScreen newGame
-                             }
-                            , Cmd.none)
+                            ( { model
+                                | screen = GameScreen newGame
+                              }
+                            , Cmd.none
+                            )
+
                         _ ->
-                            (model, Cmd.none)
+                            ( model, Cmd.none )
 
                 Err err ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
 
         GameMsg submsg ->
             case submsg of
                 Game.ExitToLobby ->
-                    ({ model
-                         | screen =
-                             LobbyScreen
-                                 Lobby.initialModel
-                     }
+                    ( { model
+                        | screen =
+                            LobbyScreen
+                                Lobby.initialModel
+                      }
                     , Task.perform identity
                         (Task.succeed
-                             (LobbyMsg
-                                  (Lobby.LocalMsg
-                                       Lobby.GetGameList))))
+                            (LobbyMsg
+                                (Lobby.LocalMsg
+                                    Lobby.GetGameList
+                                )
+                            )
+                        )
+                    )
 
-                Game.LocalMsg msg ->
+                Game.LocalMsg localmsg ->
                     case model.screen of
                         GameScreen game ->
                             let
-                                (newGame, cmd) =
-                                    Game.update msg game
+                                ( newGame, cmd ) =
+                                    Game.update localmsg game
                             in
-                                ({ model
-                                     | screen = GameScreen newGame
-                                 }
-                                , Cmd.batch
-                                    [ debouncedWriteToPouchDB
-                                          newGame
-                                    , Cmd.map GameMsg cmd
-                                    ])
-                        _ -> (model, Cmd.none)
+                            ( { model
+                                | screen = GameScreen newGame
+                              }
+                            , Cmd.batch
+                                [ maybeWriteToPouchDB
+                                      localmsg
+                                      newGame
+                                , Cmd.map GameMsg cmd
+                                ]
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         LobbyMsg submsg ->
             case submsg of
                 Lobby.LoadGame id ->
-                    ({ model | screen = LoadingGameScreen id }
+                    ( { model | screen = LoadingGameScreen id }
                     , PouchDB.loadGame
-                        (encodeGameData Game.emptyGameData, id))
-                
-                Lobby.LocalMsg msg ->
+                        ( encodeGameData Game.emptyGameData, id )
+                    )
+
+                Lobby.LocalMsg localmsg ->
                     case model.screen of
                         LobbyScreen lobby ->
                             let
-                                (newLobby, cmd) =
-                                    Lobby.update msg lobby
+                                ( newLobby, cmd ) =
+                                    Lobby.update localmsg lobby
                             in
-                                ({ model
-                                     | screen = LobbyScreen newLobby
-                                 }
-                                , Cmd.map
-                                    (LobbyMsg << Lobby.LocalMsg)
-                                        cmd)
-                        _ -> (model, Cmd.none)
+                            ( { model
+                                | screen = LobbyScreen newLobby
+                              }
+                            , Cmd.map
+                                (LobbyMsg << Lobby.LocalMsg)
+                                cmd
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         LoginMsg submsg ->
             case submsg of
                 Login.LoadLobby ->
                     loadLobby model
-                Login.LocalMsg msg ->
+
+                Login.LocalMsg localmsg ->
                     case model.screen of
                         LoginScreen login ->
                             let
-                                (newLogin, cmd) =
-                                    Login.update msg login
+                                ( newLogin, cmd ) =
+                                    Login.update localmsg login
                             in
-                                ({ model
-                                     | screen = LoginScreen newLogin
-                                 }
-                                , Cmd.map
-                                    (LoginMsg)
-                                        cmd)
-                        _ -> (model, Cmd.none)
+                            ( { model
+                                | screen = LoginScreen newLogin
+                              }
+                            , Cmd.map
+                                LoginMsg
+                                cmd
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
 
 
-loadLobby : Model -> (Model, Cmd Msg)
+loadLobby : Model -> ( Model, Cmd Msg )
 loadLobby model =
     let
-        (lobby, cmd) = Lobby.init
+        ( lobby, cmd ) =
+            Lobby.init
     in
-        ({ model | screen = LobbyScreen lobby }
-        , Cmd.map LobbyMsg cmd)
+    ( { model | screen = LobbyScreen lobby }
+    , Cmd.map LobbyMsg cmd
+    )
+
+
+maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
+maybeWriteToPouchDB msg newGame =
+    case msg of
+        Game.CharacterSheetMsg _ _ ->
+            debouncedWriteToPouchDB
+                newGame
+        Game.AddCharacterSheet ->
+            debouncedWriteToPouchDB
+                newGame
+        Game.RemoveCharacterSheet _ ->
+            debouncedWriteToPouchDB
+                newGame
+        Game.UpdateGameTitle _ ->
+            debouncedWriteToPouchDB
+                newGame
+        _ ->
+            Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
 debouncedWriteToPouchDB newGame =
     Task.perform identity
-    (Task.succeed
-         (WriteToPouchDB newGame
-         |> provideInput
-         |> DebounceMsg))
+        (Task.succeed
+            (WriteToPouchDB newGame
+                |> provideInput
+                |> DebounceMsg
+            )
+        )
+
 
 
 -- View
+
 
 view : Model -> Html Msg
 view model =
@@ -231,4 +299,3 @@ view model =
         GameScreen game ->
             Game.view game
                 |> Html.Styled.map GameMsg
-

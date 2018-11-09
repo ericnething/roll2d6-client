@@ -1,14 +1,16 @@
-module Game.Types exposing (..)
+module Game.Types exposing (ConsumerMsg(..), GameData, GameId, Model, Msg(..), Overlay(..), emptyGameData, initialModel, mergeGameData)
 
-import CharacterSheet
 import Array exposing (Array)
-import PouchDB exposing (PouchDBRef)
+import CharacterSheet
 import Json.Decode exposing (Value)
+import PouchDB exposing (PouchDBRef)
+
 
 type Overlay
     = EditCharacterSheet Int
     | EditGameSettings
     | OverlayNone
+
 
 type alias Model =
     { ref : PouchDBRef
@@ -18,12 +20,15 @@ type alias Model =
     , overlay : Overlay
     }
 
+
 type alias GameData =
     { title : String
     , characterSheets : Array CharacterSheet.Model
     }
 
-type alias GameId = String
+
+type alias GameId =
+    String
 
 
 mergeGameData : Model -> GameData -> Model
@@ -32,6 +37,8 @@ mergeGameData model gameData =
         | title = gameData.title
         , characterSheets = gameData.characterSheets
     }
+
+
 
 -- initialModel : Model
 -- initialModel =
@@ -54,6 +61,7 @@ mergeGameData model gameData =
 --     , overlay = OverlayNone
 --     }
 
+
 initialModel : PouchDBRef -> GameId -> String -> Model
 initialModel ref id title =
     { ref = ref
@@ -63,17 +71,22 @@ initialModel ref id title =
     , overlay = OverlayNone
     }
 
+
 emptyGameData : GameData
 emptyGameData =
     { title = "New Game"
     , characterSheets = Array.fromList []
     }
 
+
+
 -- Update
+
 
 type ConsumerMsg
     = ExitToLobby
     | LocalMsg Msg
+
 
 type Msg
     = CharacterSheetMsg Int CharacterSheet.Msg
@@ -83,5 +96,4 @@ type Msg
     | OpenOverlay Overlay
     | CloseOverlay
     | UpdateCurrentGame Value
-    | ChangesReceived      
-
+    | ChangesReceived

@@ -10,19 +10,29 @@ var app = Elm.Main.init();
 app.ports.loadGame.subscribe(function (args) {
   const emptyGame = args[0];
   const id = args[1];
-  // const id = "game_e95bcd76-c9fd-4bd4-ba1d-d1cd35760706"
 
-  // const domain = "http://localhost:5984/"
   const domain = window.location.origin + "/api/couchdb/";
-  console.log(emptyGame, id);
   const remoteUrl = domain + id;
-  console.log("Remote URL", remoteUrl);
   const local = new PouchDB(id);
-  console.log("local connected");
-  const remote = new PouchDB(remoteUrl); //, { skip_setup: true });
-  // const remote = new PouchDB("http://localhost:8080/api/couchdb/game_e95bcd76-c9fd-4bd4-ba1d-d1cd35760706");
-  remote.info().then( info => console.log("Remote", info));
-  console.log("remote connected!!!!!");
+  const remote = new PouchDB(remoteUrl, {
+    skip_setup: true,
+    fetch: function (url, opts) {
+      return PouchDB.fetch(url, opts).then(function (resp) {
+        console.log("Fetch Response: ", resp);
+        if (resp.status === 401) {
+          console.log("Auth Failed");
+          app.ports.authFailed.send(0);
+          remote.close();
+        } else if (resp.status >= 400 && resp.status < 600) {
+          console.log("Game Load Failed");
+          app.ports.gameLoadFailed.send(0);
+          remote.close();
+        } else {
+          return resp
+        }
+      })
+    }
+  });
   
   // Perform a one-time one-way replication from remote to local
   local.replicate.from(remote).on("complete", function () {
@@ -46,8 +56,7 @@ app.ports.loadGame.subscribe(function (args) {
       getGame();
     });
   }).on("error", function (err) {
-    console.log("Replication Error: ", err)
-    // app.ports.loadGameFailed.send();
+    console.log("Replication Error: ", err);
   });
   
   // Sync local and remote databases

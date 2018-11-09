@@ -1,4 +1,15 @@
-module Game.Types exposing (ConsumerMsg(..), GameData, GameId, Model, Msg(..), Overlay(..), emptyGameData, initialModel, mergeGameData)
+module Game.Types
+    exposing
+    ( ConsumerMsg(..)
+    , GameData
+    , GameId
+    , Model
+    , Msg(..)
+    , Overlay(..)
+    , emptyGameData
+    , initialModel
+    , mergeGameData
+    )
 
 import Array exposing (Array)
 import CharacterSheet
@@ -39,29 +50,6 @@ mergeGameData model gameData =
     }
 
 
-
--- initialModel : Model
--- initialModel =
---     { title = "My First Game"
---     , characterSheets =
---           Array.fromList
---               [ CharacterSheet.initialModel
---                     initialCharacterSheet
---               , CharacterSheet.initialModel
---                     harryDresden_dfa
---               , CharacterSheet.initialModel
---                     sarissa_dfa
---               , CharacterSheet.initialModel
---                     tachyonSquadronShip
---               , CharacterSheet.initialModel
---                     initialCharacterSheet
---               , CharacterSheet.initialModel
---                     initialCharacterSheet
---               ]
---     , overlay = OverlayNone
---     }
-
-
 initialModel : PouchDBRef -> GameId -> String -> Model
 initialModel ref id title =
     { ref = ref
@@ -84,8 +72,8 @@ emptyGameData =
 
 
 type ConsumerMsg
-    = ExitToLobby
-    | LocalMsg Msg
+    -- = ExitToLobby
+    = LocalMsg Msg
 
 
 type Msg
@@ -97,3 +85,4 @@ type Msg
     | CloseOverlay
     | UpdateCurrentGame Value
     | ChangesReceived
+    | ExitToLobby

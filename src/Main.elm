@@ -1,8 +1,9 @@
-module Main exposing (Model, Msg(..), Screen(..), debouncedWriteToPouchDB, init, initialModel, loadLobby, main, subscriptions, update, updateDebouncer, view)
+module Main exposing (main)
 
-import Browser
+import Browser exposing (UrlRequest(..))
+import Browser.Navigation as Navigation
+import Url exposing (Url)
 import Array exposing (Array)
-import Css exposing (..)
 import Debouncer.Messages as Debouncer
     exposing
         ( Debouncer
@@ -15,8 +16,6 @@ import Game
 import Game.Types as Game exposing (GameId)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes as HA exposing (..)
-import Html.Styled.Events exposing (..)
 import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
@@ -32,18 +31,22 @@ import PouchDB.Decode
 import PouchDB.Encode exposing (encodeGame, encodeGameData)
 import Task
 import Util exposing (removeIndexFromArray)
+import Route exposing (Route)
+import Http
 
 
 main : Program () Model Msg
 main =
-    Browser.document
-        { init = \_ -> init
+    Browser.application
+        { init = init
         , view = view >> toUnstyled >>
                  \html -> { title = "Fate RPG"
                           , body = [ html ]
                           }
         , update = update
         , subscriptions = subscriptions
+        , onUrlRequest = NavigateToUrl
+        , onUrlChange = UrlChanged
         }
 
 
@@ -55,6 +58,8 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ PouchDB.gameLoaded GameLoaded
+        , PouchDB.gameLoadFailed (always GameLoadFailed)
+        , PouchDB.authFailed (always AuthFailed)
         , case model.screen of
             GameScreen game ->
                 Sub.map GameMsg (Game.subscriptions game)
@@ -71,33 +76,30 @@ subscriptions model =
 type alias Model =
     { screen : Screen
     , debouncer : Debouncer Msg
+    , navkey : Navigation.Key
     }
 
 
 type Screen
     = LoginScreen Login.Model
     | LobbyScreen Lobby.Model
-    | LoadingGameScreen GameId
+    | LoadingScreen
     | GameScreen Game.Model
 
 
-initialModel : Model
-initialModel =
+initialModel : Navigation.Key -> Model
+initialModel key =
     { screen = LoginScreen Login.initialModel
     , debouncer =
         debounce (fromSeconds 1)
             |> toDebouncer
+    , navkey = key
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( initialModel
-    , Task.perform identity
-        (Task.succeed
-            (LobbyMsg (Lobby.LocalMsg Lobby.GetGameList))
-        )
-    )
+init : flags -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init _ url key =
+    changeRouteTo (Route.fromUrl url) (initialModel key)
 
 
 
@@ -105,12 +107,17 @@ init =
 
 
 type Msg
-    = GameMsg Game.ConsumerMsg
+    = NavigateToUrl UrlRequest
+    | UrlChanged Url
+    | RouteChanged (Maybe Route)
+    | GameMsg Game.ConsumerMsg
     | LobbyMsg Lobby.ConsumerMsg
     | LoginMsg Login.ConsumerMsg
     | WriteToPouchDB Game.Model
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
+    | GameLoadFailed
+    | AuthFailed
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -125,7 +132,29 @@ updateDebouncer =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    let _ = Debug.log "DEBUG: " msg
+    in
+      case msg of
+        NavigateToUrl urlRequest ->
+            case urlRequest of
+                Internal url ->
+                    ( model
+                    , Navigation.pushUrl
+                        model.navkey
+                        (Url.toString url)
+                    )
+                    
+                External url ->
+                    ( model
+                    , Navigation.load url
+                    )
+
+        UrlChanged url ->
+            changeRouteTo (Route.fromUrl url) model
+
+        RouteChanged route ->
+            changeRouteTo route model
+
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
@@ -136,7 +165,7 @@ update msg model =
             case decodeGame value of
                 Ok newGame ->
                     case model.screen of
-                        LoadingGameScreen id ->
+                        LoadingScreen ->
                             ( { model
                                 | screen = GameScreen newGame
                               }
@@ -146,33 +175,50 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
 
-                Err err ->
-                    ( model, Cmd.none )
+                Err _ ->
+                    (model, Cmd.none)
+
+        GameLoadFailed ->
+            ( model
+            , Navigation.replaceUrl
+                model.navkey
+                (Route.toUrlString Route.Lobby)
+            )
+
+        AuthFailed ->
+            ( model
+            , Navigation.replaceUrl
+                model.navkey
+                (Route.toUrlString Route.Auth)
+            )
 
         GameMsg submsg ->
             case submsg of
-                Game.ExitToLobby ->
-                    ( { model
-                        | screen =
-                            LobbyScreen
-                                Lobby.initialModel
-                      }
-                    , Task.perform identity
-                        (Task.succeed
-                            (LobbyMsg
-                                (Lobby.LocalMsg
-                                    Lobby.GetGameList
-                                )
-                            )
-                        )
-                    )
+                -- Game.ExitToLobby ->
+                --     ( { model
+                --         | screen =
+                --             LobbyScreen
+                --                 Lobby.initialModel
+                --       }
+                --     , Task.perform identity
+                --         (Task.succeed
+                --             (LobbyMsg
+                --                 (Lobby.LocalMsg
+                --                     Lobby.GetGameList
+                --                 )
+                --             )
+                --         )
+                --     )
 
                 Game.LocalMsg localmsg ->
                     case model.screen of
                         GameScreen game ->
                             let
                                 ( newGame, cmd ) =
-                                    Game.update localmsg game
+                                    Game.update
+                                        model.navkey
+                                        localmsg
+                                        game
                             in
                             ( { model
                                 | screen = GameScreen newGame
@@ -190,18 +236,21 @@ update msg model =
 
         LobbyMsg submsg ->
             case submsg of
-                Lobby.LoadGame id ->
-                    ( { model | screen = LoadingGameScreen id }
-                    , PouchDB.loadGame
-                        ( encodeGameData Game.emptyGameData, id )
-                    )
+                -- Lobby.LoadGame id ->
+                --     ( { model | screen = LoadingGameScreen id }
+                --     , PouchDB.loadGame
+                --         ( encodeGameData Game.emptyGameData, id )
+                --     )
 
                 Lobby.LocalMsg localmsg ->
                     case model.screen of
                         LobbyScreen lobby ->
                             let
                                 ( newLobby, cmd ) =
-                                    Lobby.update localmsg lobby
+                                    Lobby.update
+                                        model.navkey
+                                        localmsg
+                                        lobby
                             in
                             ( { model
                                 | screen = LobbyScreen newLobby
@@ -216,15 +265,18 @@ update msg model =
 
         LoginMsg submsg ->
             case submsg of
-                Login.LoadLobby ->
-                    loadLobby model
+                -- Login.LoadLobby ->
+                --     changeRouteTo (Just Route.Lobby) model
 
                 Login.LocalMsg localmsg ->
                     case model.screen of
                         LoginScreen login ->
                             let
                                 ( newLogin, cmd ) =
-                                    Login.update localmsg login
+                                    Login.update
+                                        model.navkey
+                                        localmsg
+                                        login
                             in
                             ( { model
                                 | screen = LoginScreen newLogin
@@ -237,6 +289,43 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
 
+
+changeRouteTo : Maybe Route -> Model -> (Model, Cmd Msg)
+changeRouteTo route model =
+    case route of
+        Just Route.Auth ->
+            let
+                (login, cmd) = Login.init
+            in
+                ({ model
+                     | screen = LoginScreen login
+                 }
+                , Cmd.map LoginMsg cmd
+                )
+                
+        Just Route.Lobby ->
+            let
+                (lobby, cmd) = Lobby.init
+            in
+                ({ model
+                     | screen = LobbyScreen lobby
+                 }
+                , Cmd.map LobbyMsg cmd
+                )
+                
+        Just (Route.Game gameId) ->
+            -- (model
+            -- , Task.perform
+            --     (LobbyMsg << Lobby.LoadGame)
+            --     (Task.succeed gameId)
+            -- )
+            ( { model | screen = LoadingScreen }
+            , PouchDB.loadGame
+                ( encodeGameData Game.emptyGameData, gameId )
+            )
+            
+        Nothing ->
+            (model, Cmd.none)
 
 loadLobby : Model -> ( Model, Cmd Msg )
 loadLobby model =
@@ -255,16 +344,32 @@ maybeWriteToPouchDB msg newGame =
         Game.CharacterSheetMsg _ _ ->
             debouncedWriteToPouchDB
                 newGame
+
         Game.AddCharacterSheet ->
             debouncedWriteToPouchDB
                 newGame
+
         Game.RemoveCharacterSheet _ ->
             debouncedWriteToPouchDB
                 newGame
+
         Game.UpdateGameTitle _ ->
             debouncedWriteToPouchDB
                 newGame
-        _ ->
+
+        Game.OpenOverlay _ ->
+            Cmd.none
+
+        Game.CloseOverlay ->
+            Cmd.none
+
+        Game.UpdateCurrentGame _ ->
+            Cmd.none
+
+        Game.ChangesReceived ->
+            Cmd.none
+
+        Game.ExitToLobby ->
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
@@ -293,7 +398,7 @@ view model =
             Lobby.view submodel
                 |> Html.Styled.map LobbyMsg
 
-        LoadingGameScreen _ ->
+        LoadingScreen ->
             div [] [ text "Loading game..." ]
 
         GameScreen game ->

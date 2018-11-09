@@ -1,4 +1,4 @@
-module Login.Types exposing (Auth, ConsumerMsg(..), Model, Msg(..), Registration, Tab(..), encodeAuth, encodeRegistration, initialModel)
+module Login.Types exposing (init, Auth, ConsumerMsg(..), Model, Msg(..), Registration, Tab(..), encodeAuth, encodeRegistration, initialModel)
 
 import Http
 import Json.Decode
@@ -12,6 +12,10 @@ type alias Model =
     , password : String
     }
 
+
+init : (Model, Cmd ConsumerMsg)
+init =
+    (initialModel, Cmd.none)
 
 initialModel : Model
 initialModel =
@@ -28,8 +32,8 @@ type Tab
 
 
 type ConsumerMsg
-    = LoadLobby
-    | LocalMsg Msg
+    -- = LoadLobby
+    = LocalMsg Msg
 
 
 type Msg

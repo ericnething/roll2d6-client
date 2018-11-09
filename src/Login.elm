@@ -9,10 +9,12 @@ import Html.Styled.Events exposing (..)
 import Json.Decode
 import Login.Types exposing (..)
 import Task
+import Browser.Navigation as Navigation
+import Route
 
 
-update : Msg -> Model -> ( Model, Cmd ConsumerMsg )
-update msg model =
+update : Navigation.Key -> Msg -> Model -> ( Model, Cmd ConsumerMsg )
+update navkey msg model =
     case msg of
         Login ->
             ( model
@@ -22,10 +24,16 @@ update msg model =
                 }
             )
 
-        LoginResponse value ->
-            ( model
-            , Task.perform identity (Task.succeed LoadLobby)
-            )
+        LoginResponse result ->
+            case result of
+                Ok _ ->
+                    ( model
+                    , Navigation.pushUrl
+                        navkey
+                        (Route.toUrlString Route.Lobby)
+                    )
+                Err status ->
+                    (model, Cmd.none)
 
         Register ->
             ( model
@@ -36,7 +44,7 @@ update msg model =
                 }
             )
 
-        RegisterResponse value ->
+        RegisterResponse result ->
             ( model
             , Cmd.none
             )

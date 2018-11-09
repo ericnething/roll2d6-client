@@ -1,4 +1,4 @@
-module Game exposing (addNewCharacterSheetButton, appName, characterSheetCard, characterSheetColumn, characterSheetList, characterSheetWrapper, characterSheetsView, editCharacterSheetToolbarView, editCharacterSheetView, gameSettingsButton, gameSettingsView, gameTitle, invitePlayerButton, invitePlayersCircleButton, navigationButton, onlinePlayers, overlay, spacer, subscriptions, toolbarButton, topNavigation, topToolbar, update, view)
+module Game exposing (subscriptions, update, view)
 
 import Array exposing (Array)
 import CharacterSheet
@@ -14,7 +14,13 @@ import PouchDB exposing (PouchDBRef)
 import PouchDB.Decode exposing (decodeGameData)
 import Task
 import Util exposing (removeIndexFromArray)
+import Browser.Navigation as Navigation
+import Route
 
+
+-- init : GameId -> (Model, Cmd ConsumerMsg)
+-- init gameId =
+    
 
 subscriptions : Model -> Sub ConsumerMsg
 subscriptions _ =
@@ -25,8 +31,8 @@ subscriptions _ =
         ]
 
 
-update : Msg -> Model -> ( Model, Cmd ConsumerMsg )
-update msg model =
+update : Navigation.Key -> Msg -> Model -> ( Model, Cmd ConsumerMsg )
+update navkey msg model =
     case msg of
         CharacterSheetMsg index submsg ->
             case Array.get index model.characterSheets of
@@ -104,6 +110,12 @@ update msg model =
         ChangesReceived ->
             ( model, PouchDB.get model.ref )
 
+        ExitToLobby ->
+            (model
+            , Navigation.pushUrl
+                navkey
+                (Route.toUrlString Route.Lobby)
+            )
 
 
 -- View
@@ -158,7 +170,7 @@ topNavigation =
             , padding2 (px 0) (Css.em 0.2)
             ]
         ]
-        [ navigationButton [ onClick ExitToLobby ]
+        [ navigationButton [ onClick (LocalMsg ExitToLobby) ]
             [ text "My Games" ]
         , appName
         , navigationButton [] [ text "My Account" ]

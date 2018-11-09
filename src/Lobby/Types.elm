@@ -2,6 +2,7 @@ module Lobby.Types exposing (ConsumerMsg(..), GameMetadata, Model, Msg(..), init
 
 import Game.Types as Game
 import RemoteData exposing (RemoteData(..), WebData)
+import Http
 
 
 type alias Model =
@@ -21,11 +22,14 @@ type alias GameMetadata =
 
 
 type ConsumerMsg
-    = LoadGame Game.GameId
-    | LocalMsg Msg
+    -- = LoadGame Game.GameId
+    = LocalMsg Msg
 
 
 type Msg
     = NewGame
     | GetGameList
     | SetGameList (WebData (List GameMetadata))
+    | LoadGame Game.GameId
+    | Logout
+    | LogoutResponse (Result Http.Error String)

@@ -1,4 +1,11 @@
-module API exposing (domain, getAllGames, login, newGame, register)
+module API
+    exposing
+    ( register
+    , login
+    , logout
+    , getAllGames
+    , newGame
+    )
 
 import Http
 import Json.Decode exposing (decodeValue)
@@ -89,3 +96,21 @@ register reg =
     in
     Http.send Login.RegisterResponse request
         |> Cmd.map Login.LocalMsg
+
+
+logout : Cmd Lobby.Msg
+logout =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/logout"
+                , body = Http.emptyBody
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+    Http.send Lobby.LogoutResponse request
+

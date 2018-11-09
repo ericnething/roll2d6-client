@@ -12,7 +12,8 @@ import Json.Encode exposing (Value)
 import Lobby.Types exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
 import Task
-
+import Browser.Navigation as Navigation
+import Route
 
 init : ( Model, Cmd ConsumerMsg )
 init =
@@ -22,9 +23,8 @@ init =
         (Task.succeed GetGameList)
     )
 
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
+update navkey msg model =
     case msg of
         NewGame ->
             ( model
@@ -36,10 +36,47 @@ update msg model =
             , API.getAllGames
             )
 
-        SetGameList response ->
-            ( { model | games = response }
-            , Cmd.none
+        SetGameList result ->
+            case result of
+                Failure (Http.BadStatus resp) ->
+                    case resp.status.code of
+                        401 ->
+                            ( model
+                            , Navigation.pushUrl
+                                navkey
+                                (Route.toUrlString Route.Auth)
+                            )
+                        _ ->
+                            ( { model | games = result }
+                            , Cmd.none
+                            )
+                _ ->
+                    ( { model | games = result }
+                    , Cmd.none
+                    )
+
+        LoadGame id ->
+            (model
+            , Navigation.pushUrl
+                navkey
+                (Route.toUrlString (Route.Game id))
             )
+
+        Logout ->
+            ( model
+            , API.logout
+            )
+
+        LogoutResponse result ->
+            case result of
+                Ok _ ->
+                    ( model
+                    , Navigation.replaceUrl
+                        navkey
+                        (Route.toUrlString Route.Auth)
+                    )
+                Err status ->
+                    (model, Cmd.none)
 
 
 view : Model -> Html ConsumerMsg
@@ -92,13 +129,13 @@ gamePreview { id, title } =
     div []
         [ span [] [ text title ]
         , button
-            [ onClick (LoadGame id)
+            [ onClick (LocalMsg <| LoadGame id)
             ]
             [ text "Join Game" ]
         ]
 
 
-topNavigation : Html msg
+topNavigation : Html ConsumerMsg
 topNavigation =
     header
         [ css
@@ -113,6 +150,11 @@ topNavigation =
             ]
         ]
         [ h1 [] [ text "Fate RPG" ]
+        , button
+              [ type_ "button"
+              , onClick (LocalMsg Logout)
+              ]
+              [ text "Log out" ]
         ]
 
 

@@ -3,11 +3,13 @@ port module PouchDB
     ( PouchDBRef
     , changesReceived
     , gameLoaded
+    , gameLoadFailed
     , get
     , getGameListResponse
     , getResponse
     , loadGame
     , put
+    , authFailed
     )
 
 import Json.Decode
@@ -18,6 +20,12 @@ port loadGame : ( Value, String ) -> Cmd msg
 
 
 port gameLoaded : (Value -> msg) -> Sub msg
+
+
+port gameLoadFailed : (Value -> msg) -> Sub msg
+
+
+port authFailed : (Value -> msg) -> Sub msg
 
 
 port changesReceived : (Value -> msg) -> Sub msg

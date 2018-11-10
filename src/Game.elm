@@ -8,6 +8,7 @@ module Game
 import Array exposing (Array)
 import CharacterSheet
 import CharacterSheet.Template
+import CharacterSheet.View exposing (inputStyles)
 import Css exposing (..)
 import Game.Types exposing (..)
 import Html
@@ -21,22 +22,19 @@ import Task
 import Util exposing (removeIndexFromArray)
 import Browser.Navigation as Navigation
 import Route
+import RemoteData exposing (WebData)
+import API
 
 
--- init : GameId -> (Model, Cmd ConsumerMsg)
--- init gameId =
-    
-
-subscriptions : Model -> Sub ConsumerMsg
+subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ PouchDB.getResponse (LocalMsg << UpdateCurrentGame)
-        , PouchDB.changesReceived
-            (always (LocalMsg <| ChangesReceived))
+        [ PouchDB.getResponse UpdateCurrentGame
+        , PouchDB.changesReceived (always ChangesReceived)
         ]
 
 
-update : Navigation.Key -> Msg -> Model -> ( Model, Cmd ConsumerMsg )
+update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
 update navkey msg model =
     case msg of
         CharacterSheetMsg index submsg ->
@@ -58,7 +56,7 @@ update navkey msg model =
                                 updatedCharacterSheet
                                 model.characterSheets
                       }
-                    , Cmd.map (LocalMsg << CharacterSheetMsg index) cmd
+                    , Cmd.map (CharacterSheetMsg index) cmd
                     )
 
         AddCharacterSheet ->
@@ -71,7 +69,7 @@ update navkey msg model =
                         model.characterSheets
               }
             , Task.perform
-                (LocalMsg << OpenOverlay)
+                OpenOverlay
                 (Task.succeed
                     (EditCharacterSheet
                         (Array.length
@@ -87,7 +85,7 @@ update navkey msg model =
                     removeIndexFromArray index model.characterSheets
               }
             , Task.perform
-                LocalMsg
+                identity
                 (Task.succeed CloseOverlay)
             )
 
@@ -116,17 +114,30 @@ update navkey msg model =
             ( model, PouchDB.get model.ref )
 
         ExitToLobby ->
-            (model
+            ( model
             , Navigation.pushUrl
                 navkey
                 (Route.toUrlString Route.Lobby)
             )
 
+        CreateInvite ->
+            ( model
+            , API.createInvite model.id
+            )
+
+        InviteCreated result ->
+            ({ model
+                 | overlay = InstantInvite result
+             }
+            , Cmd.none
+            )
+
+
 
 -- View
 
 
-view : Model -> Html ConsumerMsg
+view : Model -> Html Msg
 view model =
     div
         [ css
@@ -138,32 +149,82 @@ view model =
         ]
         [ topNavigation
         , topToolbar model
-            |> Html.Styled.map LocalMsg
         , characterSheetsView model.characterSheets
-            |> Html.Styled.map LocalMsg
-        , case model.overlay of
-            OverlayNone ->
-                text ""
-
-            EditCharacterSheet index ->
-                overlay
-                    []
-                    [ Html.Styled.map LocalMsg <|
-                        editCharacterSheetView
-                            index
-                            (Array.get index model.characterSheets)
-                    ]
-
-            EditGameSettings ->
-                overlay
-                    []
-                    [ gameSettingsView model
-                        |> Html.Styled.map LocalMsg
-                    ]
+        , overlayView model
         ]
 
 
-topNavigation : Html ConsumerMsg
+overlayView : Model -> Html Msg
+overlayView model =
+    case model.overlay of
+        OverlayNone ->
+            text ""
+                
+        EditCharacterSheet index ->
+            overlay
+            []
+            [ editCharacterSheetView
+                  index
+                  (Array.get index model.characterSheets)
+            ]
+                    
+        EditGameSettings ->
+            overlay [] [ gameSettingsView model ]
+
+        InstantInvite mInvite ->
+            overlay [] [ instantInviteView mInvite ]
+
+
+instantInviteView : WebData String -> Html Msg
+instantInviteView mInvite =
+    div
+    [ css
+      [ margin2 (Css.em 4) auto
+      , backgroundColor (hex "fff")
+      , padding (Css.em 2)
+      , Css.width (Css.em 32)
+      , borderRadius (Css.em 0.2)
+      ]
+    ]
+    [ case mInvite of
+          RemoteData.NotAsked ->
+              text ""
+          RemoteData.Loading ->
+              text "Creating your invitation now"
+          RemoteData.Failure err ->
+              text "Something went wrong."
+          RemoteData.Success invite ->
+              div []
+                  [ label [ css
+                            [ display block
+                            ]
+                          ]
+                        [ text "Players can join your game by following this link" ]
+                  , input
+                        [ type_ "text"
+                        , readonly True
+                        , value
+                              (Route.toUrlString
+                                   (Route.Invite invite))
+                        , css
+                              [ inputStyles
+                              , backgroundColor (hex "eee")
+                              ]
+                        ]
+                        []
+                  , div []
+                      [ text "This invite wil expire in 24 hours" ]
+                  ]
+    , button
+          [ type_ "button"
+          , onClick CloseOverlay
+          ]
+          [ text "Close" ]
+    ]
+            
+
+
+topNavigation : Html Msg
 topNavigation =
     header
         [ css
@@ -175,8 +236,9 @@ topNavigation =
             , padding2 (px 0) (Css.em 0.2)
             ]
         ]
-        [ navigationButton [ onClick (LocalMsg ExitToLobby) ]
-            [ text "My Games" ]
+        [ navigationButton
+              [ onClick ExitToLobby ]
+              [ text "My Games" ]
         , appName
         , navigationButton [] [ text "My Account" ]
         ]
@@ -274,6 +336,7 @@ invitePlayerButton : Html Msg
 invitePlayerButton =
     toolbarButton
         [ css [ marginRight (Css.em 1) ]
+        , onClick CreateInvite
         ]
         [ text "Invite Player" ]
 

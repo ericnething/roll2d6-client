@@ -5,6 +5,8 @@ module API
     , logout
     , getAllGames
     , newGame
+    , createInvite
+    , joinGame
     )
 
 import Http
@@ -12,6 +14,8 @@ import Json.Decode exposing (decodeValue)
 import Json.Encode exposing (encode)
 import Lobby.Types as Lobby
 import Login.Types as Login
+import Game.Types as Game
+import Invite
 import PouchDB.Decode
     exposing
         ( decodeGameId
@@ -40,8 +44,8 @@ getAllGames =
                 , withCredentials = False
                 }
     in
-    RemoteData.sendRequest request
-        |> Cmd.map Lobby.SetGameList
+        RemoteData.sendRequest request
+            |> Cmd.map Lobby.SetGameList
 
 
 newGame : String -> Cmd Lobby.Msg
@@ -58,8 +62,8 @@ newGame title =
                 , withCredentials = False
                 }
     in
-    RemoteData.sendRequest request
-        |> Cmd.map (always Lobby.GetGameList)
+        RemoteData.sendRequest request
+            |> Cmd.map (always Lobby.GetGameList)
 
 
 login : Login.Auth -> Cmd Login.ConsumerMsg
@@ -76,8 +80,8 @@ login auth =
                 , withCredentials = False
                 }
     in
-    Http.send Login.LoginResponse request
-        |> Cmd.map Login.LocalMsg
+        Http.send Login.LoginResponse request
+            |> Cmd.map Login.LocalMsg
 
 
 register : Login.Registration -> Cmd Login.ConsumerMsg
@@ -94,8 +98,8 @@ register reg =
                 , withCredentials = False
                 }
     in
-    Http.send Login.RegisterResponse request
-        |> Cmd.map Login.LocalMsg
+        Http.send Login.RegisterResponse request
+            |> Cmd.map Login.LocalMsg
 
 
 logout : Cmd Lobby.Msg
@@ -112,5 +116,37 @@ logout =
                 , withCredentials = False
                 }
     in
-    Http.send Lobby.LogoutResponse request
+        Http.send Lobby.LogoutResponse request
 
+createInvite : Game.GameId -> Cmd Game.Msg
+createInvite gameId =
+    let
+        request =
+            Http.request
+                { method = "PUT"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/invite"
+                , body = Http.emptyBody
+                , expect = Http.expectJson Json.Decode.string
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        RemoteData.sendRequest request
+            |> Cmd.map Game.InviteCreated
+
+joinGame : String -> Cmd Invite.Msg
+joinGame inviteId =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/invite/" ++ inviteId
+                , body = Http.emptyBody
+                , expect = Http.expectJson gameIdDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (Invite.JoinGame inviteId) request

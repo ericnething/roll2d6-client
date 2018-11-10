@@ -22,6 +22,7 @@ type Route
     = Auth
     | Lobby
     | Game String
+    | Invite String
 
 routeParser : Parser (Route -> a) a
 routeParser =
@@ -29,6 +30,7 @@ routeParser =
         [ map Auth (s "login")
         , map Lobby top
         , map Game (s "game" </> string)
+        , map Invite (s "invite" </> string)
         ]
 
 fromUrl : Url -> Maybe Route
@@ -45,4 +47,7 @@ toUrlString route =
 
         Game gameId ->
             absolute [ "game" , gameId ] []
+
+        Invite inviteId ->
+            absolute [ "invite" , inviteId ] []
         

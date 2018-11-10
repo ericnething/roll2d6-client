@@ -33,6 +33,8 @@ import Task
 import Util exposing (removeIndexFromArray)
 import Route exposing (Route)
 import Http
+import API
+import Invite
 
 
 main : Program () Model Msg
@@ -85,6 +87,7 @@ type Screen
     | LobbyScreen Lobby.Model
     | LoadingScreen
     | GameScreen Game.Model
+    | InviteScreen Invite.Model
 
 
 initialModel : Navigation.Key -> Model
@@ -110,14 +113,15 @@ type Msg
     = NavigateToUrl UrlRequest
     | UrlChanged Url
     | RouteChanged (Maybe Route)
-    | GameMsg Game.ConsumerMsg
-    | LobbyMsg Lobby.ConsumerMsg
+    | GameMsg Game.Msg
+    | LobbyMsg Lobby.Msg
     | LoginMsg Login.ConsumerMsg
     | WriteToPouchDB Game.Model
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
     | GameLoadFailed
     | AuthFailed
+    | InviteMsg Invite.Msg
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -192,54 +196,48 @@ update msg model =
                 (Route.toUrlString Route.Auth)
             )
 
-        GameMsg submsg ->
-            case submsg of
-                Game.LocalMsg localmsg ->
-                    case model.screen of
-                        GameScreen game ->
-                            let
-                                ( newGame, cmd ) =
-                                    Game.update
-                                        model.navkey
-                                        localmsg
-                                        game
-                            in
-                            ( { model
-                                | screen = GameScreen newGame
-                              }
-                            , Cmd.batch
-                                [ maybeWriteToPouchDB
-                                      localmsg
-                                      newGame
-                                , Cmd.map GameMsg cmd
-                                ]
-                            )
+        GameMsg localmsg ->
+            case model.screen of
+                GameScreen game ->
+                    let
+                        ( newGame, cmd ) =
+                            Game.update
+                                model.navkey
+                                localmsg
+                                game
+                    in
+                        ( { model
+                              | screen = GameScreen newGame
+                          }
+                        , Cmd.batch
+                            [ maybeWriteToPouchDB
+                                  localmsg
+                                  newGame
+                            , Cmd.map GameMsg cmd
+                            ]
+                        )
 
-                        _ ->
-                            ( model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
-        LobbyMsg submsg ->
-            case submsg of
-                Lobby.LocalMsg localmsg ->
-                    case model.screen of
-                        LobbyScreen lobby ->
-                            let
-                                ( newLobby, cmd ) =
-                                    Lobby.update
-                                        model.navkey
-                                        localmsg
-                                        lobby
-                            in
-                            ( { model
-                                | screen = LobbyScreen newLobby
-                              }
-                            , Cmd.map
-                                (LobbyMsg << Lobby.LocalMsg)
-                                cmd
-                            )
+        LobbyMsg localmsg ->
+            case model.screen of
+                LobbyScreen lobby ->
+                    let
+                        ( newLobby, cmd ) =
+                            Lobby.update
+                                model.navkey
+                                localmsg
+                                lobby
+                    in
+                        ( { model
+                              | screen = LobbyScreen newLobby
+                          }
+                        , Cmd.map LobbyMsg cmd
+                        )
 
-                        _ ->
-                            ( model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
         LoginMsg submsg ->
             case submsg of
@@ -263,6 +261,25 @@ update msg model =
 
                         _ ->
                             ( model, Cmd.none )
+
+        InviteMsg localmsg ->
+            case model.screen of
+                InviteScreen invite ->
+                    let
+                        ( newInvite, cmd ) =
+                            Invite.update
+                                model.navkey
+                                localmsg
+                                invite
+                    in
+                        ( { model
+                              | screen = InviteScreen newInvite
+                          }
+                        , Cmd.map InviteMsg cmd
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 changeRouteTo : Maybe Route -> Model -> (Model, Cmd Msg)
@@ -293,19 +310,15 @@ changeRouteTo route model =
             , PouchDB.loadGame
                 ( encodeGameData Game.emptyGameData, gameId )
             )
+
+        Just (Route.Invite inviteId) ->
+            ( { model | screen = InviteScreen Invite.initialModel }
+            , API.joinGame inviteId
+                  |> Cmd.map InviteMsg
+            )
             
         Nothing ->
             (model, Cmd.none)
-
-loadLobby : Model -> ( Model, Cmd Msg )
-loadLobby model =
-    let
-        ( lobby, cmd ) =
-            Lobby.init
-    in
-    ( { model | screen = LobbyScreen lobby }
-    , Cmd.map LobbyMsg cmd
-    )
 
 
 maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
@@ -342,6 +355,12 @@ maybeWriteToPouchDB msg newGame =
         Game.ExitToLobby ->
             Cmd.none
 
+        Game.CreateInvite ->
+            Cmd.none
+
+        Game.InviteCreated _ ->
+            Cmd.none
+
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
 debouncedWriteToPouchDB newGame =
     Task.perform identity
@@ -374,3 +393,7 @@ view model =
         GameScreen game ->
             Game.view game
                 |> Html.Styled.map GameMsg
+
+        InviteScreen invite ->
+            Invite.view invite
+                |> Html.Styled.map InviteMsg

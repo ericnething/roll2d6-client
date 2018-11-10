@@ -20,11 +20,11 @@ import Task
 import Browser.Navigation as Navigation
 import Route
 
-init : ( Model, Cmd ConsumerMsg )
+init : ( Model, Cmd Msg )
 init =
     ( initialModel
     , Task.perform
-        LocalMsg
+        identity
         (Task.succeed GetGameList)
     )
 
@@ -84,7 +84,7 @@ update navkey msg model =
                     (model, Cmd.none)
 
 
-view : Model -> Html ConsumerMsg
+view : Model -> Html Msg
 view model =
     div
         [ css
@@ -122,25 +122,25 @@ view model =
                         )
                     , button
                         [ type_ "button"
-                        , onClick (LocalMsg NewGame)
+                        , onClick NewGame
                         ]
                         [ text "Create new game" ]
                     ]
         ]
 
 
-gamePreview : GameMetadata -> Html ConsumerMsg
+gamePreview : GameMetadata -> Html Msg
 gamePreview { id, title } =
     div []
         [ span [] [ text title ]
         , button
-            [ onClick (LocalMsg <| LoadGame id)
+            [ onClick (LoadGame id)
             ]
             [ text "Join Game" ]
         ]
 
 
-topNavigation : Html ConsumerMsg
+topNavigation : Html Msg
 topNavigation =
     header
         [ css
@@ -157,7 +157,7 @@ topNavigation =
         [ h1 [] [ text "Fate RPG" ]
         , button
               [ type_ "button"
-              , onClick (LocalMsg Logout)
+              , onClick Logout
               ]
               [ text "Log out" ]
         ]

@@ -1,4 +1,10 @@
-module Lobby.Types exposing (ConsumerMsg(..), GameMetadata, Model, Msg(..), initialModel)
+module Lobby.Types
+    exposing
+    ( GameMetadata
+    , Model
+    , Msg(..)
+    , initialModel
+    )
 
 import Game.Types as Game
 import RemoteData exposing (RemoteData(..), WebData)
@@ -19,10 +25,6 @@ type alias GameMetadata =
     { id : Game.GameId
     , title : String
     }
-
-
-type ConsumerMsg
-    = LocalMsg Msg
 
 
 type Msg

@@ -1,7 +1,6 @@
 module Game.Types
     exposing
-    ( ConsumerMsg(..)
-    , GameData
+    ( GameData
     , GameId
     , Model
     , Msg(..)
@@ -15,11 +14,13 @@ import Array exposing (Array)
 import CharacterSheet
 import Json.Decode exposing (Value)
 import PouchDB exposing (PouchDBRef)
+import RemoteData exposing (WebData)
 
 
 type Overlay
     = EditCharacterSheet Int
     | EditGameSettings
+    | InstantInvite (WebData String)
     | OverlayNone
 
 
@@ -70,11 +71,6 @@ emptyGameData =
 
 -- Update
 
-
-type ConsumerMsg
-    = LocalMsg Msg
-
-
 type Msg
     = CharacterSheetMsg Int CharacterSheet.Msg
     | AddCharacterSheet
@@ -85,3 +81,5 @@ type Msg
     | UpdateCurrentGame Value
     | ChangesReceived
     | ExitToLobby
+    | CreateInvite
+    | InviteCreated (WebData String)

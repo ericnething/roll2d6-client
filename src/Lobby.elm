@@ -89,8 +89,8 @@ view model =
     div
         [ css
             [ Css.property "display" "grid"
-            , Css.property "grid-template-rows" "2.2rem auto"
-            , Css.property "grid-row-gap" "0.8rem"
+            , Css.property "grid-template-rows" "3rem auto"
+            -- , Css.property "grid-row-gap" "0.8rem"
             , backgroundColor (hex "36393f")
             , Css.minHeight (vh 100)
             ]
@@ -115,12 +115,14 @@ view model =
 
                 Success games ->
                     [ h1 [] [ text "My Games" ]
-                    , div []
+                    , div [ css
+                            [ margin2 (Css.em 1) (Css.em 0) ]
+                          ]
                         (games
                             |> List.reverse
                             |> List.map gamePreview
                         )
-                    , button
+                    , defaultButton
                         [ type_ "button"
                         , onClick NewGame
                         ]
@@ -129,11 +131,40 @@ view model =
         ]
 
 
+defaultButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor (hex "fff")
+        , border3 (px 1) solid (hex "ccc")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+            [ backgroundColor (hex "eee") ]
+        ]
+
+
+gameButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 1) (Css.em 1)
+        , backgroundColor (hex "aaa")
+        , border3 (px 1) solid (hex "ccc")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+            [ backgroundColor (hex "eee") ]
+        ]
+
 gamePreview : GameMetadata -> Html Msg
 gamePreview { id, title } =
     div []
-        [ span [] [ text title ]
-        , button
+        [ span
+              [ css
+                [ marginRight (Css.em 1) ]
+              ]
+              [ text title ]
+        , defaultButton
             [ onClick (LoadGame id)
             ]
             [ text "Join Game" ]
@@ -146,6 +177,7 @@ topNavigation =
         [ css
             [ displayFlex
             , alignItems center
+            , justifyContent spaceBetween
             , backgroundColor (rgba 0 0 0 0.15)
             , Css.height (Css.rem 3)
             , color (hex "fff")
@@ -155,7 +187,7 @@ topNavigation =
             ]
         ]
         [ h1 [] [ text "Fate RPG" ]
-        , button
+        , defaultButton
               [ type_ "button"
               , onClick Logout
               ]
@@ -176,3 +208,5 @@ topToolbar =
             ]
         ]
         [ text "Toolbar" ]
+
+

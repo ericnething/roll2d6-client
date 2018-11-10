@@ -24,6 +24,7 @@ import Browser.Navigation as Navigation
 import Route
 import RemoteData exposing (WebData)
 import API
+import Icons
 
 
 subscriptions : Model -> Sub Msg
@@ -142,87 +143,20 @@ view model =
     div
         [ css
             [ Css.property "display" "grid"
-            , Css.property "grid-template-rows" "2.4rem 2.4rem auto"
+            , Css.property "grid-template-rows" "3rem auto"
             , Css.property "grid-row-gap" "0.6rem"
             , backgroundColor (hex "0079bf")
             ]
         ]
-        [ topNavigation
-        , topToolbar model
+        [ topToolbar model
         , characterSheetsView model.characterSheets
         , overlayView model
         ]
 
 
-overlayView : Model -> Html Msg
-overlayView model =
-    case model.overlay of
-        OverlayNone ->
-            text ""
-                
-        EditCharacterSheet index ->
-            overlay
-            []
-            [ editCharacterSheetView
-                  index
-                  (Array.get index model.characterSheets)
-            ]
-                    
-        EditGameSettings ->
-            overlay [] [ gameSettingsView model ]
-
-        InstantInvite mInvite ->
-            overlay [] [ instantInviteView mInvite ]
-
-
-instantInviteView : WebData String -> Html Msg
-instantInviteView mInvite =
-    div
-    [ css
-      [ margin2 (Css.em 4) auto
-      , backgroundColor (hex "fff")
-      , padding (Css.em 2)
-      , Css.width (Css.em 32)
-      , borderRadius (Css.em 0.2)
-      ]
-    ]
-    [ case mInvite of
-          RemoteData.NotAsked ->
-              text ""
-          RemoteData.Loading ->
-              text "Creating your invitation now"
-          RemoteData.Failure err ->
-              text "Something went wrong."
-          RemoteData.Success invite ->
-              div []
-                  [ label [ css
-                            [ display block
-                            ]
-                          ]
-                        [ text "Players can join your game by following this link" ]
-                  , input
-                        [ type_ "text"
-                        , readonly True
-                        , value
-                              (Route.toUrlString
-                                   (Route.Invite invite))
-                        , css
-                              [ inputStyles
-                              , backgroundColor (hex "eee")
-                              ]
-                        ]
-                        []
-                  , div []
-                      [ text "This invite wil expire in 24 hours" ]
-                  ]
-    , button
-          [ type_ "button"
-          , onClick CloseOverlay
-          ]
-          [ text "Close" ]
-    ]
-            
-
+--------------------------------------------------
+-- Top Navigation
+--------------------------------------------------
 
 topNavigation : Html Msg
 topNavigation =
@@ -236,32 +170,24 @@ topNavigation =
             , padding2 (px 0) (Css.em 0.2)
             ]
         ]
-        [ navigationButton
-              [ onClick ExitToLobby ]
-              [ text "My Games" ]
-        , appName
-        , navigationButton [] [ text "My Account" ]
+        [
         ]
 
 
-topToolbar : Model -> Html Msg
-topToolbar model =
-    div
-        [ css
-            [ displayFlex
-            , alignItems center
-            , backgroundColor transparent
-            , color (hex "fff")
-            , padding2 (px 0) (Css.em 1)
+navigationButton =
+    styled button
+        [ whiteSpace noWrap
+        , lineHeight (num 1)
+        , padding2 (Css.em 0.3) (Css.em 0.5)
+        , backgroundColor (rgba 255 255 255 0.3)
+        , color (hex "fff")
+        , borderRadius (px 4)
+        , cursor pointer
+        , border (px 0)
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.2)
             ]
         ]
-        [ gameTitle model.title
-        , onlinePlayers
-        , addNewCharacterSheetButton
-        , gameSettingsButton
-        , invitePlayerButton
-        ]
-
 
 appName : Html msg
 appName =
@@ -277,68 +203,107 @@ appName =
         [ text "Fate RPG" ]
 
 
+--------------------------------------------------
+-- Top Toolbar
+--------------------------------------------------
+
+topToolbar : Model -> Html Msg
+topToolbar model =
+    header
+        [ css
+            [ displayFlex
+            , alignItems center
+            , justifyContent spaceBetween
+            , backgroundColor transparent
+            , color (hex "fff")
+            , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0)
+            ]
+        ]
+        [ div [ css [ displayFlex ] ]
+              [ exitGameButton
+              , onlinePlayers
+              ]
+        , gameTitle model.title
+        , buttons
+        ]
+
+
 gameTitle : String -> Html Msg
 gameTitle title =
     div
         [ css
-            [ marginRight (Css.em 1)
+            [ margin2 (Css.em 0) (Css.em 1)
+            , overflow Css.hidden
+            , textOverflow ellipsis
+            , whiteSpace noWrap
+            , maxWidth (Css.vw 32)
             ]
         ]
         [ text title ]
+
+exitGameButton : Html Msg
+exitGameButton =
+    toolbarButton [ onClick ExitToLobby
+                  , css [ marginRight (Css.em 1) ]
+                  ]
+    [ text "Exit Game" ]
+
+buttons : Html Msg
+buttons =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , whiteSpace noWrap
+          ]
+        ]
+    [ addNewCharacterSheetButton
+    , invitePlayerButton
+    , gameSettingsButton
+    ]
+
+toolbarButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.35) (Css.em 0.5)
+        , backgroundColor (rgba 255 255 255 0.2)
+        , color (hex "fff")
+        , borderRadius (px 4)
+        , cursor pointer
+        , border (px 0)
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.3)
+            ]
+        ]
 
 
 addNewCharacterSheetButton : Html Msg
 addNewCharacterSheetButton =
     toolbarButton
         [ onClick AddCharacterSheet
-        , css [ marginRight (Css.em 1) ]
+        , css [ marginLeft (Css.em 0.5) ]
         ]
-        [ text "Add Character Sheet" ]
+        [ Icons.addCharacterSheet ]
+        -- [ text "Add Character Sheet" ]
 
 
 gameSettingsButton : Html Msg
 gameSettingsButton =
     toolbarButton
         [ onClick (OpenOverlay EditGameSettings)
-        , css [ marginRight (Css.em 1) ]
+        , css [ marginLeft (Css.em 0.5) ]
         ]
-        [ text "Game Settings" ]
-
-
-gameSettingsView : Model -> Html Msg
-gameSettingsView model =
-    div
-        [ css
-            [ margin2 (Css.em 4) auto
-            , backgroundColor (hex "fff")
-            , padding (Css.em 2)
-            , Css.width (Css.em 32)
-            , borderRadius (Css.em 0.2)
-            ]
-        ]
-        [ h1 [] [ text "Game Settings" ]
-        , div []
-            [ label [] [ text "Game Title" ]
-            , input
-                [ type_ "text"
-                , onInput UpdateGameTitle
-                , value model.title
-                ]
-                []
-            ]
-        , button
-            [ onClick CloseOverlay ]
-            [ text "Done" ]
-        ]
+        [ Icons.gameSettings ]
+        -- [ text "Game Settings" ]
 
 
 invitePlayerButton : Html Msg
 invitePlayerButton =
     toolbarButton
-        [ css [ marginRight (Css.em 1) ]
-        , onClick CreateInvite
+        [ onClick CreateInvite
+        , css [ marginLeft (Css.em 0.5) ]
         ]
-        [ text "Invite Player" ]
+        [ Icons.instantInvite ]
+        -- [ text "Invite Player" ]
 
 
 invitePlayersCircleButton : Html Msg
@@ -391,6 +356,10 @@ onlinePlayers =
         ]
 
 
+--------------------------------------------------
+-- Character Sheets
+--------------------------------------------------
+
 characterSheetsView : Array CharacterSheet.Model -> Html Msg
 characterSheetsView characterSheets =
     div
@@ -399,7 +368,7 @@ characterSheetsView characterSheets =
             , alignItems Css.start
             , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
             , overflowX auto
-            , Css.property "height" "calc(100vh - 6rem)"
+            , Css.property "height" "calc(100vh - 3.6rem)"
             , Css.property "display" "grid"
             , Css.property "grid-auto-columns" "23rem"
             , Css.property "grid-auto-flow" "column"
@@ -468,7 +437,7 @@ characterSheetColumn =
     styled div
         [ displayFlex
         , Css.property "flex-direction" "column"
-        , Css.property "max-height" "calc(100vh - 6rem)"
+        , Css.property "max-height" "calc(100vh - 3.6rem)"
         , Css.property "display" "grid"
         , Css.property "grid-template-rows" "minmax(auto, 1fr)"
         , Css.property "flex" "0 0 23rem"
@@ -535,36 +504,9 @@ characterSheetWrapper index characterSheet =
         ]
 
 
-toolbarButton =
-    styled button
-        [ whiteSpace noWrap
-        , padding2 (Css.em 0.35) (Css.em 0.5)
-        , backgroundColor (rgba 255 255 255 0.2)
-        , color (hex "fff")
-        , borderRadius (px 4)
-        , cursor pointer
-        , border (px 0)
-        , hover
-            [ backgroundColor (rgba 255 255 255 0.3)
-            ]
-        ]
-
-
-navigationButton =
-    styled button
-        [ whiteSpace noWrap
-        , lineHeight (num 1)
-        , padding2 (Css.em 0.3) (Css.em 0.5)
-        , backgroundColor (rgba 255 255 255 0.3)
-        , color (hex "fff")
-        , borderRadius (px 4)
-        , cursor pointer
-        , border (px 0)
-        , hover
-            [ backgroundColor (rgba 255 255 255 0.2)
-            ]
-        ]
-
+--------------------------------------------------
+-- Overlay
+--------------------------------------------------
 
 overlay =
     styled div
@@ -577,3 +519,107 @@ overlay =
         , backgroundColor (rgba 0 0 0 0.5)
         , overflowY scroll
         ]
+
+overlayView : Model -> Html Msg
+overlayView model =
+    case model.overlay of
+        OverlayNone ->
+            text ""
+                
+        EditCharacterSheet index ->
+            overlay
+            []
+            [ editCharacterSheetView
+                  index
+                  (Array.get index model.characterSheets)
+            ]
+                    
+        EditGameSettings ->
+            overlay [] [ gameSettingsView model ]
+
+        InstantInvite mInvite ->
+            overlay [] [ instantInviteView mInvite ]
+
+
+--------------------------------------------------
+-- Game Settings
+--------------------------------------------------
+
+gameSettingsView : Model -> Html Msg
+gameSettingsView model =
+    div
+        [ css
+            [ margin2 (Css.em 4) auto
+            , backgroundColor (hex "fff")
+            , padding (Css.em 2)
+            , Css.width (Css.em 32)
+            , borderRadius (Css.em 0.2)
+            ]
+        ]
+        [ h1 [] [ text "Game Settings" ]
+        , div []
+            [ label [] [ text "Game Title" ]
+            , input
+                [ type_ "text"
+                , onInput UpdateGameTitle
+                , value model.title
+                ]
+                []
+            ]
+        , button
+            [ onClick CloseOverlay ]
+            [ text "Done" ]
+        ]
+
+
+--------------------------------------------------
+-- Instant Invite
+--------------------------------------------------
+
+instantInviteView : WebData String -> Html Msg
+instantInviteView mInvite =
+    div
+    [ css
+      [ margin2 (Css.em 4) auto
+      , backgroundColor (hex "fff")
+      , padding (Css.em 2)
+      , Css.width (Css.em 32)
+      , borderRadius (Css.em 0.2)
+      ]
+    ]
+    [ case mInvite of
+          RemoteData.NotAsked ->
+              text ""
+          RemoteData.Loading ->
+              text "Creating your invitation now"
+          RemoteData.Failure err ->
+              text "Something went wrong."
+          RemoteData.Success invite ->
+              div []
+                  [ label [ css
+                            [ display block
+                            ]
+                          ]
+                        [ text "Players can join your game by following this link" ]
+                  , input
+                        [ type_ "text"
+                        , readonly True
+                        , value
+                              (Route.toUrlString
+                                   (Route.Invite invite))
+                        , css
+                              [ inputStyles
+                              , backgroundColor (hex "eee")
+                              ]
+                        ]
+                        []
+                  , div []
+                      [ text "This invite wil expire in 24 hours" ]
+                  ]
+    , button
+          [ type_ "button"
+          , onClick CloseOverlay
+          ]
+          [ text "Close" ]
+    ]
+            

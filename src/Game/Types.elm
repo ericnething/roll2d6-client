@@ -1,28 +1,32 @@
-module Game.Types
-    exposing
-    ( GameData
-    , GameId
-    , Model
-    , Msg(..)
-    , Overlay(..)
-    , emptyGameData
-    , initialModel
-    , mergeGameData
-    )
+module Game.Types exposing (..)
 
 import Array exposing (Array)
 import CharacterSheet
 import Json.Decode exposing (Value)
 import PouchDB exposing (PouchDBRef)
 import RemoteData exposing (WebData)
+import Http
 
 
 type Overlay
     = EditCharacterSheet Int
     | EditGameSettings
     | InstantInvite (WebData String)
+    | ShowPlayerList
     | OverlayNone
 
+
+type AccessLevel
+    = Owner
+    | GameMaster
+    | Player
+
+type alias Person =
+    { id : Int
+    , accessLevel : AccessLevel
+    , username : String
+    -- , presence : Presence
+    }
 
 type alias Model =
     { ref : PouchDBRef
@@ -30,6 +34,7 @@ type alias Model =
     , title : String
     , characterSheets : Array CharacterSheet.Model
     , overlay : Overlay
+    , players : WebData (List Person)
     }
 
 
@@ -58,6 +63,7 @@ initialModel ref id title =
     , title = title
     , characterSheets = Array.fromList []
     , overlay = OverlayNone
+    , players = RemoteData.Loading
     }
 
 
@@ -68,6 +74,17 @@ emptyGameData =
     }
 
 
+
+type Presence
+    = Online
+    | Offline
+
+type ServerEvent
+    = PlayerListUpdated (Result Json.Decode.Error (List Person))
+    -- | PlayerStatusChange
+    --   { id : Int
+    --   , status : Presence
+    --   }
 
 -- Update
 
@@ -83,3 +100,5 @@ type Msg
     | ExitToLobby
     | CreateInvite
     | InviteCreated (WebData String)
+    | PlayerList GameId (WebData (List Person))
+    | ServerEventReceived ServerEvent

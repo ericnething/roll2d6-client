@@ -17,7 +17,11 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Json.Decode
 import PouchDB exposing (PouchDBRef)
-import PouchDB.Decode exposing (decodeGameData)
+import PouchDB.Decode
+    exposing
+    ( decodeGameData
+    , decodePlayerList
+    )
 import Task
 import Util exposing (removeIndexFromArray)
 import Browser.Navigation as Navigation
@@ -32,6 +36,10 @@ subscriptions _ =
     Sub.batch
         [ PouchDB.getResponse UpdateCurrentGame
         , PouchDB.changesReceived (always ChangesReceived)
+        , PouchDB.sse_playerListUpdated
+            (ServerEventReceived
+                 << PlayerListUpdated
+                 << decodePlayerList)
         ]
 
 
@@ -133,6 +141,23 @@ update navkey msg model =
             , Cmd.none
             )
 
+
+        PlayerList gameId players ->
+            ({ model | players = players }
+            , Cmd.none
+            )
+
+        ServerEventReceived (PlayerListUpdated ePlayers) ->
+            case ePlayers of
+                Ok players ->
+                    ({ model
+                         | players
+                             = RemoteData.succeed players
+                     }
+                    , Cmd.none
+                    )
+                Err err ->
+                    (model, Cmd.none)
 
 
 -- View
@@ -259,6 +284,7 @@ buttons =
     [ addNewCharacterSheetButton
     , invitePlayerButton
     , gameSettingsButton
+    , showPlayerListButton
     ]
 
 toolbarButton =
@@ -305,6 +331,13 @@ invitePlayerButton =
         [ Icons.instantInvite ]
         -- [ text "Invite Player" ]
 
+showPlayerListButton : Html Msg
+showPlayerListButton =
+    toolbarButton
+        [ onClick (OpenOverlay ShowPlayerList)
+        , css [ marginLeft (Css.em 0.5) ]
+        ]
+        [ Icons.players ]
 
 invitePlayersCircleButton : Html Msg
 invitePlayersCircleButton =
@@ -540,6 +573,9 @@ overlayView model =
         InstantInvite mInvite ->
             overlay [] [ instantInviteView mInvite ]
 
+        ShowPlayerList ->
+            overlay [] [ playerListView model.players ]
+
 
 --------------------------------------------------
 -- Game Settings
@@ -566,7 +602,7 @@ gameSettingsView model =
                 ]
                 []
             ]
-        , button
+        , defaultButton
             [ onClick CloseOverlay ]
             [ text "Done" ]
         ]
@@ -614,7 +650,7 @@ instantInviteView mInvite =
                         ]
                         []
                   , div []
-                      [ text "This invite wil expire in 24 hours" ]
+                      [ text "This invite will expire in 24 hours" ]
                   ]
     , button
           [ type_ "button"
@@ -623,3 +659,69 @@ instantInviteView mInvite =
           [ text "Close" ]
     ]
             
+--------------------------------------------------
+-- Player List
+--------------------------------------------------
+
+playerListView : WebData (List Person) -> Html Msg
+playerListView mPlayers =
+    div [ css
+          [ margin2 (Css.em 4) auto
+          , backgroundColor (hex "fff")
+          , padding (Css.em 2)
+          , Css.width (Css.em 32)
+          , borderRadius (Css.em 0.2)
+          ]
+        ]
+    [ case mPlayers of
+          RemoteData.NotAsked ->
+              text "Not Asked"
+          RemoteData.Loading ->
+              text "Loading player list"
+          RemoteData.Failure err ->
+              text ("Something went wrong." ++ Debug.toString err)
+          RemoteData.Success players ->
+              div []
+                  [ div [] (List.map playerListItemView players)
+                  , defaultButton
+                        [ onClick CloseOverlay ]
+                        [ text "Close" ]
+                  ]
+    ]                  
+
+
+playerListItemView : Person -> Html Msg
+playerListItemView player =
+    div []
+        [ text player.username
+        -- , case player.presence of
+        --       Online ->
+        --           presenceIndicator "00ff00"
+        --       Offline ->
+        --           presenceIndicator "ff0000"
+        ]
+
+
+presenceIndicator : String -> Html msg
+presenceIndicator color =
+    span [ css
+           [ Css.width (Css.em 0.5)
+           , Css.height (Css.em 0.5)
+           , borderRadius (pct 50)
+           , backgroundColor (hex color)
+           , margin2 (Css.em 0) (Css.em 0.5)
+           ]
+         ]
+        []
+
+defaultButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor (hex "fff")
+        , border3 (px 1) solid (hex "ccc")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+            [ backgroundColor (hex "eee") ]
+        ]

@@ -7,6 +7,7 @@ module API
     , newGame
     , createInvite
     , joinGame
+    , getPlayers
     )
 
 import Http
@@ -22,6 +23,7 @@ import PouchDB.Decode
         , decodeGameList
         , gameIdDecoder
         , gameListDecoder
+        , playerListDecoder
         )
 import RemoteData exposing (RemoteData(..), WebData)
 
@@ -150,3 +152,20 @@ joinGame inviteId =
                 }
     in
         Http.send (Invite.JoinGame inviteId) request
+
+getPlayers : Game.GameId -> Cmd Game.Msg
+getPlayers gameId =
+    let
+        request =
+            Http.request
+                { method = "GET"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/players"
+                , body = Http.emptyBody
+                , expect = Http.expectJson playerListDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        RemoteData.sendRequest request
+            |> Cmd.map (Game.PlayerList gameId)

@@ -5,6 +5,8 @@ module PouchDB.Decode exposing
     , decodeGameList
     , gameIdDecoder
     , gameListDecoder
+    , playerListDecoder
+    , decodePlayerList
     )
 
 import Array exposing (Array)
@@ -27,11 +29,60 @@ import Game.Types as Game
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Lobby.Types as Lobby
+import RemoteData
+
+
+--------------------------------------------------
+-- Server Sent Events
+--------------------------------------------------
 
 
 
+--------------------------------------------------
+-- Player List
+--------------------------------------------------
+
+decodePlayerList : Value -> Result Error (List Game.Person)
+decodePlayerList value =
+    decodeValue playerListDecoder value
+
+playerListDecoder : Decoder (List Game.Person)
+playerListDecoder =
+    list playerDecoder
+
+playerDecoder : Decoder Game.Person
+playerDecoder =
+    map3 Game.Person
+        (field "id" int)
+        (field "access" (string |> andThen accessLevelDecoder))
+        (field "username" string)
+        -- (field "presence" (string |> andThen presenceDecoder))
+
+accessLevelDecoder : String -> Decoder Game.AccessLevel
+accessLevelDecoder access =
+    case String.toLower access of
+        "owner" ->
+            succeed Game.Owner
+        "game master" ->
+            succeed Game.GameMaster
+        "player" ->
+            succeed Game.Player
+        _ ->
+            fail "Not a valid Access Level"
+
+presenceDecoder : String -> Decoder Game.Presence
+presenceDecoder presence =
+    case String.toLower presence of
+        "online" ->
+            succeed Game.Online
+        "offline" ->
+            succeed Game.Offline
+        _ ->
+            fail "Not a valid Presence"
+
+--------------------------------------------------
 -- Game Metadata List
-
+--------------------------------------------------
 
 decodeGameList : Value -> Result Error (List Lobby.GameMetadata)
 decodeGameList value =
@@ -50,9 +101,9 @@ gameMetadataDecoder =
         (field "title" string)
 
 
-
+--------------------------------------------------
 -- Game
-
+--------------------------------------------------
 
 decodeGameId : Value -> Result Error Game.GameId
 decodeGameId value =
@@ -78,6 +129,7 @@ gameDecoder =
             , title = gameData.title
             , characterSheets = gameData.characterSheets
             , overlay = Game.OverlayNone
+            , players = RemoteData.Loading
             }
         )
         (field "ref" value)

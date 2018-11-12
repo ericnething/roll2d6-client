@@ -173,7 +173,8 @@ update msg model =
                             ( { model
                                 | screen = GameScreen newGame
                               }
-                            , Cmd.none
+                            , API.getPlayers newGame.id
+                                  |> Cmd.map GameMsg
                             )
 
                         _ ->
@@ -359,6 +360,12 @@ maybeWriteToPouchDB msg newGame =
             Cmd.none
 
         Game.InviteCreated _ ->
+            Cmd.none
+
+        Game.PlayerList _ _ ->
+            Cmd.none
+
+        Game.ServerEventReceived _ ->
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg

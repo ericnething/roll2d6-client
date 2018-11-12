@@ -6,6 +6,8 @@ var app = Elm.Main.init();
 //  Couch DB
 //----------------------------------------------
 
+let eventSource = null;
+
 // New database connection
 app.ports.loadGame.subscribe(function (args) {
   const emptyGame = args[0];
@@ -33,7 +35,18 @@ app.ports.loadGame.subscribe(function (args) {
       })
     }
   });
-  
+
+  function setupEventSource(gameId) {
+    eventSource = new EventSource("/api/subscribe/" + gameId);
+    eventSource.onerror = function (ev) {
+      console.log("SSE Error", ev);
+    };
+    eventSource.addEventListener("player-list", function (ev) {
+      console.log("Player list", ev.data);
+      app.ports.sse_playerListUpdated.send(JSON.parse(ev.data));
+    });
+  }
+
   // Perform a one-time one-way replication from remote to local
   local.replicate.from(remote).on("complete", function () {
     console.log("Replication Successful")
@@ -54,6 +67,8 @@ app.ports.loadGame.subscribe(function (args) {
       sync();
       // Send the game document back to Elm
       getGame();
+      // setup event source
+      setupEventSource(id);
     });
   }).on("error", function (err) {
     console.log("Replication Error: ", err);

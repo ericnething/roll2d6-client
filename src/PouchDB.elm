@@ -15,6 +15,8 @@ port getResponse : (Value -> msg) -> Sub msg
 -- port allDocs : PouchDBRef -> Cmd msg
 port getGameListResponse : (Value -> msg) -> Sub msg
 port sse_playerListUpdated : (Value -> msg) -> Sub msg
+port sse_playerPresenceUpdated : (Value -> msg) -> Sub msg
+port closeEventStream : Value -> Cmd msg
 -- port sse_playerAdded : (Value -> msg) -> Sub msg
 -- port sse_playerRemoved : (Value -> msg) -> Sub msg
 

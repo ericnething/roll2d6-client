@@ -25,11 +25,14 @@ type alias Person =
     { id : Int
     , accessLevel : AccessLevel
     , username : String
-    -- , presence : Presence
+    , presence : Presence
     }
+
+type alias EventSourceRef = Value
 
 type alias Model =
     { ref : PouchDBRef
+    , eventSource : EventSourceRef
     , id : GameId
     , title : String
     , characterSheets : Array CharacterSheet.Model
@@ -56,9 +59,14 @@ mergeGameData model gameData =
     }
 
 
-initialModel : PouchDBRef -> GameId -> String -> Model
-initialModel ref id title =
+initialModel : PouchDBRef
+             -> EventSourceRef
+             -> GameId
+             -> String
+             -> Model
+initialModel ref eventSource id title =
     { ref = ref
+    , eventSource = eventSource
     , id = id
     , title = title
     , characterSheets = Array.fromList []
@@ -79,12 +87,15 @@ type Presence
     = Online
     | Offline
 
+type alias PlayerPresence =
+    { id : Int
+    , presence : Presence
+    }
+
 type ServerEvent
     = PlayerListUpdated (Result Json.Decode.Error (List Person))
-    -- | PlayerStatusChange
-    --   { id : Int
-    --   , status : Presence
-    --   }
+    | PlayerPresenceUpdated (Result Json.Decode.Error (List PlayerPresence))
+
 
 -- Update
 
@@ -102,3 +113,6 @@ type Msg
     | InviteCreated (WebData String)
     | PlayerList GameId (WebData (List Person))
     | ServerEventReceived ServerEvent
+    | Ping
+    | Pong
+    | NoOp

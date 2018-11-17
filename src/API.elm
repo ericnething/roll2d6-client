@@ -8,6 +8,9 @@ module API
     , createInvite
     , joinGame
     , getPlayers
+    , ping
+    , setPresenceOnline
+    , setPresenceOffline
     )
 
 import Http
@@ -169,3 +172,55 @@ getPlayers gameId =
     in
         RemoteData.sendRequest request
             |> Cmd.map (Game.PlayerList gameId)
+
+ping : Game.GameId -> Cmd Game.Msg
+ping gameId =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/ping"
+                , body = Http.emptyBody
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (always Game.Pong) request
+
+setPresenceOffline : Game.GameId -> Cmd Game.Msg
+setPresenceOffline gameId =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++
+                        "/games/" ++ gameId ++
+                        "/presence/" ++ "offline"
+                , body = Http.emptyBody
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (always Game.NoOp) request
+
+setPresenceOnline : Game.GameId -> Cmd Game.Msg
+setPresenceOnline gameId =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++
+                        "/games/" ++ gameId ++
+                        "/presence/" ++ "online"
+                , body = Http.emptyBody
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (always Game.NoOp) request

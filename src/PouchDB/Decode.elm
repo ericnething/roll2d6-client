@@ -7,6 +7,7 @@ module PouchDB.Decode exposing
     , gameListDecoder
     , playerListDecoder
     , decodePlayerList
+    , decodePlayerPresence
     )
 
 import Array exposing (Array)
@@ -36,7 +37,16 @@ import RemoteData
 -- Server Sent Events
 --------------------------------------------------
 
+decodePlayerPresence : Value
+                     -> Result Error (List Game.PlayerPresence)
+decodePlayerPresence value =
+    decodeValue (list playerPresenceDecoder) value
 
+playerPresenceDecoder : Decoder Game.PlayerPresence
+playerPresenceDecoder =
+    map2 Game.PlayerPresence
+        (field "id" int)
+        (field "presence" (string |> andThen presenceDecoder))
 
 --------------------------------------------------
 -- Player List
@@ -52,11 +62,11 @@ playerListDecoder =
 
 playerDecoder : Decoder Game.Person
 playerDecoder =
-    map3 Game.Person
+    map4 Game.Person
         (field "id" int)
         (field "access" (string |> andThen accessLevelDecoder))
         (field "username" string)
-        -- (field "presence" (string |> andThen presenceDecoder))
+        (field "presence" (string |> andThen presenceDecoder))
 
 accessLevelDecoder : String -> Decoder Game.AccessLevel
 accessLevelDecoder access =
@@ -122,9 +132,10 @@ decodeGame value =
 
 gameDecoder : Decoder Game.Model
 gameDecoder =
-    map3
-        (\ref id gameData ->
+    map4
+        (\ref id gameData eventSource ->
             { ref = ref
+            , eventSource = eventSource
             , id = id
             , title = gameData.title
             , characterSheets = gameData.characterSheets
@@ -135,6 +146,7 @@ gameDecoder =
         (field "ref" value)
         (field "id" string)
         (field "game" gameDataDecoder)
+        (field "eventSource" value)
 
 
 decodeGameData : Value -> Result Error Game.GameData

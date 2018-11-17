@@ -173,8 +173,12 @@ update msg model =
                             ( { model
                                 | screen = GameScreen newGame
                               }
-                            , API.getPlayers newGame.id
-                                  |> Cmd.map GameMsg
+                            , Cmd.batch
+                                [ API.getPlayers newGame.id
+                                    |> Cmd.map GameMsg
+                                , API.setPresenceOnline newGame.id
+                                    |> Cmd.map GameMsg
+                                ]
                             )
 
                         _ ->
@@ -366,6 +370,15 @@ maybeWriteToPouchDB msg newGame =
             Cmd.none
 
         Game.ServerEventReceived _ ->
+            Cmd.none
+
+        Game.Ping ->
+            Cmd.none
+
+        Game.Pong ->
+            Cmd.none
+
+        Game.NoOp ->
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg

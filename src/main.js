@@ -6,8 +6,6 @@ var app = Elm.Main.init();
 //  Couch DB
 //----------------------------------------------
 
-let eventSource = null;
-
 // New database connection
 app.ports.loadGame.subscribe(function (args) {
   const emptyGame = args[0];
@@ -25,7 +23,7 @@ app.ports.loadGame.subscribe(function (args) {
           console.log("Auth Failed");
           app.ports.authFailed.send(0);
           remote.close();
-        } else if (resp.status >= 400 && resp.status < 600) {
+        } else if (resp.status >= 400 && resp.status < 600 && resp.status !== 404) {
           console.log("Game Load Failed");
           app.ports.gameLoadFailed.send(0);
           remote.close();
@@ -37,7 +35,7 @@ app.ports.loadGame.subscribe(function (args) {
   });
 
   function setupEventSource(gameId) {
-    eventSource = new EventSource("/api/subscribe/" + gameId);
+    const eventSource = new EventSource("/api/subscribe/" + gameId);
     eventSource.onerror = function (ev) {
       console.log("SSE Error", ev);
     };
@@ -45,6 +43,11 @@ app.ports.loadGame.subscribe(function (args) {
       console.log("Player list", ev.data);
       app.ports.sse_playerListUpdated.send(JSON.parse(ev.data));
     });
+    eventSource.addEventListener("player-presence", function (ev) {
+      console.log("Player presence", ev.data);
+      app.ports.sse_playerPresenceUpdated.send(JSON.parse(ev.data));
+    });
+    return eventSource;
   }
 
   // Perform a one-time one-way replication from remote to local
@@ -66,14 +69,44 @@ app.ports.loadGame.subscribe(function (args) {
       // Set up syncing
       sync();
       // Send the game document back to Elm
-      getGame();
-      // setup event source
-      setupEventSource(id);
+      local.get("game").then(function (doc) {
+        console.log("Game Loaded", { id: id, ref: local, game: doc });
+        
+        // setup event source
+        const eventSource = setupEventSource(id);
+        
+        app.ports.gameLoaded.send({
+          id: id,
+          ref: local,
+          game: doc,
+          eventSource: eventSource
+        });
+
+        addBeforeUnloadListener(eventSource, id);
+        
+      }).catch(function (err) {
+        console.log("GetGame Error", err);
+      });
     });
   }).on("error", function (err) {
     console.log("Replication Error: ", err);
   });
   
+  function addBeforeUnloadListener (eventSource, gameId) {
+    window.addEventListener("unload", function (event) {
+      // Cancel the event as stated by the standard.
+      event.preventDefault();
+      // Chrome requires returnValue to be set.
+      event.returnValue = '';
+
+      const url = window.location.origin
+              + "/api/games/" + gameId
+              + "/presence/offline"
+      navigator.sendBeacon(url);
+      eventSource.close()
+    });
+  }
+
   // Sync local and remote databases
   function sync () {
     // local.sync(remote, {
@@ -123,19 +156,6 @@ app.ports.loadGame.subscribe(function (args) {
     });
   }
 
-  // Load game document from local database
-  function getGame () {
-    local.get("game").then(function (doc) {
-      console.log("Game Loaded", { id: id, ref: local, game: doc });
-      app.ports.gameLoaded.send({
-        id: id,
-        ref: local,
-        game: doc
-      });
-    }).catch(function (err) {
-      console.log("GetGame Error", err);
-    });
-  }
 });
 
 // Write to database
@@ -183,3 +203,8 @@ app.ports.get.subscribe(function (db) {
 //     app.ports.getGameListResponse.send(gameList);
 //   });
 // });
+
+app.ports.closeEventStream.subscribe(function (eventSource) {
+  console.log("Close EventStream");
+  eventSource.close();
+});

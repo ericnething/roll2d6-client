@@ -15,12 +15,14 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
+import Time
 import Json.Decode
 import PouchDB exposing (PouchDBRef)
 import PouchDB.Decode
     exposing
     ( decodeGameData
     , decodePlayerList
+    , decodePlayerPresence
     )
 import Task
 import Util exposing (removeIndexFromArray)
@@ -40,6 +42,11 @@ subscriptions _ =
             (ServerEventReceived
                  << PlayerListUpdated
                  << decodePlayerList)
+        , PouchDB.sse_playerPresenceUpdated
+            (ServerEventReceived
+                 << PlayerPresenceUpdated
+                 << decodePlayerPresence)
+        , Time.every 45000 (always Ping)
         ]
 
 
@@ -124,9 +131,13 @@ update navkey msg model =
 
         ExitToLobby ->
             ( model
-            , Navigation.pushUrl
-                navkey
-                (Route.toUrlString Route.Lobby)
+            , Cmd.batch
+                [ API.setPresenceOffline model.id
+                , PouchDB.closeEventStream model.ref
+                , Navigation.pushUrl
+                    navkey
+                    (Route.toUrlString Route.Lobby)
+                ]
             )
 
         CreateInvite ->
@@ -158,6 +169,51 @@ update navkey msg model =
                     )
                 Err err ->
                     (model, Cmd.none)
+
+        ServerEventReceived (PlayerPresenceUpdated ePresence) ->
+            case ePresence of
+                Ok presenceList ->
+                    ({ model
+                         | players
+                             = model.players
+                                   |> RemoteData.map
+                                      (updatePlayerPresenceList
+                                           presenceList)
+                     }
+                    , Cmd.none
+                    )
+                Err err ->
+                    (model, Cmd.none)
+
+        Ping ->
+            (model, API.ping model.id)
+
+        Pong ->
+            (model, Cmd.none)
+
+        NoOp ->
+            (model, Cmd.none)
+
+
+updatePlayerPresenceList : List PlayerPresence
+                         -> List Person
+                         -> List Person
+updatePlayerPresenceList presenceList players =
+    List.map
+        (\player ->
+             let
+                 maybePresence =
+                     List.filter
+                     (\{ id } -> player.id == id)
+                     presenceList
+             in
+                 case maybePresence of
+                     [] ->
+                         player
+                     { presence } :: _ ->
+                         { player | presence = presence }
+        )
+        players
 
 
 -- View
@@ -694,25 +750,23 @@ playerListItemView : Person -> Html Msg
 playerListItemView player =
     div []
         [ text player.username
-        -- , case player.presence of
-        --       Online ->
-        --           presenceIndicator "00ff00"
-        --       Offline ->
-        --           presenceIndicator "ff0000"
+        , case player.presence of
+              Online ->
+                  presenceIndicator "00ff00" "online"
+              Offline ->
+                  presenceIndicator "ff0000" "offline"
         ]
 
 
-presenceIndicator : String -> Html msg
-presenceIndicator color =
+presenceIndicator : String -> String -> Html msg
+presenceIndicator color status =
     span [ css
-           [ Css.width (Css.em 0.5)
-           , Css.height (Css.em 0.5)
-           , borderRadius (pct 50)
-           , backgroundColor (hex color)
+           [ borderRadius (pct 50)
+           , Css.color (hex color)
            , margin2 (Css.em 0) (Css.em 0.5)
            ]
          ]
-        []
+        [ text status ]
 
 defaultButton =
     styled button

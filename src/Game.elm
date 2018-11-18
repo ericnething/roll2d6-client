@@ -302,7 +302,7 @@ topToolbar model =
         ]
         [ div [ css [ displayFlex ] ]
               [ exitGameButton
-              , onlinePlayers
+              , onlinePlayers model.players
               ]
         , gameTitle model.title
         , buttons
@@ -412,8 +412,8 @@ invitePlayersCircleButton =
         [ text "+" ]
 
 
-onlinePlayers : Html Msg
-onlinePlayers =
+onlinePlayers : WebData (List Person) -> Html Msg
+onlinePlayers players_ =
     let
         avatar name bg =
             div
@@ -424,11 +424,31 @@ onlinePlayers =
                     , backgroundColor (hex bg)
                     , color (hex "eee")
                     , textAlign center
-                    , marginLeft (Css.em -0.35)
-                    , border3 (px 2) solid (hex "eee")
+                    , marginRight (Css.em 0.25)
+                    , border3 (px 2) solid transparent
+                    , lineHeight (num 1.5)
                     ]
                 ]
                 [ text name ]
+
+        colors =
+            Array.fromList
+                [ "2ECC40"
+                , "FF851B"
+                , "85144b"
+                , "0074D9"
+                , "001f3f"
+                ]
+
+        chooseColor id =
+            let
+                index = modBy id (Array.length colors)
+            in
+                case Array.get index colors of
+                    Nothing ->
+                        "0074D9"
+                    Just color ->
+                        color
     in
     span
         [ css
@@ -437,13 +457,18 @@ onlinePlayers =
             , marginRight (Css.em 1)
             ]
         ]
-        [ avatar "W" "001f3f"
-        , avatar "O" "FF851B"
-        , avatar "R" "85144b"
-        , avatar "G" "2ECC40"
-        , avatar "B" "0074D9"
-        ]
-
+        (case players_ of
+            RemoteData.Success players ->
+                players
+                    |> List.filter
+                       (\{ presence } -> presence == Online )
+                    |> List.map
+                       (\{ username, id } ->
+                            avatar
+                            (String.left 1 username)
+                            (chooseColor id))
+            _ -> [ text "" ]
+        )
 
 --------------------------------------------------
 -- Character Sheets

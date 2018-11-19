@@ -31,6 +31,7 @@ import Route
 import RemoteData exposing (WebData)
 import API
 import Icons
+import List.Extra as List
 
 
 subscriptions : Model -> Sub Msg
@@ -225,12 +226,14 @@ view model =
         [ css
             [ Css.property "display" "grid"
             , Css.property "grid-template-rows" "3rem auto"
+            , Css.property "grid-template-columns" "1fr 23em"
             , Css.property "grid-row-gap" "0.6rem"
             , backgroundColor (hex "0079bf")
             ]
         ]
         [ topToolbar model
         , characterSheetsView model.characterSheets
+        , sidebar
         , overlayView model
         ]
 
@@ -239,49 +242,49 @@ view model =
 -- Top Navigation
 --------------------------------------------------
 
-topNavigation : Html Msg
-topNavigation =
-    header
-        [ css
-            [ displayFlex
-            , alignItems center
-            , justifyContent spaceBetween
-            , backgroundColor (rgba 0 0 0 0.15)
-            , color (hex "fff")
-            , padding2 (px 0) (Css.em 0.2)
-            ]
-        ]
-        [
-        ]
+-- topNavigation : Html Msg
+-- topNavigation =
+--     header
+--         [ css
+--             [ displayFlex
+--             , alignItems center
+--             , justifyContent spaceBetween
+--             , backgroundColor (rgba 0 0 0 0.15)
+--             , color (hex "fff")
+--             , padding2 (px 0) (Css.em 0.2)
+--             ]
+--         ]
+--         [
+--         ]
 
 
-navigationButton =
-    styled button
-        [ whiteSpace noWrap
-        , lineHeight (num 1)
-        , padding2 (Css.em 0.3) (Css.em 0.5)
-        , backgroundColor (rgba 255 255 255 0.3)
-        , color (hex "fff")
-        , borderRadius (px 4)
-        , cursor pointer
-        , border (px 0)
-        , hover
-            [ backgroundColor (rgba 255 255 255 0.2)
-            ]
-        ]
+-- navigationButton =
+--     styled button
+--         [ whiteSpace noWrap
+--         , lineHeight (num 1)
+--         , padding2 (Css.em 0.3) (Css.em 0.5)
+--         , backgroundColor (rgba 255 255 255 0.3)
+--         , color (hex "fff")
+--         , borderRadius (px 4)
+--         , cursor pointer
+--         , border (px 0)
+--         , hover
+--             [ backgroundColor (rgba 255 255 255 0.2)
+--             ]
+--         ]
 
-appName : Html msg
-appName =
-    div
-        [ css
-            [ marginLeft (Css.em 1)
-            , opacity (num 0.8)
-            , Css.property "font-variant" "all-small-caps"
-            , fontWeight (int 500)
-            , fontSize (Css.em 1.2)
-            ]
-        ]
-        [ text "Fate RPG" ]
+-- appName : Html msg
+-- appName =
+--     div
+--         [ css
+--             [ marginLeft (Css.em 1)
+--             , opacity (num 0.8)
+--             , Css.property "font-variant" "all-small-caps"
+--             , fontWeight (int 500)
+--             , fontSize (Css.em 1.2)
+--             ]
+--         ]
+--         [ text "Fate RPG" ]
 
 
 --------------------------------------------------
@@ -298,6 +301,7 @@ topToolbar model =
             , backgroundColor transparent
             , color (hex "fff")
             , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0)
+            , Css.property "grid-column" "1 / -1"
             ]
         ]
         [ div [ css [ displayFlex ] ]
@@ -804,3 +808,126 @@ defaultButton =
         , hover
             [ backgroundColor (hex "eee") ]
         ]
+
+
+--------------------------------------------------
+-- Side Menu
+--------------------------------------------------
+
+sidebar : Html Msg
+sidebar =
+    div [ css
+          [ backgroundColor (hex "ddd")
+          , Css.property "height" "calc(100vh - 3.6rem)"
+          ]
+
+        ]
+    [ chatView
+    ]
+
+chatView : Html Msg
+chatView =
+    div [ css
+          [ Css.property "display" "grid"
+          , Css.property "grid-template-rows" "1fr auto"
+          , Css.property "height" "calc(100vh - 3.6rem)"
+          , padding2 (px 0) (Css.em 0.8)
+          , displayFlex
+          , flexDirection column
+          , justifyContent spaceBetween
+          , fontSize (Css.em 0.95)
+          ]
+        ]
+    [ chatMessageListView testChatMessages
+    , chatInputView
+    ]
+
+chatInputView : Html Msg
+chatInputView =
+    div [ css
+            [ padding2 (Css.em 0.8) (px 0)
+            ]
+          ]
+        [ textarea
+              [ css
+                [ resize none
+                , Css.width (pct 100)
+                , border (px 0)
+                , borderRadius (Css.em 0.35)
+                , padding (Css.em 0.35)
+                ]
+              , rows 4
+              , placeholder "Send a message or roll dice"
+              ]
+              []
+        ]
+
+chatMessageListView : List ChatMessage -> Html Msg
+chatMessageListView messages =
+    let
+        body =
+            case messages of
+                [] ->
+                    [ chatMessageView <|
+                      ChatMessage
+                          { id = 1
+                          , author = ""
+                          , body = "You can chat with the other players here and roll your dice."
+                          }
+                    ]
+                _ ->
+                    List.map chatMessageView messages
+    in
+        div [ css
+              [ overflowY auto
+              , padding2 (Css.em 0.8) (px 0)
+              ]
+            ]
+        body
+
+testChatMessages =
+    List.cycle 20 [ DiceRoll
+      { id = 1
+      , author = "Welkin"
+      , result = "3 + 4 (+ 1) = 8"
+      }
+    , ChatMessage
+      { id = 1
+      , author = "Geronimo"
+      , body = "How far am I away from the opponent? Can I make a long dash and then ready an action?"
+      }
+    ]
+
+type ChatMessage
+    = ChatMessage
+      { id : Int
+      , author : String
+      , body : String
+      }
+    | DiceRoll
+      { id : Int
+      , author : String
+      , result : String
+      }
+
+styledChatMessage =
+    styled div
+        [ backgroundColor (hex "eee")
+        , padding (Css.em 0.5)
+        , borderRadius (Css.em 0.35)
+        , marginBottom (Css.em 0.8)
+        ]
+
+chatMessageView : ChatMessage -> Html Msg
+chatMessageView message =
+    case message of
+        ChatMessage { id, author, body } ->
+            styledChatMessage
+            []
+            [ text (author ++ ": ")
+            , text body
+            ]
+        DiceRoll { id, author, result } ->
+            styledChatMessage
+            []
+            [ text (author ++ " rolled " ++ result) ]

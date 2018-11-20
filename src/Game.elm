@@ -209,16 +209,33 @@ update navkey msg model =
             )
 
         SendChatMessage chatMessage ->
-            ({ model
-                 | chatMessages = chatMessage :: model.chatMessages
-             }
+            ( model
             , Cmd.batch
                 [ Task.perform
                       identity
                       (Task.succeed ResetChatInput)
-                , jumpToBottom "chat-message-list"
+                , API.sendChatMessage model.id chatMessage
                 ]
             )
+
+        ChatMessagesReceived messages ->
+            ({ model
+                 | chatMessages = messages ++ model.chatMessages
+             }
+            , jumpToBottom "chat-message-list"
+            )
+
+
+        ChatLogReceived result ->
+            case result of
+                Ok messages ->
+                    ({ model | chatMessages = messages }
+                    , jumpToBottom "chat-message-list" )
+
+                Err err ->
+                    let _ = Debug.log "Chat" err
+                    in
+                        (model, Cmd.none)
 
         KeyPressChatInput ->
             case Chat.isDiceRollRequest model.chatInput of
@@ -235,34 +252,20 @@ update navkey msg model =
                                 (model, Cmd.none)
                             
                 Nothing ->
-                    let
-                        message =
-                            ChatMessage
-                            { id = 0
-                            , player = "Welkin"
-                            , body = model.chatInput
-                            }
-                    in
-                        (model
-                        , Task.perform
-                            SendChatMessage
-                            (Task.succeed message)
-                        )
+                    (model
+                    , Task.perform
+                        SendChatMessage
+                        (Task.succeed
+                             (NewChatMessage model.chatInput))
+                    )
 
         DiceRollResult rollResult ->
-            let
-                message =
-                    DiceRollMessage
-                    { id = 0
-                    , player = "Welkin"
-                    , result = rollResult
-                    }
-            in
-                ( model
-                , Task.perform
-                    SendChatMessage
-                    (Task.succeed message)
-                )
+            ( model
+            , Task.perform
+                SendChatMessage
+                (Task.succeed
+                     (NewDiceRollMessage rollResult))
+            )
 
 updatePlayerPresenceList : List PlayerPresence
                          -> List Person
@@ -859,7 +862,7 @@ chatView model =
           , fontSize (Css.em 0.95)
           ]
         ]
-    [ chatMessageListView model.chatMessages -- testChatMessages
+    [ chatMessageListView model.chatMessages
     , chatInputView model.chatInput
     ]
 
@@ -894,8 +897,9 @@ chatMessageListView messages =
                 [] ->
                     [ chatMessageView <|
                       ChatMessage
-                          { id = 1
-                          , player = ""
+                          { timestamp = Time.millisToPosix 0
+                          , playerId = 0
+                          , playerName = "Help"
                           , body = "You can chat with the other players here and roll your dice."
                           }
                     ]
@@ -911,44 +915,6 @@ chatMessageListView messages =
             ]
         body
 
-testChatMessages =
-    List.cycle 20
-        [ DiceRollMessage
-          { id = 1
-          , player = "Welkin"
-          , result =
-              DiceRoll
-              { type_ = D6
-              , request = "3d6-2"
-              , results = [D6Result 3, D6Result 1, D6Result 5]
-              , modifier = Just -2
-              , total = 7
-              }
-          }
-        , ChatMessage
-          { id = 1
-          , player = "Geronimo"
-          , body = "How far am I away from the opponent? Can I make a long dash and then ready an action?"
-          }
-        , DiceRollMessage
-          { id = 1
-          , player = "Welkin"
-          , result =
-              DiceRoll
-              { type_ = DFate
-              , request = "df+2"
-              , results =
-                    [ DFateResult DFatePlus
-                    , DFateResult DFateBlank
-                    , DFateResult DFateMinus
-                    , DFateResult DFatePlus
-                    ]
-              , modifier = Just 2
-              , total = 3
-              }
-          }
-        ]
-
 styledChatMessage =
     styled div
         [ backgroundColor (hex "eee")
@@ -960,19 +926,19 @@ styledChatMessage =
 chatMessageView : ChatMessage -> Html Msg
 chatMessageView message =
     case message of
-        ChatMessage { id, player, body } ->
+        ChatMessage { playerName, body } ->
             styledChatMessage
             []
-            [ div [] [ text player ]
+            [ div [] [ text playerName ]
             , div [] [ text body ]
             ]
-        DiceRollMessage { id, player, result } ->
+        DiceRollMessage { playerName, result } ->
             let
                 (DiceRoll { request }) = result
             in
                 styledChatMessage
                 []
-                [ div [] [ text (player ++ " rolled " ++ request) ]
+                [ div [] [ text (playerName ++ " rolled " ++ request) ]
                 , showDiceRoll result
                 ]
 

@@ -1,4 +1,9 @@
-module PouchDB.Encode exposing (encodeGame, encodeGameData)
+module PouchDB.Encode
+    exposing
+    ( encodeGame
+    , encodeGameData
+    , encodeChatMessage
+    )
 
 import Array exposing (Array)
 import CharacterSheet.Model
@@ -15,7 +20,80 @@ import CharacterSheet.Model
         )
 import Game.Types as Game
 import Json.Encode exposing (..)
+import Maybe
 
+
+--------------------------------------------------
+-- Chat Messages and Dice Rolls
+--------------------------------------------------
+
+encodeChatMessage : Game.NewChatMessage -> Value
+encodeChatMessage message =
+    case message of
+        Game.NewChatMessage body ->
+            object
+                [ ( "ctor", string "ChatMessage" )
+                , ( "body", string body )
+                ]
+        Game.NewDiceRollMessage roll ->
+            object
+                [ ( "ctor", string "DiceRollMessage" )
+                , ( "result", encodeDiceRoll roll )
+                ]
+
+encodeDiceRoll : Game.DiceRoll -> Value
+encodeDiceRoll (Game.DiceRoll roll) =
+    object
+        [ ( "type", encodeDiceType roll.type_ )
+        , ( "request", string roll.request )
+        , ( "results", list encodeDiceResult roll.results )
+        , ( "modifier", Maybe.withDefault null (Maybe.map int roll.modifier) )
+        , ( "total", int roll.total )
+        ]
+
+encodeDiceType : Game.DiceType -> Value
+encodeDiceType type_ =
+    case type_ of
+        Game.DFate -> string "fate"
+        Game.D20 -> string "d20"
+        Game.D6 -> string "d6"
+        Game.DOther n -> string ("d" ++ String.fromInt n)
+
+encodeDiceResult : Game.DiceResult -> Value
+encodeDiceResult result =
+    case result of
+        Game.DFateResult face ->
+            object
+            [ ( "ctor", string "DFateResult" )
+            , ( "face", encodeDFateFace face )
+            ]
+        Game.D20Result n ->
+            object
+            [ ( "ctor", string "D20Result" )
+            , ( "face", int n )
+            ]
+        Game.D6Result n ->
+            object
+            [ ( "ctor", string "D6Result" )
+            , ( "face", int n )
+            ]
+        Game.DOtherResult sides n ->
+            object
+            [ ( "ctor", string "DOtherResult" )
+            , ( "sides", int sides )
+            , ( "face", int n )
+            ]
+
+encodeDFateFace : Game.DFateFace -> Value
+encodeDFateFace face =
+    case face of
+        Game.DFatePlus -> string "+"
+        Game.DFateBlank -> string "b"
+        Game.DFateMinus -> string "-"
+
+--------------------------------------------------
+-- Game Data
+--------------------------------------------------
 
 encodeGame : Game.Model -> Value
 encodeGame game =
@@ -42,13 +120,9 @@ encodeGameData game =
           )
         ]
 
-
--- encodeCharacterSheetArray :
---     Array CharacterSheet.Model.Model
---     -> Array Value
--- encodeCharacterSheetArray sheets =
---     Array.map encodeCharacterSheet sheets
-
+--------------------------------------------------
+-- Character Sheets
+--------------------------------------------------
 
 encodeCharacterSheet : CharacterSheet.Model.Model -> Value
 encodeCharacterSheet { characterSheet } =
@@ -65,12 +139,6 @@ encodeCharacterSheet { characterSheet } =
         , ( "conditions", array encodeCondition characterSheet.conditions )
         ]
 
-
--- encodeAspectArray : Array Aspect -> Array Value
--- encodeAspectArray aspects =
---     Array.map encodeAspect aspects
-
-
 encodeAspect : Aspect -> Value
 encodeAspect (Aspect title invokes) =
     object
@@ -79,12 +147,6 @@ encodeAspect (Aspect title invokes) =
         , ( "title", string title )
         , ( "invokes", int invokes )
         ]
-
-
--- encodeSkillArray : Array Skill -> Array Value
--- encodeSkillArray skills =
---     Array.map encodeSkill skills
-
 
 encodeSkill : Skill -> Value
 encodeSkill (Skill rating name) =
@@ -95,12 +157,6 @@ encodeSkill (Skill rating name) =
         , ( "name", string name )
         ]
 
-
--- encodeStuntArray : Array Stunt -> Array Value
--- encodeStuntArray stunts =
---     Array.map encodeStunt stunts
-
-
 encodeStunt : Stunt -> Value
 encodeStunt (Stunt title description) =
     object
@@ -109,12 +165,6 @@ encodeStunt (Stunt title description) =
         , ( "title", string title )
         , ( "description", string description )
         ]
-
-
--- encodeConsequenceArray : Array Consequence -> Array Value
--- encodeConsequenceArray consequences =
---     Array.map encodeConsequence consequences
-
 
 encodeConsequence : Consequence -> Value
 encodeConsequence (Consequence severity title) =
@@ -125,12 +175,6 @@ encodeConsequence (Consequence severity title) =
         , ( "title", string title )
         ]
 
-
--- encodeConditionArray : Array Condition -> Array Value
--- encodeConditionArray conditions =
---     Array.map encodeCondition conditions
-
-
 encodeCondition : Condition -> Value
 encodeCondition (Condition title stressBoxes) =
     object
@@ -140,12 +184,6 @@ encodeCondition (Condition title stressBoxes) =
         , ( "stressBoxes", array encodeStressBox stressBoxes )
         ]
 
-
--- encodeStressBoxArray : Array StressBox -> Array Value
--- encodeStressBoxArray stressBoxes =
---     Array.map encodeStressBox stressBoxes
-
-
 encodeStressBox : StressBox -> Value
 encodeStressBox (StressBox value marked) =
     object
@@ -154,12 +192,6 @@ encodeStressBox (StressBox value marked) =
         , ( "value", int value )
         , ( "marked", bool marked )
         ]
-
-
--- encodeStressTrackArray : Array StressTrack -> Array Value
--- encodeStressTrackArray stressTracks =
---     Array.map encodeStressTrack stressTracks
-
 
 encodeStressTrack : StressTrack -> Value
 encodeStressTrack (StressTrack title stressBoxes) =

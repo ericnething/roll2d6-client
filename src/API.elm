@@ -11,6 +11,8 @@ module API
     , ping
     , setPresenceOnline
     , setPresenceOffline
+    , sendChatMessage
+    , getChatLog
     )
 
 import Http
@@ -27,9 +29,10 @@ import PouchDB.Decode
         , gameIdDecoder
         , gameListDecoder
         , playerListDecoder
+        , chatMessageListDecoder
         )
+import PouchDB.Encode exposing ( encodeChatMessage )
 import RemoteData exposing (RemoteData(..), WebData)
-
 
 domain =
     "/api"
@@ -224,3 +227,39 @@ setPresenceOnline gameId =
                 }
     in
         Http.send (always Game.NoOp) request
+
+
+sendChatMessage : Game.GameId -> Game.NewChatMessage -> Cmd Game.Msg
+sendChatMessage gameId chatMessage =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/chat"
+                , body =
+                    Http.jsonBody
+                        (encodeChatMessage chatMessage)
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (always Game.NoOp) request
+
+
+getChatLog : Game.GameId -> Cmd Game.Msg
+getChatLog gameId =
+    let
+        request =
+            Http.request
+                { method = "GET"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/chat"
+                , body = Http.emptyBody
+                , expect = Http.expectJson chatMessageListDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send Game.ChatLogReceived request

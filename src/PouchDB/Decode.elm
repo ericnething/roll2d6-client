@@ -8,6 +8,8 @@ module PouchDB.Decode exposing
     , playerListDecoder
     , decodePlayerList
     , decodePlayerPresence
+    , chatMessageListDecoder
+    , decodeChatMessageList
     )
 
 import Array exposing (Array)
@@ -31,7 +33,128 @@ import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Lobby.Types as Lobby
 import RemoteData
+import Time
 
+
+--------------------------------------------------
+-- Chat messages and dice rolls
+--------------------------------------------------
+
+decodeChatMessageList : Value -> Result Error (List Game.ChatMessage)
+decodeChatMessageList value =
+    decodeValue chatMessageListDecoder value
+
+chatMessageListDecoder : Decoder (List Game.ChatMessage)
+chatMessageListDecoder =
+    list chatMessageDecoder
+
+chatMessageDecoder : Decoder Game.ChatMessage
+chatMessageDecoder =
+    field "ctor"
+        (string |> andThen
+           (\ctor ->
+                case ctor of
+                    "ChatMessage" ->
+                        map4 (\a b c d ->
+                                  Game.ChatMessage
+                                  { timestamp = a
+                                  , playerId = b
+                                  , playerName = c
+                                  , body = d
+                                  }
+                             )
+                            (field "timestamp"
+                               (map Time.millisToPosix int))
+                            (field "playerId" int)
+                            (field "playerName" string)
+                            (field "body" string)
+                    "DiceRollMessage" ->
+                        map4 (\a b c d ->
+                                  Game.DiceRollMessage
+                                  { timestamp = a
+                                  , playerId = b
+                                  , playerName = c
+                                  , result = d
+                                  }
+                             )
+                            (field "timestamp"
+                               (map Time.millisToPosix int))
+                            (field "playerId" int)
+                            (field "playerName" string)
+                            (field "result" diceRollDecoder)
+                    _ ->
+                        fail ("Not a valid ChatMessage constructor: " ++ ctor)
+           )
+        )
+
+diceRollDecoder : Decoder Game.DiceRoll
+diceRollDecoder =
+    succeed (\a b c d e ->
+                 Game.DiceRoll
+                 { type_ = a
+                 , request = b
+                 , results = c
+                 , modifier = d
+                 , total = e
+                 }
+            )
+        |> required "type" (string |> andThen diceTypeDecoder)
+        |> required "request" string
+        |> required "results" (list diceResultDecoder)
+        |> optional "modifier" (map Just int) Nothing
+        |> required "total" int
+
+diceTypeDecoder : String -> Decoder Game.DiceType
+diceTypeDecoder type_ =
+    case type_ of
+        "fate" -> succeed Game.DFate
+        "d20" -> succeed Game.D20
+        "d6" -> succeed Game.D6
+        _ ->
+            if String.startsWith "d" type_
+            then
+                case String.toInt (String.dropLeft 1 type_) of
+                    Nothing ->
+                        fail ("Not a valid dice type: " ++ type_)
+                    Just sides ->
+                        succeed (Game.DOther sides)
+            else
+                fail ("Not a valid dice type: " ++ type_)
+
+diceResultDecoder : Decoder Game.DiceResult
+diceResultDecoder =
+    field "ctor"
+        (string |> andThen
+           (\ctor ->
+                case ctor of
+                    "DFateResult" ->
+                        succeed Game.DFateResult
+                            |> required "face"
+                               (string |> andThen dFateFaceDecoder)
+                    "D20Result" ->
+                        succeed Game.D20Result
+                            |> required "face" int
+                    "D6Result" ->
+                        succeed Game.D6Result
+                            |> required "face" int
+                    "DOtherResult" ->
+                        succeed Game.DOtherResult
+                            |> required "sides" int
+                            |> required "face" int
+                    _ ->
+                        fail ("Not a valid DiceResult constructor: " ++ ctor)
+           )
+        )
+
+
+dFateFaceDecoder : String -> Decoder Game.DFateFace
+dFateFaceDecoder face =
+    case face of
+        "+" -> succeed Game.DFatePlus
+        "b" -> succeed Game.DFateBlank
+        "-" -> succeed Game.DFateMinus
+        _ ->
+            fail ("Not a valid DFateFace value: " ++ face)
 
 --------------------------------------------------
 -- Server Sent Events

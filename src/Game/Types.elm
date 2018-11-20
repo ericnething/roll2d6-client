@@ -6,6 +6,7 @@ import Json.Decode exposing (Value)
 import PouchDB exposing (PouchDBRef)
 import RemoteData exposing (WebData)
 import Http
+import Time
 
 
 type Overlay
@@ -101,15 +102,22 @@ type ServerEvent
     | PlayerPresenceUpdated (Result Json.Decode.Error (List PlayerPresence))
 
 
+type NewChatMessage
+    = NewChatMessage String
+    | NewDiceRollMessage DiceRoll
+
+
 type ChatMessage
     = ChatMessage
-      { id : Int
-      , player : String
+      { timestamp : Time.Posix
+      , playerId : Int
+      , playerName : String
       , body : String
       }
     | DiceRollMessage
-      { id : Int
-      , player : String
+      { timestamp : Time.Posix
+      , playerId : Int
+      , playerName : String
       , result : DiceRoll
       }
 
@@ -167,6 +175,8 @@ type Msg
     | Pong
     | UpdateChatInput String
     | ResetChatInput
-    | SendChatMessage ChatMessage
+    | SendChatMessage NewChatMessage
     | KeyPressChatInput
     | DiceRollResult DiceRoll
+    | ChatMessagesReceived (List ChatMessage)
+    | ChatLogReceived (Result Http.Error (List ChatMessage))

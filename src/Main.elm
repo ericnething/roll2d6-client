@@ -381,6 +381,9 @@ maybeWriteToPouchDB msg newGame =
         Game.NoOp ->
             Cmd.none
 
+        _ ->
+            Cmd.none
+
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
 debouncedWriteToPouchDB newGame =
     Task.perform identity

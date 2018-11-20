@@ -32,6 +32,8 @@ import RemoteData exposing (WebData)
 import API
 import Icons
 import List.Extra as List
+import Chat.Parser as Chat
+import Chat.DiceRoller as DiceRoller
 
 
 subscriptions : Model -> Sub Msg
@@ -195,6 +197,71 @@ update navkey msg model =
         NoOp ->
             (model, Cmd.none)
 
+        UpdateChatInput message ->
+            ({ model | chatInput = message }
+            , Cmd.none
+            )
+
+        ResetChatInput ->
+            ({ model | chatInput = "" }
+            , Cmd.none
+            )
+
+        SendChatMessage chatMessage ->
+            ({ model
+                 | chatMessages = chatMessage :: model.chatMessages
+             }
+            , Cmd.batch
+                [ Task.perform
+                      identity
+                      (Task.succeed ResetChatInput)
+                , Cmd.none
+                ]
+            )
+
+        KeyPressChatInput ->
+            case Chat.isDiceRollRequest model.chatInput of
+                Just roll_ ->
+                    case Chat.parseDiceRollRequest roll_ of
+                        Ok rollRequest ->
+                            ( model
+                            , DiceRoller.roll rollRequest
+                            )
+                        Err err ->
+                            let
+                                _ = Debug.log "Error" err
+                            in
+                                (model, Cmd.none)
+                            
+                Nothing ->
+                    let
+                        message =
+                            ChatMessage
+                            { id = 0
+                            , player = "Welkin"
+                            , body = model.chatInput
+                            }
+                    in
+                        (model
+                        , Task.perform
+                            SendChatMessage
+                            (Task.succeed message)
+                        )
+
+        DiceRollResult rollResult ->
+            let
+                message =
+                    DiceRollMessage
+                    { id = 0
+                    , player = "Welkin"
+                    , result = rollResult
+                    }
+            in
+                ( model
+                , Task.perform
+                    SendChatMessage
+                    (Task.succeed message)
+                )
 
 updatePlayerPresenceList : List PlayerPresence
                          -> List Person
@@ -233,58 +300,9 @@ view model =
         ]
         [ topToolbar model
         , characterSheetsView model.characterSheets
-        , sidebar
+        , sidebar model
         , overlayView model
         ]
-
-
---------------------------------------------------
--- Top Navigation
---------------------------------------------------
-
--- topNavigation : Html Msg
--- topNavigation =
---     header
---         [ css
---             [ displayFlex
---             , alignItems center
---             , justifyContent spaceBetween
---             , backgroundColor (rgba 0 0 0 0.15)
---             , color (hex "fff")
---             , padding2 (px 0) (Css.em 0.2)
---             ]
---         ]
---         [
---         ]
-
-
--- navigationButton =
---     styled button
---         [ whiteSpace noWrap
---         , lineHeight (num 1)
---         , padding2 (Css.em 0.3) (Css.em 0.5)
---         , backgroundColor (rgba 255 255 255 0.3)
---         , color (hex "fff")
---         , borderRadius (px 4)
---         , cursor pointer
---         , border (px 0)
---         , hover
---             [ backgroundColor (rgba 255 255 255 0.2)
---             ]
---         ]
-
--- appName : Html msg
--- appName =
---     div
---         [ css
---             [ marginLeft (Css.em 1)
---             , opacity (num 0.8)
---             , Css.property "font-variant" "all-small-caps"
---             , fontWeight (int 500)
---             , fontSize (Css.em 1.2)
---             ]
---         ]
---         [ text "Fate RPG" ]
 
 
 --------------------------------------------------
@@ -814,19 +832,21 @@ defaultButton =
 -- Side Menu
 --------------------------------------------------
 
-sidebar : Html Msg
-sidebar =
+sidebar : Model -> Html Msg
+sidebar model =
     div [ css
           [ backgroundColor (hex "ddd")
           , Css.property "height" "calc(100vh - 3.6rem)"
+          , borderLeft3 (Css.em 0.15) solid (hex "aaa")
           ]
 
         ]
-    [ chatView
+    [ Icons.diceDefs
+    , chatView model
     ]
 
-chatView : Html Msg
-chatView =
+chatView : Model -> Html Msg
+chatView model =
     div [ css
           [ Css.property "display" "grid"
           , Css.property "grid-template-rows" "1fr auto"
@@ -838,12 +858,12 @@ chatView =
           , fontSize (Css.em 0.95)
           ]
         ]
-    [ chatMessageListView testChatMessages
-    , chatInputView
+    [ chatMessageListView model.chatMessages -- testChatMessages
+    , chatInputView model.chatInput
     ]
 
-chatInputView : Html Msg
-chatInputView =
+chatInputView : String -> Html Msg
+chatInputView message =
     div [ css
             [ padding2 (Css.em 0.8) (px 0)
             ]
@@ -858,6 +878,9 @@ chatInputView =
                 ]
               , rows 4
               , placeholder "Send a message or roll dice"
+              , onInput UpdateChatInput
+              , onEnter KeyPressChatInput
+              , value message
               ]
               []
         ]
@@ -871,44 +894,58 @@ chatMessageListView messages =
                     [ chatMessageView <|
                       ChatMessage
                           { id = 1
-                          , author = ""
+                          , player = ""
                           , body = "You can chat with the other players here and roll your dice."
                           }
                     ]
                 _ ->
-                    List.map chatMessageView messages
+                    List.map chatMessageView (List.reverse messages)
     in
         div [ css
               [ overflowY auto
+              , overflowX Css.hidden
               , padding2 (Css.em 0.8) (px 0)
               ]
             ]
         body
 
 testChatMessages =
-    List.cycle 20 [ DiceRoll
-      { id = 1
-      , author = "Welkin"
-      , result = "3 + 4 (+ 1) = 8"
-      }
-    , ChatMessage
-      { id = 1
-      , author = "Geronimo"
-      , body = "How far am I away from the opponent? Can I make a long dash and then ready an action?"
-      }
-    ]
-
-type ChatMessage
-    = ChatMessage
-      { id : Int
-      , author : String
-      , body : String
-      }
-    | DiceRoll
-      { id : Int
-      , author : String
-      , result : String
-      }
+    List.cycle 20
+        [ DiceRollMessage
+          { id = 1
+          , player = "Welkin"
+          , result =
+              DiceRoll
+              { type_ = D6
+              , request = "3d6-2"
+              , results = [D6Result 3, D6Result 1, D6Result 5]
+              , modifier = Just -2
+              , total = 7
+              }
+          }
+        , ChatMessage
+          { id = 1
+          , player = "Geronimo"
+          , body = "How far am I away from the opponent? Can I make a long dash and then ready an action?"
+          }
+        , DiceRollMessage
+          { id = 1
+          , player = "Welkin"
+          , result =
+              DiceRoll
+              { type_ = DFate
+              , request = "df+2"
+              , results =
+                    [ DFateResult DFatePlus
+                    , DFateResult DFateBlank
+                    , DFateResult DFateMinus
+                    , DFateResult DFatePlus
+                    ]
+              , modifier = Just 2
+              , total = 3
+              }
+          }
+        ]
 
 styledChatMessage =
     styled div
@@ -921,13 +958,118 @@ styledChatMessage =
 chatMessageView : ChatMessage -> Html Msg
 chatMessageView message =
     case message of
-        ChatMessage { id, author, body } ->
+        ChatMessage { id, player, body } ->
             styledChatMessage
             []
-            [ text (author ++ ": ")
-            , text body
+            [ div [] [ text player ]
+            , div [] [ text body ]
             ]
-        DiceRoll { id, author, result } ->
-            styledChatMessage
-            []
-            [ text (author ++ " rolled " ++ result) ]
+        DiceRollMessage { id, player, result } ->
+            let
+                (DiceRoll { request }) = result
+            in
+                styledChatMessage
+                []
+                [ div [] [ text (player ++ " rolled " ++ request) ]
+                , showDiceRoll result
+                ]
+
+
+showDiceRoll : DiceRoll -> Html msg
+showDiceRoll (DiceRoll roll) =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , lineHeight (num 1)
+          , fontSize (Css.em 1.4)
+          , flexWrap Css.wrap
+          ]
+        ]
+    [ span [ css
+             [ displayFlex
+             , margin2 (px 0) (Css.em 0.25)
+             ]
+           ]
+          (case roll.type_ of
+               DFate ->
+                   roll.results
+                       |> List.map showDiceResult
+                       |> List.concat
+               _ ->
+                   roll.results
+                       |> List.map showDiceResult
+                       |> List.intercalate [ text ", " ]
+          )
+    , case roll.modifier of
+          Nothing ->
+              text ""
+          Just modifier ->
+              let
+                  output =
+                      if modifier < 0
+                      then
+                          "(-" ++ String.fromInt (abs modifier) ++ ")"
+                      else
+                          "(+" ++ String.fromInt modifier ++ ")"
+              in
+                  span [ css
+                         [ margin2 (px 0) (Css.em 0.25)
+                         ]
+                       ]
+                      [ text output ]
+    , if List.length roll.results < 2
+        && roll.modifier == Nothing
+        && roll.type_ /= DFate
+      then
+          text ""
+      else
+          span [ css
+                 [ margin2 (px 0) (Css.em 0.25)
+                 ]
+               ]
+              [ text ("= " ++ String.fromInt roll.total) ]
+    ]
+
+showDiceResult : DiceResult -> List (Html msg)
+showDiceResult result =
+    case result of
+        DFateResult face ->
+            [ showDFateFace face ]
+
+        D20Result face ->
+            [text (String.fromInt face)]
+
+        D6Result face ->
+            [text (String.fromInt face)]
+
+        DOtherResult _ face ->
+            [text (String.fromInt face)]
+            
+
+showDFateFace : DFateFace -> Html msg
+showDFateFace face =
+    span [ css
+           [ marginRight (Css.em 0.15) ]
+         ]
+    [ case face of
+          DFatePlus ->
+              Icons.dFatePlus
+          DFateBlank ->
+              Icons.dFateBlank
+          DFateMinus ->
+              Icons.dFateMinus
+    ]
+
+onEnter : msg -> Attribute msg
+onEnter onEnterAction =
+   on "keyup" <|
+       Json.Decode.andThen
+           (\keyCode ->
+               case keyCode of
+                   13 ->
+                       Json.Decode.succeed onEnterAction
+
+                   _ ->
+                       Json.Decode.fail (String.fromInt keyCode)
+           )
+           keyCode

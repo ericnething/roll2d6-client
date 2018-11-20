@@ -1,8 +1,44 @@
-module Icons exposing (..)
+module Icons
+    exposing
+    ( addCharacterSheet
+    , gameSettings
+    , instantInvite
+    , players
+    , diceDefs
+    , dFatePlus
+    , dFateBlank
+    , dFateMinus
+    )
 
-import Html.Styled exposing (Html)
-import Svg.Styled exposing (svg, path)
-import Svg.Styled.Attributes exposing (viewBox, d, width, height, fill, display)
+import Html.Styled exposing (Html, div)
+import Html.Styled.Attributes exposing (css)
+import Svg.Styled
+    exposing
+    ( Svg
+    , svg
+    , path
+    , symbol
+    , defs
+    , use
+    )
+import Svg.Styled.Attributes
+    exposing
+    ( viewBox
+    , d
+    , width
+    , height
+    , fill
+    , display
+    , visibility
+    , xlinkHref
+    , id
+    )
+
+import Css
+
+--------------------------------------------------
+-- Game Menu
+--------------------------------------------------
 
 addCharacterSheet : Html msg
 addCharacterSheet =
@@ -54,3 +90,87 @@ players =
     [ path [ d "M17 9c0-1.381-0.56-2.631-1.464-3.535s-2.155-1.465-3.536-1.465-2.631 0.56-3.536 1.465c-0.904 0.904-1.464 2.154-1.464 3.535s0.56 2.631 1.464 3.535c0.905 0.905 2.155 1.465 3.536 1.465s2.631-0.56 3.536-1.465c0.904-0.904 1.464-2.154 1.464-3.535z"] []
     , path [ d "M6 19c0 1 2.25 2 6 2 3.518 0 6-1 6-2 0-2-2.354-4-6-4-3.75 0-6 2-6 4z"] []
     ]
+
+--------------------------------------------------
+-- Dice
+--------------------------------------------------
+
+diceDefs : Html msg
+diceDefs =
+    div [ css
+          [ Css.position Css.absolute
+          , Css.width (Css.px 0)
+          , Css.height (Css.px 0)
+          , Css.overflow Css.hidden
+          ]
+        ]
+    [ svg []
+          [ defs []
+                [ sym_dFatePlus
+                , sym_dFateBlank
+                , sym_dFateMinus
+                ]
+          ]
+    ]
+
+
+dFatePlus : Html msg
+dFatePlus =
+    svg [ display "inline"
+        , width "24"
+        , height "28"
+        ]
+    [ use [ xlinkHref ("#" ++ id_dFatePlus) ] [] ]
+
+id_dFatePlus = "icon-dice-fate-plus"
+
+sym_dFatePlus : Svg msg
+sym_dFatePlus =
+    symbol [viewBox "0 0 24 28"
+           , fill "#333"
+           , id id_dFatePlus
+           ]
+    [ path [ d "M20 15v-2c0-0.547-0.453-1-1-1h-5v-5c0-0.547-0.453-1-1-1h-2c-0.547 0-1 0.453-1 1v5h-5c-0.547 0-1 0.453-1 1v2c0 0.547 0.453 1 1 1h5v5c0 0.547 0.453 1 1 1h2c0.547 0 1-0.453 1-1v-5h5c0.547 0 1-0.453 1-1zM24 6.5v15c0 2.484-2.016 4.5-4.5 4.5h-15c-2.484 0-4.5-2.016-4.5-4.5v-15c0-2.484 2.016-4.5 4.5-4.5h15c2.484 0 4.5 2.016 4.5 4.5z" ] []
+    ]
+
+
+
+dFateBlank : Html msg
+dFateBlank =
+    svg [ display "inline"
+        , width "24"
+        , height "28"
+        ]
+    [ use [ xlinkHref ("#" ++ id_dFateBlank) ] [] ]
+
+id_dFateBlank = "icon-dice-fate-blank"
+
+sym_dFateBlank : Svg msg
+sym_dFateBlank =
+    symbol [ viewBox "0 0 24 28"
+           , fill "#333"
+           , id id_dFateBlank
+           ]
+    [ path [ d "M24 6.5v15c0 2.484-2.016 4.5-4.5 4.5h-15c-2.484 0-4.5-2.016-4.5-4.5v-15c0-2.484 2.016-4.5 4.5-4.5h15c2.484 0 4.5 2.016 4.5 4.5z" ] []
+    ]
+
+
+dFateMinus : Html msg
+dFateMinus =
+    svg [ display "inline"
+        , width "24"
+        , height "28"
+        ]
+    [ use [ xlinkHref ("#" ++ id_dFateMinus) ] [] ]
+
+id_dFateMinus = "icon-dice-fate-minus"
+
+sym_dFateMinus : Svg msg
+sym_dFateMinus =
+    symbol [ viewBox "0 0 24 28"
+           , fill "#333"
+           , id id_dFateMinus
+           ]
+    [ path [ d "M20 15v-2c0-0.547-0.453-1-1-1h-14c-0.547 0-1 0.453-1 1v2c0 0.547 0.453 1 1 1h14c0.547 0 1-0.453 1-1zM24 6.5v15c0 2.484-2.016 4.5-4.5 4.5h-15c-2.484 0-4.5-2.016-4.5-4.5v-15c0-2.484 2.016-4.5 4.5-4.5h15c2.484 0 4.5 2.016 4.5 4.5z" ] []
+    ]
+

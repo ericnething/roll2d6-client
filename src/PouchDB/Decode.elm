@@ -141,6 +141,8 @@ gameDecoder =
             , characterSheets = gameData.characterSheets
             , overlay = Game.OverlayNone
             , players = RemoteData.Loading
+            , chatInput = ""
+            , chatMessages = []
             }
         )
         (field "ref" value)

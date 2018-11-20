@@ -38,6 +38,8 @@ type alias Model =
     , characterSheets : Array CharacterSheet.Model
     , overlay : Overlay
     , players : WebData (List Person)
+    , chatInput : String
+    , chatMessages : List ChatMessage
     }
 
 
@@ -72,6 +74,8 @@ initialModel ref eventSource id title =
     , characterSheets = Array.fromList []
     , overlay = OverlayNone
     , players = RemoteData.Loading
+    , chatInput = ""
+    , chatMessages = []
     }
 
 
@@ -97,10 +101,56 @@ type ServerEvent
     | PlayerPresenceUpdated (Result Json.Decode.Error (List PlayerPresence))
 
 
+type ChatMessage
+    = ChatMessage
+      { id : Int
+      , player : String
+      , body : String
+      }
+    | DiceRollMessage
+      { id : Int
+      , player : String
+      , result : DiceRoll
+      }
+
+type DiceType
+    = DFate
+    | D20
+    | D6
+    | DOther Int
+
+type DiceResult
+    = DFateResult DFateFace
+    | D20Result Int
+    | D6Result Int
+    | DOtherResult Int Int
+
+type DFateFace
+    = DFatePlus
+    | DFateBlank
+    | DFateMinus
+
+type DiceRoll =
+    DiceRoll
+    { type_ : DiceType
+    , request : String
+    , results : List DiceResult
+    , modifier : Maybe Int
+    , total : Int
+    }
+
+type DiceRollRequest =
+    DiceRollRequest
+    { size : Int
+    , type_ : DiceType
+    , modifier : Maybe Int
+    }
+
 -- Update
 
 type Msg
-    = CharacterSheetMsg Int CharacterSheet.Msg
+    = NoOp
+    | CharacterSheetMsg Int CharacterSheet.Msg
     | AddCharacterSheet
     | RemoveCharacterSheet Int
     | UpdateGameTitle String
@@ -115,4 +165,8 @@ type Msg
     | ServerEventReceived ServerEvent
     | Ping
     | Pong
-    | NoOp
+    | UpdateChatInput String
+    | ResetChatInput
+    | SendChatMessage ChatMessage
+    | KeyPressChatInput
+    | DiceRollResult DiceRoll

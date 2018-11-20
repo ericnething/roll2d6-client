@@ -34,6 +34,7 @@ import Icons
 import List.Extra as List
 import Chat.Parser as Chat
 import Chat.DiceRoller as DiceRoller
+import Browser.Dom as Dom
 
 
 subscriptions : Model -> Sub Msg
@@ -215,7 +216,7 @@ update navkey msg model =
                 [ Task.perform
                       identity
                       (Task.succeed ResetChatInput)
-                , Cmd.none
+                , jumpToBottom "chat-message-list"
                 ]
             )
 
@@ -906,6 +907,7 @@ chatMessageListView messages =
               , overflowX Css.hidden
               , padding2 (Css.em 0.8) (px 0)
               ]
+            , id "chat-message-list"
             ]
         body
 
@@ -1073,3 +1075,20 @@ onEnter onEnterAction =
                        Json.Decode.fail (String.fromInt keyCode)
            )
            keyCode
+
+
+jumpToBottom : String -> Cmd Msg
+jumpToBottom id =
+  Dom.getViewportOf id
+    |> Task.andThen
+       (\info ->
+            -- if Debug.log "viewport difference" (info.scene.height
+            --     - (info.viewport.y
+            --        + info.viewport.height)) < 300
+            -- then
+                Dom.setViewportOf id 0 info.scene.height
+            -- else
+            --     Task.succeed ()
+       )
+    |> Task.attempt (\_ -> NoOp)
+

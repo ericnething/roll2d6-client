@@ -247,26 +247,33 @@ update navkey msg model =
                         (model, Cmd.none)
 
         KeyPressChatInput ->
-            case Chat.isDiceRollRequest model.chatInput of
-                Just roll_ ->
-                    case Chat.parseDiceRollRequest roll_ of
-                        Ok rollRequest ->
-                            ( model
-                            , DiceRoller.roll rollRequest
-                            )
-                        Err err ->
-                            let
-                                _ = Debug.log "Error" err
-                            in
-                                (model, Cmd.none)
+            let
+                rawMessage = String.trim model.chatInput
+            in
+                if String.length rawMessage < 1
+                then
+                    (model, Cmd.none)
+                else
+                    case Chat.isDiceRollRequest rawMessage of
+                        Just roll_ ->
+                            case Chat.parseDiceRollRequest roll_ of
+                                Ok rollRequest ->
+                                    ( model
+                                    , DiceRoller.roll rollRequest
+                                    )
+                                Err err ->
+                                    let
+                                        _ = Debug.log "Error" err
+                                    in
+                                        (model, Cmd.none)
                             
-                Nothing ->
-                    (model
-                    , Task.perform
-                        SendChatMessage
-                        (Task.succeed
-                             (NewChatMessage model.chatInput))
-                    )
+                        Nothing ->
+                            (model
+                            , Task.perform
+                                SendChatMessage
+                                (Task.succeed
+                                     (NewChatMessage rawMessage))
+                            )
 
         DiceRollResult rollResult ->
             ( model

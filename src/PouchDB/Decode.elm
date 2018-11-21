@@ -50,8 +50,8 @@ chatMessageListDecoder =
 
 chatMessageDecoder : Decoder Game.ChatMessage
 chatMessageDecoder =
-    field "ctor"
-        (string |> andThen
+    field "ctor" string
+        |> andThen
            (\ctor ->
                 case ctor of
                     "ChatMessage" ->
@@ -64,7 +64,8 @@ chatMessageDecoder =
                                   }
                              )
                             (field "timestamp"
-                               (map Time.millisToPosix int))
+                               (map (Time.millisToPosix << round)
+                                    float))
                             (field "playerId" int)
                             (field "playerName" string)
                             (field "body" string)
@@ -78,14 +79,14 @@ chatMessageDecoder =
                                   }
                              )
                             (field "timestamp"
-                               (map Time.millisToPosix int))
+                               (map (Time.millisToPosix << round)
+                                    float))
                             (field "playerId" int)
                             (field "playerName" string)
                             (field "result" diceRollDecoder)
                     _ ->
                         fail ("Not a valid ChatMessage constructor: " ++ ctor)
            )
-        )
 
 diceRollDecoder : Decoder Game.DiceRoll
 diceRollDecoder =
@@ -123,8 +124,8 @@ diceTypeDecoder type_ =
 
 diceResultDecoder : Decoder Game.DiceResult
 diceResultDecoder =
-    field "ctor"
-        (string |> andThen
+    field "ctor" string
+        |> andThen
            (\ctor ->
                 case ctor of
                     "DFateResult" ->
@@ -144,7 +145,6 @@ diceResultDecoder =
                     _ ->
                         fail ("Not a valid DiceResult constructor: " ++ ctor)
            )
-        )
 
 
 dFateFaceDecoder : String -> Decoder Game.DFateFace

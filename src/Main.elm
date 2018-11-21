@@ -178,6 +178,8 @@ update msg model =
                                     |> Cmd.map GameMsg
                                 , API.setPresenceOnline newGame.id
                                     |> Cmd.map GameMsg
+                                , API.getChatLog newGame.id
+                                    |> Cmd.map GameMsg
                                 ]
                             )
 

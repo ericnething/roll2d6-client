@@ -23,6 +23,7 @@ import PouchDB.Decode
     ( decodeGameData
     , decodePlayerList
     , decodePlayerPresence
+    , decodeChatMessageList
     )
 import Task
 import Util exposing (removeIndexFromArray)
@@ -50,6 +51,10 @@ subscriptions _ =
             (ServerEventReceived
                  << PlayerPresenceUpdated
                  << decodePlayerPresence)
+        , PouchDB.sse_chatMessageReceived
+            (ServerEventReceived
+                 << ChatMessagesReceived
+                 << decodeChatMessageList)
         , Time.every 45000 (always Ping)
         ]
 
@@ -189,6 +194,18 @@ update navkey msg model =
                 Err err ->
                     (model, Cmd.none)
 
+        ServerEventReceived (ChatMessagesReceived eMessages) ->
+            case eMessages of
+                Ok messages ->
+                    ({ model
+                         | chatMessages
+                             = messages ++ model.chatMessages
+                     }
+                    , jumpToBottom "chat-message-list"
+                    )
+                Err err ->
+                    (model, Cmd.none)
+
         Ping ->
             (model, API.ping model.id)
 
@@ -217,14 +234,6 @@ update navkey msg model =
                 , API.sendChatMessage model.id chatMessage
                 ]
             )
-
-        ChatMessagesReceived messages ->
-            ({ model
-                 | chatMessages = messages ++ model.chatMessages
-             }
-            , jumpToBottom "chat-message-list"
-            )
-
 
         ChatLogReceived result ->
             case result of

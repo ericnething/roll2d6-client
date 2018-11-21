@@ -47,6 +47,10 @@ app.ports.loadGame.subscribe(function (args) {
       console.log("Player presence", ev.data);
       app.ports.sse_playerPresenceUpdated.send(JSON.parse(ev.data));
     });
+    eventSource.addEventListener("chat-message", function (ev) {
+      console.log("Chat message", ev.data);
+      app.ports.sse_chatMessageReceived.send(JSON.parse(ev.data));
+    });
     return eventSource;
   }
 

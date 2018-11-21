@@ -98,8 +98,12 @@ type alias PlayerPresence =
     }
 
 type ServerEvent
-    = PlayerListUpdated (Result Json.Decode.Error (List Person))
-    | PlayerPresenceUpdated (Result Json.Decode.Error (List PlayerPresence))
+    = PlayerListUpdated
+        (Result Json.Decode.Error (List Person))
+    | PlayerPresenceUpdated
+        (Result Json.Decode.Error (List PlayerPresence))
+    | ChatMessagesReceived
+        (Result Json.Decode.Error (List ChatMessage))
 
 
 type NewChatMessage
@@ -178,5 +182,4 @@ type Msg
     | SendChatMessage NewChatMessage
     | KeyPressChatInput
     | DiceRollResult DiceRoll
-    | ChatMessagesReceived (List ChatMessage)
     | ChatLogReceived (Result Http.Error (List ChatMessage))

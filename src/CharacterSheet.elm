@@ -1,33 +1,64 @@
-module CharacterSheet exposing (Model, Msg, defaultButton, editView, initialModel, readOnlyView, update)
+module CharacterSheet
+    exposing
+    ( Model
+    , Msg
+    , defaultButton
+    , editView
+    , view
+    , update
+    )
 
-import CharacterSheet.Model as Model
-import CharacterSheet.Update as Update
-import CharacterSheet.View as View
+import CharacterSheet.Types as CharacterSheet
+import CharacterSheet.Update as CharacterSheet
+import CharacterSheet.View as CharacterSheet
 
 
-type alias Model =
-    Model.Model
+-- type alias Msg
+--     = CharacterSheetMsg CharacterSheet.Msg
+--     | GameAspectSheetMsg GameAspectSheet.Msg
+
+-- type Model
+--     = CharacterSheet CharacterSheet.Model
+--     | GameAspectSheet GameAspectSheet.Model
+
+-- update : Msg -> Model -> (Model, Cmd Msg)
+-- update msg model =
+--     case (msg, model) of
+--         (CharacterSheetMsg submsg, CharacterSheet submodel) ->
+--             let
+--                 (newModel, cmd) =
+--                     CharacterSheet.update submsg submodel
+--             in
+--                 (newModel, Cmd.map CharacterSheetMsg cmd)
+
+--         (GameAspectSheetMsg submsg, GameAspectSheet submodel) ->
+--             let
+--                 (newModel, cmd) =
+--                     GameAspectSheet.update submsg submodel
+--             in
+--                 (newModel, Cmd.map GameAspectSheetMsg cmd)
+
+--         _ ->
+--             (model, cmd)
 
 
 type alias Msg =
-    Update.Msg
+    CharacterSheet.Msg
 
+type alias Model =
+    CharacterSheet.Model
 
 update =
-    Update.update
-
+    CharacterSheet.update
 
 editView =
-    View.editView
+    CharacterSheet.editView
 
 
-readOnlyView =
-    View.readOnlyView
+view =
+    CharacterSheet.view
 
 
 defaultButton =
-    View.defaultButton
+    CharacterSheet.defaultButton
 
-
-initialModel =
-    Update.initialModel

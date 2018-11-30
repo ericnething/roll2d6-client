@@ -1,7 +1,9 @@
-module CharacterSheet.Model exposing (Aspect(..), CharacterSheet, Condition(..), Consequence(..), EditMode(..), Model, Severity(..), Skill(..), SkillRating(..), StressBox(..), StressTrack(..), Stunt(..), consequenceSeverityList, defaultModel, severityToInt, showSeverity, showSkillRating, skillRatingList, skillRatingToInt)
+module CharacterSheet.Types exposing (..)
 
 import Array exposing (Array)
 
+
+type alias Model = CharacterSheet
 
 type alias CharacterSheet =
     { name : String
@@ -16,6 +18,13 @@ type alias CharacterSheet =
     , conditions : Array Condition
     }
 
+type alias GameAspectSheet =
+    { scenes : Array Scene }
+
+type alias Scene =
+    { title : String
+    , aspects : Array Aspect
+    }
 
 
 -- Aspects
@@ -215,20 +224,4 @@ type Condition
     = Condition String (Array StressBox)
 
 
-type EditMode
-    = EditModeNone
-    | EditModeStress
-    | EditModeConditions
 
-
-type alias Model =
-    { characterSheet : CharacterSheet
-    , editMode : EditMode
-    }
-
-
-defaultModel : CharacterSheet -> Model
-defaultModel sheet =
-    { characterSheet = sheet
-    , editMode = EditModeNone
-    }

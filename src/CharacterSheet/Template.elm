@@ -1,7 +1,9 @@
-module CharacterSheet.Template exposing (blank, dresdenFilesAccelerated, emptyAspect, fateCore, harryDresden_dfa, initialCharacterSheet, sarissa_dfa, tachyonSquadronShip)
+module CharacterSheet.Template
+    exposing
+    (blank, dresdenFilesAccelerated, emptyAspect, fateCore, harryDresden_dfa, initialCharacterSheet, sarissa_dfa, tachyonSquadronShip)
 
 import Array exposing (Array)
-import CharacterSheet.Model exposing (..)
+import CharacterSheet.Types exposing (..)
 
 
 emptyAspect : Aspect

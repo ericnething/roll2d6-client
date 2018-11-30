@@ -1,16 +1,14 @@
-module CharacterSheet.Update exposing (Index, Msg(..), initialModel, update, updateCharacterSheet)
+module CharacterSheet.Update
+    exposing
+    ( Index
+    , Msg(..)
+    , update
+    )
 
 import Array exposing (Array)
-import CharacterSheet.Model exposing (..)
+import CharacterSheet.Types exposing (..)
 import List.Extra exposing (stableSortWith)
 import Util exposing (removeIndexFromArray)
-
-
-initialModel : CharacterSheet -> Model
-initialModel sheet =
-    { characterSheet = sheet
-    , editMode = EditModeNone
-    }
 
 
 type alias Index =
@@ -54,40 +52,10 @@ type Msg
     | UpdateConditionBox Int Int StressBox
     | AddConditionBox Index StressBox
     | RemoveConditionBox Index
-      -- Edit Mode
-    | ToggleEditMode EditMode
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-    case msg of
-        ToggleEditMode editMode ->
-            ( { model
-                | editMode =
-                    if model.editMode /= editMode then
-                        editMode
-
-                    else
-                        EditModeNone
-              }
-            , Cmd.none
-            )
-
-        msg0 ->
-            let
-                ( characterSheet, cmd ) =
-                    updateCharacterSheet msg0 model.characterSheet
-            in
-            ( { model | characterSheet = characterSheet }
-            , cmd
-            )
-
-
-updateCharacterSheet :
-    Msg
-    -> CharacterSheet
-    -> ( CharacterSheet, Cmd Msg )
-updateCharacterSheet msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
@@ -396,6 +364,3 @@ updateCharacterSheet msg model =
               }
             , Cmd.none
             )
-
-        _ ->
-            ( model, Cmd.none )

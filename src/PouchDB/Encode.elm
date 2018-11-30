@@ -6,7 +6,7 @@ module PouchDB.Encode
     )
 
 import Array exposing (Array)
-import CharacterSheet.Model
+import CharacterSheet.Types
     exposing
         ( Aspect(..)
         , Condition(..)
@@ -124,8 +124,8 @@ encodeGameData game =
 -- Character Sheets
 --------------------------------------------------
 
-encodeCharacterSheet : CharacterSheet.Model.Model -> Value
-encodeCharacterSheet { characterSheet } =
+encodeCharacterSheet : CharacterSheet.Types.Model -> Value
+encodeCharacterSheet characterSheet =
     object
         [ ( "name", string characterSheet.name )
         , ( "description", string characterSheet.description )

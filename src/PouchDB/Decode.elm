@@ -13,7 +13,7 @@ module PouchDB.Decode exposing
     )
 
 import Array exposing (Array)
-import CharacterSheet.Model
+import CharacterSheet.Types
     exposing
         ( Aspect(..)
         , CharacterSheet
@@ -283,7 +283,7 @@ gameDataDecoder : Decoder Game.GameData
 gameDataDecoder =
     map2 Game.GameData
         (field "title" string)
-        (field "characterSheets" (array decodeCharacterSheetWrapper))
+        (field "characterSheets" (array decodeCharacterSheet))
 
 
 decodeCharacterSheet : Decoder CharacterSheet
@@ -299,13 +299,6 @@ decodeCharacterSheet =
         |> required "stress" (array decodeStressTrack)
         |> required "consequences" (array decodeConsequence)
         |> required "conditions" (array decodeCondition)
-
-
-decodeCharacterSheetWrapper : Decoder CharacterSheet.Model.Model
-decodeCharacterSheetWrapper =
-    map
-        CharacterSheet.Model.defaultModel
-        decodeCharacterSheet
 
 
 

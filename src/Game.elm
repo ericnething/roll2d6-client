@@ -88,9 +88,7 @@ update navkey msg model =
             ( { model
                 | characterSheets =
                     Array.push
-                        (CharacterSheet.initialModel
-                            CharacterSheet.Template.blank
-                        )
+                        CharacterSheet.Template.blank
                         model.characterSheets
               }
             , Task.perform
@@ -407,7 +405,6 @@ addNewCharacterSheetButton =
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.addCharacterSheet ]
-        -- [ text "Add Character Sheet" ]
 
 
 gameSettingsButton : Html Msg
@@ -417,7 +414,6 @@ gameSettingsButton =
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.gameSettings ]
-        -- [ text "Game Settings" ]
 
 
 invitePlayerButton : Html Msg
@@ -427,7 +423,7 @@ invitePlayerButton =
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.instantInvite ]
-        -- [ text "Invite Player" ]
+
 
 showPlayerListButton : Html Msg
 showPlayerListButton =
@@ -637,7 +633,7 @@ characterSheetCard index characterSheet =
             ]
         , Html.Styled.map
             (CharacterSheetMsg index)
-            (CharacterSheet.readOnlyView characterSheet)
+            (CharacterSheet.view characterSheet)
         ]
 
 

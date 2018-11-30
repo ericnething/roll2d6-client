@@ -1,7 +1,13 @@
-module CharacterSheet.View exposing (addNewBoxButton, appearance_none, aspectInput, aspectView, conditionView, conditionsView, consequenceButtonList, consequenceInput, consequenceSeverityButton, consequenceView, defaultButton, descriptionView, editConditionView, editStressBoxView, editStressInput, editStressTrackView, editView, fatePointsView, inputStyles, invokesView, nameView, readOnlyAspectView, readOnlyConditionsView, readOnlyConsequencesView, readOnlyDescriptionView, readOnlyNameView, readOnlyRefreshView, readOnlySkillsView, readOnlyStressView, readOnlyStuntsView, readOnlyView, refreshView, removeBoxButton, sectionLabel, skillInput, skillRatingButton, skillRatingButtonList, skillView, stressBoxView, stressInput, stressTrackView, stressView, stuntInput, stuntView, toggleSwitch, userSelect_none)
+module CharacterSheet.View
+    exposing
+    ( editView
+    , view
+    , defaultButton
+    , inputStyles
+    )
 
 import Array exposing (Array)
-import CharacterSheet.Model exposing (..)
+import CharacterSheet.Types exposing (..)
 import CharacterSheet.Update exposing (..)
 import Css exposing (..)
 import Html
@@ -23,32 +29,28 @@ editView model =
             [ maxWidth (Css.em 32)
             ]
         ]
-        [ nameView model.characterSheet.name
-        , descriptionView model.characterSheet.description
-        , aspectView model.characterSheet.aspects
-        , skillView model.characterSheet.skills
-        , stressView
-            model.characterSheet.stress
-            (EditModeStress == model.editMode)
-        , consequenceView model.characterSheet.consequences
-        , conditionsView
-            model.characterSheet.conditions
-            (EditModeConditions == model.editMode)
+        [ editNameView model.name
+        , editDescriptionView model.description
+        , editAspectView model.aspects
+        , editSkillView model.skills
+        , editStressView model.stress
+        , editConsequenceView model.consequences
+        , editConditionsView model.conditions
         , div
             [ css
                 [ displayFlex
                 , justifyContent spaceAround
                 ]
             ]
-            [ refreshView model.characterSheet.refresh
-            , fatePointsView model.characterSheet.fatePoints
+            [ editRefreshView model.refresh
+            , fatePointsView model.fatePoints
             ]
-        , stuntView model.characterSheet.stunts
+        , editStuntView model.stunts
         ]
 
 
-refreshView : Int -> Html Msg
-refreshView points =
+editRefreshView : Int -> Html Msg
+editRefreshView points =
     let
         decrementButton =
             defaultButton
@@ -148,8 +150,8 @@ fatePointsView points =
         ]
 
 
-nameView : String -> Html Msg
-nameView name =
+editNameView : String -> Html Msg
+editNameView name =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -165,8 +167,8 @@ nameView name =
         ]
 
 
-descriptionView : String -> Html Msg
-descriptionView description =
+editDescriptionView : String -> Html Msg
+editDescriptionView description =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -182,8 +184,8 @@ descriptionView description =
         ]
 
 
-aspectView : Array Aspect -> Html Msg
-aspectView aspects =
+editAspectView : Array Aspect -> Html Msg
+editAspectView aspects =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -237,8 +239,8 @@ aspectInput index (Aspect title invokes) =
 -- Skill View
 
 
-skillView : Array Skill -> Html Msg
-skillView skills =
+editSkillView : Array Skill -> Html Msg
+editSkillView skills =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -334,8 +336,8 @@ skillInput index (Skill rating title) =
 -- Stunt View
 
 
-stuntView : Array Stunt -> Html Msg
-stuntView stunts =
+editStuntView : Array Stunt -> Html Msg
+editStuntView stunts =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -406,57 +408,35 @@ stuntInput index (Stunt title description) =
 -- Stress View
 
 
-stressView : Array StressTrack -> Bool -> Html Msg
-stressView stressTracks editModeActive =
-    let
-        view =
-            if editModeActive then
-                [ p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a stress box." ]
-                , div []
-                    (Array.toList
-                        (Array.indexedMap
-                            editStressTrackView
-                            stressTracks
-                        )
-                    )
-                , defaultButton
-                    [ onClick
-                        (AddNewStressTrack
-                            (StressTrack
-                                "New Stress Track"
-                                (Array.fromList
-                                    [ StressBox 1 False ]
-                                )
-                            )
-                        )
-                    ]
-                    [ text "Add new stress track" ]
-                ]
-
-            else
-                [ div []
-                    (Array.toList
-                        (Array.indexedMap
-                            stressTrackView
-                            stressTracks
-                        )
-                    )
-                ]
-    in
+editStressView : Array StressTrack -> Html Msg
+editStressView stressTracks =
     div []
-        ([ div
-            [ css
-                [ displayFlex
-                , alignItems center
-                , marginTop (Css.em 1)
-                ]
+    [ div [ css
+            [ displayFlex
+            , alignItems center
+            , marginTop (Css.em 1)
             ]
-            [ sectionLabel "Stress"
-            , toggleSwitch EditModeStress editModeActive
-            ]
-         ]
-            ++ view
-        )
+          ] 
+          [ sectionLabel "Stress" ]
+    , p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a stress box." ]
+    , div []
+        (Array.toList
+             (Array.indexedMap
+                  editStressTrackView
+                  stressTracks))
+    , defaultButton
+          [ onClick
+                (AddNewStressTrack
+                     (StressTrack
+                          "New Stress Track"
+                          (Array.fromList
+                               [ StressBox 1 False ]
+                          )
+                     )
+                )
+          ]
+          [ text "Add new stress track" ] 
+    ]
 
 
 stressTrackView : Int -> StressTrack -> Html Msg
@@ -679,8 +659,8 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
             )
         , css
             [ fontSize (Css.em 1)
-            , border3 (px 2) solid (hex "333")
-            , padding2 (Css.em 0.25) (Css.em 0.75)
+            , border3 (px 1) solid (hex "333")
+            , padding2 (Css.em 0.25) (Css.em 0.5)
             , display inline
             , marginRight (Css.em 0.5)
             , borderRadius (px 4)
@@ -693,98 +673,98 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
         []
 
 
-toggleSwitch : EditMode -> Bool -> Html Msg
-toggleSwitch mode isActive =
-    span
-        [ css
-            [ displayFlex
-            , alignItems center
-            ]
-        ]
-        [ label
-            [ css
-                [ position relative
-                , display inlineBlock
-                , Css.width (px 60)
-                , Css.height (px 34)
-                , Css.property "transform" "scale(0.65)"
-                ]
-            ]
-            [ input
-                [ type_ "checkbox"
-                , HA.checked isActive
-                , onCheck (always (ToggleEditMode mode))
-                , css [ display none ]
-                ]
-                []
-            , span
-                [ css
-                    [ position absolute
-                    , cursor pointer
-                    , top (px 0)
-                    , left (px 0)
-                    , right (px 0)
-                    , bottom (px 0)
-                    , if isActive then
-                        batch
-                            [ backgroundColor (hex "2196F3")
-                            , before
-                                [ Css.property
-                                    "-webkit-transform"
-                                    "translateX(26px)"
-                                , Css.property
-                                    "-ms-transform"
-                                    "translateX(26px)"
-                                , Css.property
-                                    "transform"
-                                    "translateX(26px)"
-                                ]
-                            ]
+-- toggleSwitch : EditMode -> Bool -> Html Msg
+-- toggleSwitch mode isActive =
+--     span
+--         [ css
+--             [ displayFlex
+--             , alignItems center
+--             ]
+--         ]
+--         [ label
+--             [ css
+--                 [ position relative
+--                 , display inlineBlock
+--                 , Css.width (px 60)
+--                 , Css.height (px 34)
+--                 , Css.property "transform" "scale(0.65)"
+--                 ]
+--             ]
+--             [ input
+--                 [ type_ "checkbox"
+--                 , HA.checked isActive
+--                 , onCheck (always (ToggleEditMode mode))
+--                 , css [ display none ]
+--                 ]
+--                 []
+--             , span
+--                 [ css
+--                     [ position absolute
+--                     , cursor pointer
+--                     , top (px 0)
+--                     , left (px 0)
+--                     , right (px 0)
+--                     , bottom (px 0)
+--                     , if isActive then
+--                         batch
+--                             [ backgroundColor (hex "2196F3")
+--                             , before
+--                                 [ Css.property
+--                                     "-webkit-transform"
+--                                     "translateX(26px)"
+--                                 , Css.property
+--                                     "-ms-transform"
+--                                     "translateX(26px)"
+--                                 , Css.property
+--                                     "transform"
+--                                     "translateX(26px)"
+--                                 ]
+--                             ]
 
-                      else
-                        backgroundColor (hex "ccc")
-                    , Css.property "-webkit-transition" "0.2s"
-                    , Css.property "transition" "0.2s ease"
-                    , borderRadius (px 34)
-                    , before
-                        [ position absolute
-                        , Css.property "content" "\"\""
-                        , Css.height (px 26)
-                        , Css.width (px 26)
-                        , left (px 4)
-                        , bottom (px 4)
-                        , backgroundColor (hex "fff")
-                        , Css.property "-webkit-transition" "0.2s"
-                        , Css.property "transition" "0.2s ease"
-                        , borderRadius (pct 50)
-                        ]
-                    ]
-                ]
-                []
-            ]
-        , span
-            [ css
-                [ fontSize (pct 80)
-                , color (hex "888")
-                ]
-            ]
-            [ text
-                (if isActive then
-                    "Unlocked"
+--                       else
+--                         backgroundColor (hex "ccc")
+--                     , Css.property "-webkit-transition" "0.2s"
+--                     , Css.property "transition" "0.2s ease"
+--                     , borderRadius (px 34)
+--                     , before
+--                         [ position absolute
+--                         , Css.property "content" "\"\""
+--                         , Css.height (px 26)
+--                         , Css.width (px 26)
+--                         , left (px 4)
+--                         , bottom (px 4)
+--                         , backgroundColor (hex "fff")
+--                         , Css.property "-webkit-transition" "0.2s"
+--                         , Css.property "transition" "0.2s ease"
+--                         , borderRadius (pct 50)
+--                         ]
+--                     ]
+--                 ]
+--                 []
+--             ]
+--         , span
+--             [ css
+--                 [ fontSize (pct 80)
+--                 , color (hex "888")
+--                 ]
+--             ]
+--             [ text
+--                 (if isActive then
+--                     "Unlocked"
 
-                 else
-                    "Locked"
-                )
-            ]
-        ]
+--                  else
+--                     "Locked"
+--                 )
+--             ]
+--         ]
 
 
 
 -- Consequences
 
 
-consequenceView : Array Consequence -> Html Msg
-consequenceView consequences =
+editConsequenceView : Array Consequence -> Html Msg
+editConsequenceView consequences =
     div
         [ css
             [ marginTop (Css.em 1) ]
@@ -877,57 +857,35 @@ consequenceSeverityButton severity =
 -- Conditions
 
 
-conditionsView : Array Condition -> Bool -> Html Msg
-conditionsView conditions editModeActive =
-    let
-        view =
-            if editModeActive then
-                [ p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a shift box." ]
-                , div []
-                    (Array.toList
-                        (Array.indexedMap
-                            editConditionView
-                            conditions
-                        )
-                    )
-                , defaultButton
-                    [ onClick
-                        (AddNewCondition
-                            (Condition
-                                "New Condition"
-                                (Array.fromList
-                                    [ StressBox 1 False ]
-                                )
-                            )
-                        )
-                    ]
-                    [ text "Add New Condition" ]
-                ]
-
-            else
-                [ div []
-                    (Array.toList
-                        (Array.indexedMap
-                            conditionView
-                            conditions
-                        )
-                    )
-                ]
-    in
+editConditionsView : Array Condition -> Html Msg
+editConditionsView conditions =
     div []
-        ([ div
-            [ css
-                [ displayFlex
-                , alignItems center
-                , marginTop (Css.em 1)
-                ]
+    [ div [ css
+            [ displayFlex
+            , alignItems center
+            , marginTop (Css.em 1)
             ]
-            [ sectionLabel "Conditions"
-            , toggleSwitch EditModeConditions editModeActive
-            ]
-         ]
-            ++ view
-        )
+          ]
+          [ sectionLabel "Conditions" ]
+    ,  p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a shift box." ]
+    , div []
+        (Array.toList
+             (Array.indexedMap
+                  editConditionView
+                  conditions))
+    , defaultButton
+          [ onClick
+                (AddNewCondition
+                     (Condition
+                          "New Condition"
+                          (Array.fromList
+                               [ StressBox 1 False ]
+                          )
+                     )
+                )
+          ]
+          [ text "Add New Condition" ]
+    ]
 
 
 conditionView : Int -> Condition -> Html Msg
@@ -1024,31 +982,31 @@ defaultButton =
 -- Read Only Views
 
 
-readOnlyView : Model -> Html Msg
-readOnlyView model =
+view : Model -> Html Msg
+view model =
     div
         [ css
             [ padding3 (px 0) (Css.em 1) (Css.em 1)
             , overflowWrap breakWord
             ]
         ]
-        [ readOnlyNameView model.characterSheet.name
-        , readOnlyDescriptionView model.characterSheet.description
-        , readOnlyAspectView model.characterSheet.aspects
-        , readOnlySkillsView model.characterSheet.skills
-        , readOnlyStressView model.characterSheet.stress
-        , readOnlyConsequencesView model.characterSheet.consequences
-        , readOnlyConditionsView model.characterSheet.conditions
+        [ nameView model.name
+        , descriptionView model.description
+        , aspectView model.aspects
+        , skillsView model.skills
+        , stressView model.stress
+        , consequencesView model.consequences
+        , conditionsView model.conditions
         , div
             [ css
                 [ displayFlex
                 , justifyContent spaceAround
                 ]
             ]
-            [ readOnlyRefreshView model.characterSheet.refresh
-            , fatePointsView model.characterSheet.fatePoints
+            [ refreshView model.refresh
+            , fatePointsView model.fatePoints
             ]
-        , readOnlyStuntsView model.characterSheet.stunts
+        , stuntsView model.stunts
         ]
 
 
@@ -1066,8 +1024,8 @@ sectionLabel title =
         [ text title ]
 
 
-readOnlyNameView : String -> Html Msg
-readOnlyNameView name =
+nameView : String -> Html Msg
+nameView name =
     div
         [ css
             [ fontWeight bold
@@ -1083,13 +1041,13 @@ readOnlyNameView name =
         [ text name ]
 
 
-readOnlyDescriptionView : String -> Html Msg
-readOnlyDescriptionView description =
+descriptionView : String -> Html Msg
+descriptionView description =
     div [] [ text description ]
 
 
-readOnlyAspectView : Array Aspect -> Html Msg
-readOnlyAspectView aspects =
+aspectView : Array Aspect -> Html Msg
+aspectView aspects =
     let
         aspectView_ index (Aspect title invokes) =
             div
@@ -1179,8 +1137,8 @@ invokesView index (Aspect title invokes) =
         content
 
 
-readOnlySkillsView : Array Skill -> Html Msg
-readOnlySkillsView skills =
+skillsView : Array Skill -> Html Msg
+skillsView skills =
     let
         skillView_ (Skill rating title) =
             div []
@@ -1213,8 +1171,8 @@ readOnlySkillsView skills =
             ]
 
 
-readOnlyStuntsView : Array Stunt -> Html Msg
-readOnlyStuntsView stunts =
+stuntsView : Array Stunt -> Html Msg
+stuntsView stunts =
     let
         stuntView_ (Stunt title description) =
             div
@@ -1248,8 +1206,8 @@ readOnlyStuntsView stunts =
             ]
 
 
-readOnlyStressView : Array StressTrack -> Html Msg
-readOnlyStressView stressTracks =
+stressView : Array StressTrack -> Html Msg
+stressView stressTracks =
     if Array.isEmpty stressTracks then
         text ""
 
@@ -1269,8 +1227,8 @@ readOnlyStressView stressTracks =
             ]
 
 
-readOnlyConsequencesView : Array Consequence -> Html Msg
-readOnlyConsequencesView consequences =
+consequencesView : Array Consequence -> Html Msg
+consequencesView consequences =
     let
         consequenceView_ (Consequence severity title) =
             div
@@ -1307,8 +1265,8 @@ readOnlyConsequencesView consequences =
             ]
 
 
-readOnlyConditionsView : Array Condition -> Html Msg
-readOnlyConditionsView conditions =
+conditionsView : Array Condition -> Html Msg
+conditionsView conditions =
     if Array.isEmpty conditions then
         text ""
 
@@ -1328,8 +1286,8 @@ readOnlyConditionsView conditions =
             ]
 
 
-readOnlyRefreshView : Int -> Html Msg
-readOnlyRefreshView points =
+refreshView : Int -> Html Msg
+refreshView points =
     div
         [ css
             [ Css.width (pct 50)

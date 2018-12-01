@@ -18,5 +18,9 @@ type alias Index = Int
 
 type Msg
     = UpdateSceneTitle Index String
-
-
+    | UpdateAspect Index Index Aspect
+    | AddNewAspect Index String
+    | RemoveAspect Index Index
+    | AddNewScene
+    | RemoveScene Index
+        

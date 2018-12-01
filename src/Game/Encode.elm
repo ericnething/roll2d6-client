@@ -13,6 +13,7 @@ import Maybe
 
 import Fate
 import Fate.CharacterSheet.Encode as Fate
+import Fate.GameAspectSheet.Encode as Fate
 
 
 --------------------------------------------------
@@ -112,7 +113,7 @@ encodeSheet sheetModel =
         Sheet.FateSheet (Fate.CharacterSheet sheet) ->
             Fate.encodeCharacterSheet sheet
         Sheet.FateSheet (Fate.GameAspectSheet sheet) ->
-            string "Not implemented"
+            Fate.encodeGameAspectSheet sheet
 
 encodeGameType : Game.GameType -> Value
 encodeGameType gameType =

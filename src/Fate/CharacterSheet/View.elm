@@ -2,6 +2,10 @@ module Fate.CharacterSheet.View
     exposing
     ( editView
     , view
+    , inputStyles
+    , sectionLabel
+    , defaultButton
+    , userSelect_none
     )
 
 import Array exposing (Array)
@@ -1007,7 +1011,7 @@ view model =
         ]
 
 
-sectionLabel : String -> Html Msg
+sectionLabel : String -> Html msg
 sectionLabel title =
     div
         [ css

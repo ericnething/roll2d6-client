@@ -1,4 +1,4 @@
-module CharacterSheet.Types exposing (..)
+module Fate.CharacterSheet.Types exposing (..)
 
 import Array exposing (Array)
 
@@ -16,14 +16,6 @@ type alias CharacterSheet =
     , stress : Array StressTrack
     , consequences : Array Consequence
     , conditions : Array Condition
-    }
-
-type alias GameAspectSheet =
-    { scenes : Array Scene }
-
-type alias Scene =
-    { title : String
-    , aspects : Array Aspect
     }
 
 
@@ -225,3 +217,44 @@ type Condition
 
 
 
+type alias Index =
+    Int
+
+
+type Msg
+    = NoOp
+    | UpdateName String
+    | UpdateDescription String
+    | UpdateRefresh Int
+    | UpdateFatePoints Int
+      -- Aspects
+    | UpdateAspect Int Aspect
+    | AddNewAspect String
+    | RemoveAspect Int
+      -- Skills
+    | UpdateSkill Int Skill
+    | AddNewSkill Skill
+    | RemoveSkill Int
+      -- Stunts
+    | UpdateStunt Int Stunt
+    | AddNewStunt String String
+    | RemoveStunt Int
+      -- Stress Tracks
+    | UpdateStressTrack Index StressTrack
+    | AddNewStressTrack StressTrack
+    | RemoveStressTrack Int
+      -- Stress Boxes
+    | UpdateStressBox Int Int StressBox
+    | AddStressBox Index StressBox
+    | RemoveStressBox Index
+      -- Consequences
+    | UpdateConsequence Int Consequence
+    | AddNewConsequence Consequence
+    | RemoveConsequence Int
+      -- Conditions
+    | UpdateCondition Int Condition
+    | AddNewCondition Condition
+    | RemoveCondition Int
+    | UpdateConditionBox Int Int StressBox
+    | AddConditionBox Index StressBox
+    | RemoveConditionBox Index

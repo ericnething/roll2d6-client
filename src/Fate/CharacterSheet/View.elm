@@ -1,14 +1,11 @@
-module CharacterSheet.View
+module Fate.CharacterSheet.View
     exposing
     ( editView
     , view
-    , defaultButton
-    , inputStyles
     )
 
 import Array exposing (Array)
-import CharacterSheet.Types exposing (..)
-import CharacterSheet.Update exposing (..)
+import Fate.CharacterSheet.Types exposing (..)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)

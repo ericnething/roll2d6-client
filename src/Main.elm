@@ -22,13 +22,13 @@ import Lobby.Types as Lobby
 import Login
 import Login.Types as Login
 import PouchDB
-import PouchDB.Decode
+import Game.Decode
     exposing
         ( decodeGame
         , decodeGameData
         , decodeGameList
         )
-import PouchDB.Encode exposing (encodeGame, encodeGameData)
+import Game.Encode exposing (encodeGame, encodeGameData)
 import Task
 import Util exposing (removeIndexFromArray)
 import Route exposing (Route)
@@ -315,7 +315,8 @@ changeRouteTo route model =
         Just (Route.Game gameId) ->
             ( { model | screen = LoadingScreen }
             , PouchDB.loadGame
-                ( encodeGameData Game.emptyGameData, gameId )
+                ( encodeGameData (Game.emptyGameData Game.Fate)
+                , gameId )
             )
 
         Just (Route.Invite inviteId) ->
@@ -331,15 +332,15 @@ changeRouteTo route model =
 maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
 maybeWriteToPouchDB msg newGame =
     case msg of
-        Game.CharacterSheetMsg _ _ ->
+        Game.SheetMsg _ _ ->
             debouncedWriteToPouchDB
                 newGame
 
-        Game.AddCharacterSheet ->
+        Game.AddSheet _ ->
             debouncedWriteToPouchDB
                 newGame
 
-        Game.RemoveCharacterSheet _ ->
+        Game.RemoveSheet _ ->
             debouncedWriteToPouchDB
                 newGame
 

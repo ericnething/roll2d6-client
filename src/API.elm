@@ -22,7 +22,7 @@ import Lobby.Types as Lobby
 import Login.Types as Login
 import Game.Types as Game
 import Invite
-import PouchDB.Decode
+import Game.Decode
     exposing
         ( decodeGameId
         , decodeGameList
@@ -31,7 +31,7 @@ import PouchDB.Decode
         , playerListDecoder
         , chatMessageListDecoder
         )
-import PouchDB.Encode exposing ( encodeChatMessage )
+import Game.Encode exposing ( encodeChatMessage )
 import RemoteData exposing (RemoteData(..), WebData)
 
 domain =
@@ -229,7 +229,9 @@ setPresenceOnline gameId =
         Http.send (always Game.NoOp) request
 
 
-sendChatMessage : Game.GameId -> Game.NewChatMessage -> Cmd Game.Msg
+sendChatMessage : Game.GameId
+                -> Game.NewChatMessage
+                -> Cmd Game.Msg
 sendChatMessage gameId chatMessage =
     let
         request =

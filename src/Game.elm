@@ -6,11 +6,11 @@ module Game
     )
 
 import Array exposing (Array)
-import CharacterSheet
-import CharacterSheet.Template
-import CharacterSheet.View exposing (inputStyles)
+import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
+import Game.Sheet.Types as Sheet
+import Game.Sheet as Sheet
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
@@ -18,7 +18,7 @@ import Html.Styled.Events exposing (..)
 import Time
 import Json.Decode
 import PouchDB exposing (PouchDBRef)
-import PouchDB.Decode
+import Game.Decode
     exposing
     ( decodeGameData
     , decodePlayerList
@@ -59,53 +59,50 @@ subscriptions _ =
         ]
 
 
-update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
+update : Navigation.Key
+       -> Msg
+       -> Model
+       -> ( Model, Cmd Msg )
 update navkey msg model =
     case msg of
-        CharacterSheetMsg index submsg ->
-            case Array.get index model.characterSheets of
+        SheetMsg index submsg ->
+            case Array.get index model.sheets of
                 Nothing ->
                     ( model, Cmd.none )
 
-                Just characterSheet ->
+                Just sheet ->
                     let
-                        ( updatedCharacterSheet, cmd ) =
-                            CharacterSheet.update
-                                submsg
-                                characterSheet
+                        ( updatedSheet, cmd ) =
+                            Sheet.updateSheet submsg sheet
                     in
                     ( { model
-                        | characterSheets =
+                        | sheets =
                             Array.set
                                 index
-                                updatedCharacterSheet
-                                model.characterSheets
+                                updatedSheet
+                                model.sheets
                       }
-                    , Cmd.map (CharacterSheetMsg index) cmd
+                    , Cmd.map (SheetMsg index) cmd
                     )
 
-        AddCharacterSheet ->
+        AddSheet sheet ->
             ( { model
-                | characterSheets =
+                | sheets =
                     Array.push
-                        CharacterSheet.Template.blank
-                        model.characterSheets
+                        sheet
+                        model.sheets
               }
             , Task.perform
                 OpenOverlay
                 (Task.succeed
-                    (EditCharacterSheet
-                        (Array.length
-                            model.characterSheets
-                        )
-                    )
+                    (EditSheet (Array.length model.sheets))
                 )
             )
 
-        RemoveCharacterSheet index ->
+        RemoveSheet index ->
             ( { model
-                | characterSheets =
-                    removeIndexFromArray index model.characterSheets
+                | sheets =
+                    removeIndexFromArray index model.sheets
               }
             , Task.perform
                 identity
@@ -317,7 +314,7 @@ view model =
             ]
         ]
         [ topToolbar model
-        , characterSheetsView model.characterSheets
+        , sheetsView model.sheets
         , sidebar model
         , overlayView model
         ]
@@ -345,7 +342,7 @@ topToolbar model =
               , onlinePlayers model.players
               ]
         , gameTitle model.title
-        , buttons
+        , buttons model.gameType
         ]
 
 
@@ -369,15 +366,15 @@ exitGameButton =
                   ]
     [ text "Exit Game" ]
 
-buttons : Html Msg
-buttons =
+buttons : GameType -> Html Msg
+buttons gameType =
     div [ css
           [ displayFlex
           , alignItems center
           , whiteSpace noWrap
           ]
         ]
-    [ addNewCharacterSheetButton
+    [ addNewSheetButton gameType
     , invitePlayerButton
     , gameSettingsButton
     , showPlayerListButton
@@ -398,10 +395,10 @@ toolbarButton =
         ]
 
 
-addNewCharacterSheetButton : Html Msg
-addNewCharacterSheetButton =
+addNewSheetButton : GameType -> Html Msg
+addNewSheetButton gameType =
     toolbarButton
-        [ onClick AddCharacterSheet
+        [ onClick (AddSheet (Sheet.blank gameType))
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.addCharacterSheet ]
@@ -509,11 +506,11 @@ onlinePlayers players_ =
         )
 
 --------------------------------------------------
--- Character Sheets
+-- Game Sheets
 --------------------------------------------------
 
-characterSheetsView : Array CharacterSheet.Model -> Html Msg
-characterSheetsView characterSheets =
+sheetsView : Array Sheet.SheetModel -> Html Msg
+sheetsView sheets =
     div
         [ css
             [ displayFlex
@@ -528,23 +525,19 @@ characterSheetsView characterSheets =
             , backgroundColor (hex "0079bf")
             ]
         ]
-        (Array.toList <|
-            Array.indexedMap
-                characterSheetWrapper
-                characterSheets
-        )
+        (Array.toList (Array.indexedMap sheetWrapper sheets))
 
 
-editCharacterSheetView :
+editSheetView :
     Int
-    -> Maybe CharacterSheet.Model
+    -> Maybe Sheet.SheetModel
     -> Html Msg
-editCharacterSheetView index mmodel =
+editSheetView index mmodel =
     case mmodel of
         Nothing ->
             div [] [ text "Not Found" ]
 
-        Just characterSheet ->
+        Just sheet ->
             div
                 [ css
                     [ margin2 (Css.em 4) auto
@@ -554,26 +547,26 @@ editCharacterSheetView index mmodel =
                     , borderRadius (Css.em 0.2)
                     ]
                 ]
-                [ editCharacterSheetToolbarView index
+                [ editSheetToolbarView index
                 , Html.Styled.map
-                    (CharacterSheetMsg index)
-                    (CharacterSheet.editView characterSheet)
+                    (SheetMsg index)
+                    (Sheet.editView sheet)
                 ]
 
 
-editCharacterSheetToolbarView : Int -> Html Msg
-editCharacterSheetToolbarView index =
+editSheetToolbarView : Int -> Html Msg
+editSheetToolbarView index =
     div
         [ css
             [ displayFlex
             , alignItems center
             ]
         ]
-        [ CharacterSheet.defaultButton
+        [ defaultButton
             [ onClick CloseOverlay ]
             [ text "Done" ]
-        , CharacterSheet.defaultButton
-            [ onClick (RemoveCharacterSheet index)
+        , defaultButton
+            [ onClick (RemoveSheet index)
             , css
                 [ backgroundColor (hex "ff0000")
                 , color (hex "fff")
@@ -585,7 +578,7 @@ editCharacterSheetToolbarView index =
         ]
 
 
-characterSheetColumn =
+sheetColumn =
     styled div
         [ displayFlex
         , Css.property "flex-direction" "column"
@@ -597,7 +590,7 @@ characterSheetColumn =
         ]
 
 
-characterSheetList =
+sheetList =
     styled div
         [ displayFlex
         , flex (int 1)
@@ -608,8 +601,8 @@ characterSheetList =
         ]
 
 
-characterSheetCard : Int -> CharacterSheet.Model -> Html Msg
-characterSheetCard index characterSheet =
+sheetCard : Int -> Sheet.SheetModel -> Html Msg
+sheetCard index sheet =
     div
         [ css
             [ borderRadius (Css.em 0.2)
@@ -624,16 +617,16 @@ characterSheetCard index characterSheet =
                 , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
                 ]
             ]
-            [ CharacterSheet.defaultButton
-                [ onClick (OpenOverlay (EditCharacterSheet index))
+            [ defaultButton
+                [ onClick (OpenOverlay (EditSheet index))
                 , css
                     [ display block ]
                 ]
                 [ text "Edit" ]
             ]
         , Html.Styled.map
-            (CharacterSheetMsg index)
-            (CharacterSheet.view characterSheet)
+            (SheetMsg index)
+            (Sheet.view sheet)
         ]
 
 
@@ -642,14 +635,14 @@ spacer =
     div [] []
 
 
-characterSheetWrapper :
+sheetWrapper :
     Int
-    -> CharacterSheet.Model
+    -> Sheet.SheetModel
     -> Html Msg
-characterSheetWrapper index characterSheet =
-    characterSheetColumn []
-        [ characterSheetList []
-            [ characterSheetCard index characterSheet
+sheetWrapper index sheet =
+    sheetColumn []
+        [ sheetList []
+            [ sheetCard index sheet
             , spacer
             , spacer
             ]
@@ -678,12 +671,12 @@ overlayView model =
         OverlayNone ->
             text ""
                 
-        EditCharacterSheet index ->
+        EditSheet index ->
             overlay
             []
-            [ editCharacterSheetView
+            [ editSheetView
                   index
-                  (Array.get index model.characterSheets)
+                  (Array.get index model.sheets)
             ]
                     
         EditGameSettings ->
@@ -841,6 +834,15 @@ defaultButton =
         , cursor pointer
         , hover
             [ backgroundColor (hex "eee") ]
+        ]
+
+inputStyles =
+    batch
+        [ Css.width (pct 100)
+        , border3 (px 1) solid (hex "888")
+        , borderRadius (px 4)
+        , padding (Css.em 0.25)
+        , flex (int 1)
         ]
 
 

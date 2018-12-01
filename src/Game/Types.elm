@@ -1,16 +1,16 @@
 module Game.Types exposing (..)
 
 import Array exposing (Array)
-import CharacterSheet
 import Json.Decode exposing (Value)
 import PouchDB exposing (PouchDBRef)
 import RemoteData exposing (WebData)
 import Http
 import Time
+import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 
 
 type Overlay
-    = EditCharacterSheet Int
+    = EditSheet Int
     | EditGameSettings
     | InstantInvite (WebData String)
     | ShowPlayerList
@@ -34,9 +34,10 @@ type alias EventSourceRef = Value
 type alias Model =
     { ref : PouchDBRef
     , eventSource : EventSourceRef
+    , gameType : GameType
     , id : GameId
     , title : String
-    , characterSheets : Array CharacterSheet.Model
+    , sheets : Array (SheetModel)
     , overlay : Overlay
     , players : WebData (List Person)
     , chatInput : String
@@ -44,9 +45,13 @@ type alias Model =
     }
 
 
+type GameType
+    = Fate
+
 type alias GameData =
     { title : String
-    , characterSheets : Array CharacterSheet.Model
+    , gameType : GameType
+    , sheets : Array SheetModel
     }
 
 
@@ -58,21 +63,23 @@ mergeGameData : Model -> GameData -> Model
 mergeGameData model gameData =
     { model
         | title = gameData.title
-        , characterSheets = gameData.characterSheets
+        , sheets = gameData.sheets
     }
 
 
 initialModel : PouchDBRef
              -> EventSourceRef
+             -> GameType
              -> GameId
              -> String
              -> Model
-initialModel ref eventSource id title =
+initialModel ref eventSource gameType id title =
     { ref = ref
     , eventSource = eventSource
+    , gameType = gameType
     , id = id
     , title = title
-    , characterSheets = Array.fromList []
+    , sheets = Array.fromList []
     , overlay = OverlayNone
     , players = RemoteData.Loading
     , chatInput = ""
@@ -80,10 +87,11 @@ initialModel ref eventSource id title =
     }
 
 
-emptyGameData : GameData
-emptyGameData =
+emptyGameData : GameType -> GameData
+emptyGameData gameType =
     { title = "New Game"
-    , characterSheets = Array.fromList []
+    , gameType = gameType
+    , sheets = Array.fromList []
     }
 
 
@@ -162,9 +170,9 @@ type DiceRollRequest =
 
 type Msg
     = NoOp
-    | CharacterSheetMsg Int CharacterSheet.Msg
-    | AddCharacterSheet
-    | RemoveCharacterSheet Int
+    | SheetMsg Int (SheetMsg)
+    | AddSheet (SheetModel)
+    | RemoveSheet Int
     | UpdateGameTitle String
     | OpenOverlay Overlay
     | CloseOverlay
@@ -183,3 +191,5 @@ type Msg
     | KeyPressChatInput
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
+
+

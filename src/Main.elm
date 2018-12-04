@@ -166,7 +166,7 @@ update msg model =
             ( model, PouchDB.put ( game.ref, encodeGame game ) )
 
         GameLoaded value ->
-            case decodeGame value of
+            case Debug.log "GameLoaded Debug" (decodeGame value) of
                 Ok newGame ->
                     case model.screen of
                         LoadingScreen ->

@@ -47,6 +47,19 @@ type alias Model =
 
 type GameType
     = Fate
+    | WorldOfDungeons
+
+gameTypeOptions : List GameType
+gameTypeOptions =
+    [ Fate
+    , WorldOfDungeons
+    ]
+
+showGameType : GameType -> String
+showGameType gameType =
+    case gameType of
+        Fate -> "Fate"
+        WorldOfDungeons -> "World of Dungeons"
 
 type alias GameData =
     { title : String
@@ -67,44 +80,11 @@ mergeGameData model gameData =
     }
 
 
--- initialModel : PouchDBRef
---              -> EventSourceRef
---              -> GameType
---              -> GameId
---              -> String
---              -> Model
--- initialModel ref eventSource gameType id title =
---     { ref = ref
---     , eventSource = eventSource
---     , gameType = gameType
---     , id = id
---     , title = title
---     , sheets = Array.fromList []
---     , overlay = OverlayNone
---     , players = RemoteData.Loading
---     , chatInput = ""
---     , chatMessages = []
---     }
-
-
 emptyGameData : GameType -> GameData
 emptyGameData gameType =
     { title = "New Game"
     , gameType = gameType
     , sheets = Array.fromList []
-        -- case gameType of
-        --     Fate ->
-        --         Array.fromList
-        --             [
-        --              { scenes =
-        --                    Array.fromList
-        --                        [
-        --                         { title = "Game Aspects"
-        --                         , aspects = Array.fromList []
-        --                         }
-        --                        ]
-        --              }
-        --             ]
     }
 
 

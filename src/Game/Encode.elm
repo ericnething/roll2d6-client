@@ -8,6 +8,7 @@ module Game.Encode
 import Array exposing (Array)
 import Game.Types as Game
 import Game.Sheet.Types as Sheet
+import Lobby.Types as Lobby
 import Json.Encode exposing (..)
 import Maybe
 
@@ -15,6 +16,8 @@ import Fate
 import Fate.CharacterSheet.Encode as Fate
 import Fate.GameAspectSheet.Encode as Fate
 
+import WorldOfDungeons
+import WorldOfDungeons.CharacterSheet.Encode as WorldOfDungeons
 
 --------------------------------------------------
 -- Chat Messages and Dice Rolls
@@ -115,7 +118,23 @@ encodeSheet sheetModel =
         Sheet.FateSheet (Fate.GameAspectSheet sheet) ->
             Fate.encodeGameAspectSheet sheet
 
+        Sheet.WorldOfDungeonsSheet
+            (WorldOfDungeons.CharacterSheet sheet) ->
+                WorldOfDungeons.encodeCharacterSheet sheet
+
 encodeGameType : Game.GameType -> Value
 encodeGameType gameType =
     case gameType of
-        Game.Fate -> string "Fate"
+        Game.Fate ->
+            string "fate"
+
+        Game.WorldOfDungeons ->
+            string "world-of-dungeons"
+
+
+encodeNewGameSettings : Lobby.NewGameSettingsModel -> Value
+encodeNewGameSettings { title, gameType } =
+    object
+        [ ( "title", string title )
+        , ( "gameType", encodeGameType gameType )
+        ]

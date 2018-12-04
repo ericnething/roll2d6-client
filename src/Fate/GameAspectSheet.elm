@@ -5,6 +5,7 @@ module Fate.GameAspectSheet
     , view
     , editView
     , update
+    , blank
     )
 
 import Fate.GameAspectSheet.Types as Types
@@ -25,3 +26,6 @@ editView =
 
 update =
     Update.update
+
+blank =
+    Types.emptyGameAspectSheet

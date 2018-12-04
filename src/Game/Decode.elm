@@ -26,6 +26,9 @@ import Fate
 import Fate.CharacterSheet.Decode as Fate
 import Fate.GameAspectSheet.Decode as Fate
 
+import WorldOfDungeons
+import WorldOfDungeons.CharacterSheet.Decode as WorldOfDungeons
+
 
 --------------------------------------------------
 -- Chat messages and dice rolls
@@ -273,15 +276,27 @@ decodeGameData value =
 
 gameDataDecoder : Decoder (Game.GameData)
 gameDataDecoder =
-    map3 Game.GameData
-        (field "title" string)
-        (field "gameType" gameTypeDecoder)
-        (field "sheets" (array sheetDecoder))
+    field "gameType" gameTypeDecoder
+        |> andThen
+           (\gameType ->
+                map3 Game.GameData
+                (field "title" string)
+                (succeed gameType)
+                (field "sheets" (array (sheetDecoder gameType)))
+           )
 
 
+sheetDecoder : Game.GameType -> Decoder (Sheet.SheetModel)
+sheetDecoder gameType =
+    case gameType of
+        Game.Fate ->
+            fateSheetDecoder
 
-sheetDecoder : Decoder (Sheet.SheetModel)
-sheetDecoder =
+        Game.WorldOfDungeons ->
+            worldOfDungeonsSheetDecoder
+
+fateSheetDecoder : Decoder (Sheet.SheetModel)
+fateSheetDecoder =
     oneOf
         [ Fate.decodeCharacterSheet
             |> Decode.map
@@ -291,13 +306,25 @@ sheetDecoder =
                (Sheet.FateSheet << Fate.GameAspectSheet)
         ]
 
+worldOfDungeonsSheetDecoder : Decoder (Sheet.SheetModel)
+worldOfDungeonsSheetDecoder =
+    WorldOfDungeons.decodeCharacterSheet
+        |> Decode.map
+           (Sheet.WorldOfDungeonsSheet <<
+                WorldOfDungeons.CharacterSheet)
+
 gameTypeDecoder : Decoder Game.GameType
 gameTypeDecoder =
-    string
-        |> andThen
-           (\gameType ->
-                case gameType of
-                    "Fate" -> succeed Game.Fate
-                    _ -> fail "Not a valid GameType"
-           )
- 
+    let
+        toGameType gameType =
+            case gameType of
+                "fate" ->
+                    succeed Game.Fate
+                        
+                "world-of-dungeons" ->
+                    succeed Game.WorldOfDungeons
+            
+                _ ->
+                    fail "Not a valid GameType"
+    in
+        string |> andThen toGameType

@@ -5,6 +5,7 @@ module Fate exposing
     , Sheet(..)
     , Msg(..)
     , blankCharacterSheet
+    , blankGameAspectSheet
     )
 
 import Html.Styled exposing (Html)
@@ -70,3 +71,6 @@ editView sheet =
 
 blankCharacterSheet =
     CharacterSheet Fate.CharacterSheet.Template.blank
+
+blankGameAspectSheet =
+    GameAspectSheet GameAspectSheet.blank

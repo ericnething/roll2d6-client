@@ -78,7 +78,8 @@ app.ports.loadGame.subscribe(function (args) {
         
         // setup event source
         const eventSource = setupEventSource(id);
-        
+        console.log("Event Source: ", eventSource);
+
         app.ports.gameLoaded.send({
           id: id,
           ref: local,

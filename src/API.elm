@@ -31,7 +31,11 @@ import Game.Decode
         , playerListDecoder
         , chatMessageListDecoder
         )
-import Game.Encode exposing ( encodeChatMessage )
+import Game.Encode
+    exposing
+    ( encodeChatMessage
+    , encodeGameData
+    )
 import RemoteData exposing (RemoteData(..), WebData)
 
 domain =
@@ -56,22 +60,22 @@ getAllGames =
             |> Cmd.map Lobby.SetGameList
 
 
-newGame : String -> Cmd Lobby.Msg
-newGame title =
+newGame : Game.GameData -> Cmd Lobby.Msg
+newGame gameData =
     let
         request =
             Http.request
                 { method = "POST"
                 , headers = []
                 , url = domain ++ "/games"
-                , body = Http.jsonBody (Json.Encode.string title)
+                , body = Http.jsonBody (encodeGameData gameData)
                 , expect = Http.expectJson gameIdDecoder
                 , timeout = Nothing
                 , withCredentials = False
                 }
     in
         RemoteData.sendRequest request
-            |> Cmd.map (always Lobby.GetGameList)
+            |> Cmd.map Lobby.NewGameResponse
 
 
 login : Login.Auth -> Cmd Login.ConsumerMsg

@@ -346,54 +346,20 @@ editClassView { class } =
 
 editLevelView : {r | level : Int } -> Html Msg
 editLevelView { level } =
-    let
-        decrementButton =
-            defaultButton
-                [ onClick
-                    (UpdateLevel
-                        (Basics.max 1 (level - 1))
-                    )
-                , if level <= 1 then
-                    css [ Css.property "visibility" "hidden" ]
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "-" ]
-
-        incrementButton =
-            defaultButton
-                [ onClick (UpdateLevel (level + 1))
-                , if level > 9 then
-                    css [ Css.property "visibility" "hidden" ]
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "+" ]
-    in
     div
         [ css
             [ Css.width (pct 50)
             , textAlign center
-            , userSelect_none
             ]
         , class "reveal-buttons-on-hover"
         ]
         [ sectionLabel "Level"
-        , div
-            [ css
-                [ whiteSpace noWrap
-                ]
-            ]
-            [ decrementButton
-            , span
-                [ css
-                    [ fontSize (Css.em 1.3)
-                    , margin2 (px 0) (Css.em 0.25)
-                    ]
-                ]
-                [ text (String.fromInt level) ]
-            , incrementButton
-            ]
+        , integerInput
+              { onClickHandler = UpdateLevel
+              , mMinBound = Just 1
+              , mMaxBound = Just 10
+              , currentValue = level
+              }
         ]
 
 editHitDiceView : {r | hitDice : Int, con : Int } -> Html Msg
@@ -485,31 +451,6 @@ editAttributesView { str, dex, con, int, wis, cha } =
 
 editAttributeView : String -> Int -> (Int -> Msg) -> Html Msg
 editAttributeView name value updateAttr =
-    let
-        decrementButton =
-            defaultButton
-                [ onClick
-                    (updateAttr
-                        (Basics.max 0 (value - 1))
-                    )
-                , if value < 1 then
-                    css [ Css.property "visibility" "hidden" ]
-
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "-" ]
-
-        incrementButton =
-            defaultButton
-                [ onClick (updateAttr (value + 1))
-                , if value >= 3 then
-                    css [ Css.property "visibility" "hidden" ]
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "+" ]
-    in
     div
         [ css
             [ Css.width (pct 16.5)
@@ -519,21 +460,12 @@ editAttributeView name value updateAttr =
             ]
         , class "reveal-buttons-on-hover"
         ]
-        [ div
-            [ css
-                [ whiteSpace noWrap
-                ]
-            ]
-            [ decrementButton
-            , span
-                [ css
-                    [ fontSize (Css.em 1.3)
-                    , margin2 (px 0) (Css.em 0.25)
-                    ]
-                ]
-                [ text (String.fromInt value) ]
-            , incrementButton
-            ]
+        [ integerInput
+              { onClickHandler = updateAttr
+              , mMinBound = Just 0
+              , mMaxBound = Just 3
+              , currentValue = value
+              }
         , div [ css
                 [ Css.property "font-variant" "small-caps"
                 , letterSpacing (Css.em 0.15)
@@ -734,53 +666,17 @@ editShieldView { shield } =
 
 editBonusArmorView : {r | bonusArmor : Int } -> Html Msg
 editBonusArmorView { bonusArmor } =
-    let
-        decrementButton =
-            defaultButton
-                [ onClick
-                    (UpdateBonusArmor
-                        (Basics.max 0 (bonusArmor - 1))
-                    )
-                , if bonusArmor < 1 then
-                    css [ Css.property "visibility" "hidden" ]
-
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "-" ]
-
-        incrementButton =
-            defaultButton
-                [ onClick (UpdateBonusArmor (bonusArmor + 1))
-                , css [ opacity (int 0) ]
-                ]
-                [ text "+" ]
-    in
-    div
-        [ css
-            [ Css.width (pct 30)
-            , textAlign center
-            , userSelect_none
-            ]
+    div [ css [ Css.width (pct 30) ]
         , class "reveal-buttons-on-hover"
         ]
-        [ sectionLabel "Bonus Armor"
-        , div
-            [ css
-                [ whiteSpace noWrap
-                ]
-            ]
-            [ decrementButton
-            , span
-                [ css
-                    [ fontSize (Css.em 1.3)
-                    , margin2 (px 0) (Css.em 0.25)
-                    ]
-                ]
-                [ text (String.fromInt bonusArmor) ]
-            , incrementButton
-            ]
-        ]
+    [ sectionLabel "Bonus Armor"
+    , integerInput
+          { onClickHandler = UpdateBonusArmor
+          , mMinBound = Just 0
+          , mMaxBound = Nothing
+          , currentValue = bonusArmor
+          }
+    ]
 
 
 editEquipmentView : {r | equipment : String } -> Html Msg
@@ -878,6 +774,72 @@ defaultButton =
             [ backgroundColor (hex "eee") ]
         ]
 
+integerInput : { onClickHandler : (Int -> msg)
+               , mMinBound : Maybe Int
+               , mMaxBound : Maybe Int
+               , currentValue : Int
+               }
+             -> Html msg
+integerInput { onClickHandler
+             , mMinBound
+             , mMaxBound
+             , currentValue
+             } =
+    let
+        minBound =
+            case mMinBound of
+                Just min -> min
+                Nothing -> Basics.round (-1/0)
+
+        maxBound =
+            case mMaxBound of
+                Just max -> max
+                Nothing -> Basics.round (1/0)
+
+        decrementButton =
+            defaultButton
+                [ onClick
+                    (onClickHandler
+                        (Basics.max minBound (currentValue - 1))
+                    )
+                , if currentValue <= minBound then
+                    css [ Css.property "visibility" "hidden" ]
+                  else
+                    css [ opacity (int 0) ]
+                ]
+                [ text "-" ]
+
+        incrementButton =
+            defaultButton
+                [ onClick
+                      (onClickHandler
+                           (Basics.min maxBound (currentValue + 1))
+                      )
+                , if currentValue >= maxBound then
+                    css [ Css.property "visibility" "hidden" ]
+                  else
+                    css [ opacity (int 0) ]
+                ]
+                [ text "+" ]
+    in
+        div [ css
+              [ whiteSpace noWrap
+              , userSelect_none
+              , textAlign center
+              ]
+            , class "reveal-buttons-on-hover"
+            ]
+        [ decrementButton
+        , span
+              [ css
+                [ fontSize (Css.em 1.3)
+                , margin2 (px 0) (Css.em 0.25)
+                ]
+              ]
+              [ text (String.fromInt currentValue) ]
+        , incrementButton
+        ]
+
 --------------------------------------------------
 -- Utils
 --------------------------------------------------
@@ -891,3 +853,4 @@ showMaybeInt def mInt =
     case mInt of
         Just int -> String.fromInt int
         Nothing -> def
+

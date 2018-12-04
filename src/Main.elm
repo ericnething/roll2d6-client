@@ -16,12 +16,13 @@ import Game
 import Game.Types as Game exposing (GameId)
 import Html
 import Html.Styled exposing (..)
+import Html.Styled.Lazy exposing (lazy)
 import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
 import Login
 import Login.Types as Login
-import PouchDB
+import PouchDB exposing (PouchDBRef)
 import Game.Decode
     exposing
         ( decodeGame
@@ -116,7 +117,7 @@ type Msg
     | GameMsg Game.Msg
     | LobbyMsg Lobby.Msg
     | LoginMsg Login.ConsumerMsg
-    | WriteToPouchDB Game.Model
+    | WriteToPouchDB PouchDBRef Game.GameData
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
     | GameLoadFailed
@@ -162,11 +163,11 @@ update msg model =
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
-        WriteToPouchDB game ->
-            ( model, PouchDB.put ( game.ref, encodeGame game ) )
+        WriteToPouchDB ref game ->
+            ( model, PouchDB.put ( ref, encodeGameData game ) )
 
         GameLoaded value ->
-            case Debug.log "GameLoaded Debug" (decodeGame value) of
+            case decodeGame value of
                 Ok newGame ->
                     case model.screen of
                         LoadingScreen ->
@@ -348,50 +349,18 @@ maybeWriteToPouchDB msg newGame =
             debouncedWriteToPouchDB
                 newGame
 
-        Game.OpenOverlay _ ->
-            Cmd.none
-
-        Game.CloseOverlay ->
-            Cmd.none
-
-        Game.UpdateCurrentGame _ ->
-            Cmd.none
-
-        Game.ChangesReceived ->
-            Cmd.none
-
-        Game.ExitToLobby ->
-            Cmd.none
-
-        Game.CreateInvite ->
-            Cmd.none
-
-        Game.InviteCreated _ ->
-            Cmd.none
-
-        Game.PlayerList _ _ ->
-            Cmd.none
-
-        Game.ServerEventReceived _ ->
-            Cmd.none
-
-        Game.Ping ->
-            Cmd.none
-
-        Game.Pong ->
-            Cmd.none
-
-        Game.NoOp ->
-            Cmd.none
-
         _ ->
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
-debouncedWriteToPouchDB newGame =
+debouncedWriteToPouchDB { ref, title, gameType, sheets } =
     Task.perform identity
         (Task.succeed
-            (WriteToPouchDB newGame
+            (WriteToPouchDB ref
+                 { title = title
+                 , gameType = gameType
+                 , sheets = sheets
+                 }
                 |> provideInput
                 |> DebounceMsg
             )

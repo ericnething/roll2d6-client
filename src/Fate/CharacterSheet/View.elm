@@ -1044,7 +1044,11 @@ nameView name =
 
 descriptionView : String -> Html Msg
 descriptionView description =
-    div [] [ text description ]
+    div [ css
+          [ whiteSpace preWrap
+          ]
+        ]
+        [ text description ]
 
 
 aspectView : Array Aspect -> Html Msg

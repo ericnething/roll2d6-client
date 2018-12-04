@@ -263,7 +263,11 @@ notesView : {r | notes : String } -> Html Msg
 notesView { notes } =
     div []
         [ sectionLabel "Notes"
-        , text notes
+        , div [ css
+                [ whiteSpace preWrap
+                ]
+              ]
+            [ text notes ]
         ]
 
 

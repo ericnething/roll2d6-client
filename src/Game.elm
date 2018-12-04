@@ -13,6 +13,7 @@ import Game.Sheet.Types as Sheet
 import Game.Sheet as Sheet
 import Html
 import Html.Styled exposing (..)
+import Html.Styled.Lazy exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Time
@@ -237,8 +238,8 @@ update navkey msg model =
                     , jumpToBottom "chat-message-list" )
 
                 Err err ->
-                    let _ = Debug.log "Chat" err
-                    in
+                    -- let _ = Debug.log "Chat" err
+                    -- in
                         (model, Cmd.none)
 
         KeyPressChatInput ->
@@ -257,9 +258,9 @@ update navkey msg model =
                                     , DiceRoller.roll rollRequest
                                     )
                                 Err err ->
-                                    let
-                                        _ = Debug.log "Error" err
-                                    in
+                                    -- let
+                                    --     _ = Debug.log "Error" err
+                                    -- in
                                         (model, Cmd.none)
                             
                         Nothing ->
@@ -313,10 +314,10 @@ view model =
             , backgroundColor (hex "0079bf")
             ]
         ]
-        [ topToolbar model
-        , sheetsView model.sheets
-        , sidebar model
-        , overlayView model
+        [ lazy topToolbar model
+        , lazy sheetsView model.sheets
+        , lazy sidebar model
+        , lazy overlayView model
         ]
 
 
@@ -511,7 +512,7 @@ onlinePlayers players_ =
 
 sheetsView : Array Sheet.SheetModel -> Html Msg
 sheetsView sheets =
-    div
+    lazy2 div
         [ css
             [ displayFlex
             , alignItems Css.start
@@ -640,7 +641,7 @@ sheetWrapper :
     -> Sheet.SheetModel
     -> Html Msg
 sheetWrapper index sheet =
-    sheetColumn []
+    lazy2 sheetColumn []
         [ sheetList []
             [ sheetCard index sheet
             , spacer
@@ -791,7 +792,7 @@ playerListView mPlayers =
           RemoteData.Loading ->
               text "Loading player list"
           RemoteData.Failure err ->
-              text ("Something went wrong." ++ Debug.toString err)
+              text ("Something went wrong.")-- ++ Debug.toString err)
           RemoteData.Success players ->
               div []
                   [ div [] (List.map playerListItemView players)
@@ -876,8 +877,8 @@ chatView model =
           , fontSize (Css.em 0.95)
           ]
         ]
-    [ chatMessageListView model.chatMessages
-    , chatInputView model.chatInput
+    [ lazy chatMessageListView model.chatMessages
+    , lazy chatInputView model.chatInput
     ]
 
 chatInputView : String -> Html Msg
@@ -918,7 +919,9 @@ chatMessageListView messages =
                           }
                     ]
                 _ ->
-                    List.map chatMessageView (List.reverse messages)
+                    List.map
+                        (lazy chatMessageView)
+                        (List.reverse messages)
     in
         div [ css
               [ overflowY auto

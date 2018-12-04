@@ -355,7 +355,7 @@ editLevelView { level } =
         ]
         [ sectionLabel "Level"
         , integerInput
-              { onClickHandler = UpdateLevel
+              { toMsg = UpdateLevel
               , mMinBound = Just 1
               , mMaxBound = Just 10
               , currentValue = level
@@ -461,7 +461,7 @@ editAttributeView name value updateAttr =
         , class "reveal-buttons-on-hover"
         ]
         [ integerInput
-              { onClickHandler = updateAttr
+              { toMsg = updateAttr
               , mMinBound = Just 0
               , mMaxBound = Just 3
               , currentValue = value
@@ -566,112 +566,42 @@ editWeaponsView { weapons } =
 
 editArmorView : {r | armor : Armor } -> Html Msg
 editArmorView { armor } =
-    let
-        armorOptionView option =
-            label [ css
-                    [ display block
-                    , marginBottom (Css.em 0.25)
-                    , fontSize (Css.em 1)
-                    , padding2 (Css.em 0.1) (Css.em 0.6)
-                    , borderRadius (Css.em 0.25)
-                    , userSelect_none
-                    , cursor pointer
-                    , if (armor == option) then
-                          batch
-                          [ backgroundColor (hex "333")
-                          , color (hex "fff")
-                          ]
-                      else
-                          batch
-                          [ hover
-                            [ backgroundColor (hex "eee")
-                            ]
-                          ]
-                    ]
-                  ]
-            [ input
-                  [ type_ "radio"
-                  , name "armor-option"
-                  , onInput (always (UpdateArmor option))
-                  , HA.checked (armor == option)
-                  , css
-                        [ position absolute
-                        , appearance_none
-                        , opacity (int 0)
-                        , Css.height (px 0)
-                        , Css.width (px 0)
-                        ]
-                  ] []
-            , text (showArmor option)
-            ]
-    in
-        div [ css
-              [ Css.width (pct 30)
-              ]
-            ]
-            [ sectionLabel "Armor & Speed"
-            , div []
-                (List.map armorOptionView armorOptions)
-            ]
+    div [ css
+          [ Css.width (pct 30)
+          ]
+        ]
+    [ sectionLabel "Armor & Speed"
+    , radioInputList
+          { toMsg = UpdateArmor
+          , options = armorOptions
+          , selected = armor
+          , showOption = showArmor
+          }
+    ]
 
 editShieldView : {r | shield : Shield } -> Html Msg
 editShieldView { shield } =
-    let
-        shieldOptionView option =
-            label [ css
-                    [ display block
-                    , marginBottom (Css.em 0.25)
-                    , fontSize (Css.em 1)
-                    , padding2 (Css.em 0.1) (Css.em 0.6)
-                    , borderRadius (Css.em 0.25)
-                    , userSelect_none
-                    , cursor pointer
-                    , if (shield == option) then
-                          batch
-                          [ backgroundColor (hex "333")
-                          , color (hex "fff")
-                          ]
-                      else
-                          batch
-                          [ hover
-                            [ backgroundColor (hex "eee")
-                            ]
-                          ]
-                    ]
-                  ]
-            [ input
-                  [ type_ "radio"
-                  , name "shield-option"
-                  , onInput (always (UpdateShield option))
-                  , HA.checked (shield == option)
-                  , css
-                        [ position absolute
-                        , appearance_none
-                        , opacity (int 0)
-                        , Css.height (px 0)
-                        , Css.width (px 0)
-                        ]
-                  ] []
-            , text (showShield option)
-            ]
-    in
-        div [ css
-              [ Css.width (pct 25)
-              ]
-            ]
-            [ sectionLabel "Shield"
-            , div []
-                (List.map shieldOptionView shieldOptions)
-            ]
+    div [ css
+          [ Css.width (pct 25)
+          ]
+        ]
+    [ sectionLabel "Shield"
+    , radioInputList
+          { toMsg = UpdateShield
+          , options = shieldOptions
+          , selected = shield
+          , showOption = showShield
+          }
+    ]
 
 editBonusArmorView : {r | bonusArmor : Int } -> Html Msg
 editBonusArmorView { bonusArmor } =
     div [ css [ Css.width (pct 30) ]
         , class "reveal-buttons-on-hover"
         ]
-    [ sectionLabel "Bonus Armor"
+    [ sectionLabel "Armor Bonus"
     , integerInput
-          { onClickHandler = UpdateBonusArmor
+          { toMsg = UpdateBonusArmor
           , mMinBound = Just 0
           , mMaxBound = Nothing
           , currentValue = bonusArmor
@@ -774,13 +704,13 @@ defaultButton =
             [ backgroundColor (hex "eee") ]
         ]
 
-integerInput : { onClickHandler : (Int -> msg)
+integerInput : { toMsg : Int -> msg
                , mMinBound : Maybe Int
                , mMaxBound : Maybe Int
                , currentValue : Int
                }
              -> Html msg
-integerInput { onClickHandler
+integerInput { toMsg
              , mMinBound
              , mMaxBound
              , currentValue
@@ -799,7 +729,7 @@ integerInput { onClickHandler
         decrementButton =
             defaultButton
                 [ onClick
-                    (onClickHandler
+                    (toMsg
                         (Basics.max minBound (currentValue - 1))
                     )
                 , if currentValue <= minBound then
@@ -812,7 +742,7 @@ integerInput { onClickHandler
         incrementButton =
             defaultButton
                 [ onClick
-                      (onClickHandler
+                      (toMsg
                            (Basics.min maxBound (currentValue + 1))
                       )
                 , if currentValue >= maxBound then
@@ -839,6 +769,55 @@ integerInput { onClickHandler
               [ text (String.fromInt currentValue) ]
         , incrementButton
         ]
+
+radioInputList : { toMsg : a -> msg
+                 , options : List a
+                 , selected : a
+                 , showOption : a -> String
+                 }
+               -> Html msg
+radioInputList { toMsg, options, selected, showOption } =
+    let
+        optionView option =
+            label [ css
+                    [ display block
+                    , marginBottom (Css.em 0.25)
+                    , fontSize (Css.em 1)
+                    , padding2 (Css.em 0.1) (Css.em 0.6)
+                    , borderRadius (Css.em 0.25)
+                    , userSelect_none
+                    , cursor pointer
+                    , if (selected == option) then
+                          batch
+                          [ backgroundColor (hex "333")
+                          , color (hex "fff")
+                          ]
+                      else
+                          batch
+                          [ hover
+                            [ backgroundColor (hex "eee")
+                            ]
+                          ]
+                    ]
+                  ]
+            [ input
+                  [ type_ "radio"
+                  , name "option"
+                  , onInput (always (toMsg option))
+                  , HA.checked (selected == option)
+                  , css
+                        [ position absolute
+                        , appearance_none
+                        , opacity (int 0)
+                        , Css.height (px 0)
+                        , Css.width (px 0)
+                        ]
+                  ] []
+            , text (showOption option)
+            ]
+    in
+        div [] (List.map optionView options)
+
 
 --------------------------------------------------
 -- Utils

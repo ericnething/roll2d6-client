@@ -281,7 +281,7 @@ update navkey msg model =
             )
 
         OnScroll position ->
-            ({ model | viewportX = toFloat position }
+            ({ model | sheetsViewportX = toFloat position }
             , Cmd.none
             )
 
@@ -519,18 +519,17 @@ onlinePlayers players_ =
 
 sheetsView : {r |
                sheets : Array Sheet.SheetModel
-             , viewportX : Float
+             , sheetsViewportX : Float
              }
            -> Html Msg
-sheetsView { sheets, viewportX } =
+sheetsView { sheets, sheetsViewportX } =
     let
         viewportWidth = 1440
         sheetWidth = 24 * 15
         minBound =
-            -- 0
-            Basics.max 0 (floor (viewportX / sheetWidth) - 1)
+            Basics.max 0
+                (floor (sheetsViewportX / sheetWidth) - 1)
         maxBound =
-            -- 500
             ceiling
             (toFloat minBound +
                  (viewportWidth / sheetWidth) + 1)

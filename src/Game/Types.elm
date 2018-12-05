@@ -42,7 +42,7 @@ type alias Model =
     , players : WebData (List Person)
     , chatInput : String
     , chatMessages : List ChatMessage
-    , viewportX : Float
+    , sheetsViewportX : Float
     }
 
 
@@ -62,7 +62,7 @@ emptyGameModel ref id gameData eventSource =
     , players = RemoteData.Loading
     , chatInput = ""
     , chatMessages = []
-    , viewportX = 0
+    , sheetsViewportX = 0
     }
 
 type GameType

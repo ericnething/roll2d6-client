@@ -42,8 +42,28 @@ type alias Model =
     , players : WebData (List Person)
     , chatInput : String
     , chatMessages : List ChatMessage
+    , viewportX : Float
     }
 
+
+emptyGameModel : PouchDBRef
+               -> GameId
+               -> GameData
+               -> EventSourceRef
+               -> Model
+emptyGameModel ref id gameData eventSource =
+    { ref = ref
+    , eventSource = eventSource
+    , gameType = gameData.gameType
+    , id = id
+    , title = gameData.title
+    , sheets = gameData.sheets
+    , overlay = OverlayNone
+    , players = RemoteData.Loading
+    , chatInput = ""
+    , chatMessages = []
+    , viewportX = 0
+    }
 
 type GameType
     = Fate
@@ -183,5 +203,6 @@ type Msg
     | KeyPressChatInput
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
+    | OnScroll Int
 
 

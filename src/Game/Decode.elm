@@ -10,6 +10,7 @@ module Game.Decode exposing
     , decodePlayerPresence
     , chatMessageListDecoder
     , decodeChatMessageList
+    , scrollDecoder
     )
 
 import Array exposing (Array)
@@ -29,6 +30,14 @@ import Fate.GameAspectSheet.Decode as Fate
 import WorldOfDungeons
 import WorldOfDungeons.CharacterSheet.Decode as WorldOfDungeons
 
+
+--------------------------------------------------
+-- Scroll events
+--------------------------------------------------
+
+scrollDecoder : (Int -> msg) -> Decoder msg
+scrollDecoder toMsg =
+    map toMsg (at ["target", "scrollLeft"] int)
 
 --------------------------------------------------
 -- Chat messages and dice rolls
@@ -249,20 +258,7 @@ decodeGame value =
 
 gameDecoder : Decoder (Game.Model)
 gameDecoder =
-    map4
-        (\ref id gameData eventSource ->
-            { ref = ref
-            , eventSource = eventSource
-            , gameType = gameData.gameType
-            , id = id
-            , title = gameData.title
-            , sheets = gameData.sheets
-            , overlay = Game.OverlayNone
-            , players = RemoteData.Loading
-            , chatInput = ""
-            , chatMessages = []
-            }
-        )
+    map4 Game.emptyGameModel
         (field "ref" value)
         (field "id" string)
         (field "game" gameDataDecoder)

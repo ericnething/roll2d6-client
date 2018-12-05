@@ -25,6 +25,7 @@ import Game.Decode
     , decodePlayerList
     , decodePlayerPresence
     , decodeChatMessageList
+    , scrollDecoder
     )
 import Task
 import Util exposing (removeIndexFromArray)
@@ -279,6 +280,12 @@ update navkey msg model =
                      (NewDiceRollMessage rollResult))
             )
 
+        OnScroll position ->
+            ({ model | viewportX = toFloat position }
+            , Cmd.none
+            )
+
+
 updatePlayerPresenceList : List PlayerPresence
                          -> List Person
                          -> List Person
@@ -315,7 +322,7 @@ view model =
             ]
         ]
         [ lazy topToolbar model
-        , lazy sheetsView model.sheets
+        , lazy sheetsView model
         , lazy sidebar model
         , lazy overlayView model
         ]
@@ -510,8 +517,24 @@ onlinePlayers players_ =
 -- Game Sheets
 --------------------------------------------------
 
-sheetsView : Array Sheet.SheetModel -> Html Msg
-sheetsView sheets =
+sheetsView : {r |
+               sheets : Array Sheet.SheetModel
+             , viewportX : Float
+             }
+           -> Html Msg
+sheetsView { sheets, viewportX } =
+    let
+        viewportWidth = 1440
+        sheetWidth = 24 * 15
+        minBound =
+            -- 0
+            Basics.max 0 (floor (viewportX / sheetWidth) - 1)
+        maxBound =
+            -- 500
+            ceiling
+            (toFloat minBound +
+                 (viewportWidth / sheetWidth) + 1)
+    in
     lazy2 div
         [ css
             [ displayFlex
@@ -525,8 +548,12 @@ sheetsView sheets =
             , Css.property "grid-column-gap" "1rem"
             , backgroundColor (hex "0079bf")
             ]
+        , on "scroll" (scrollDecoder OnScroll)
         ]
-        (Array.toList (Array.indexedMap sheetWrapper sheets))
+        (Array.toList
+             (Array.indexedMap
+                  (sheetWrapper (Debug.log "Min/MaxBound" (minBound, maxBound)))
+                      sheets))
 
 
 editSheetView :
@@ -636,18 +663,23 @@ spacer =
     div [] []
 
 
-sheetWrapper :
-    Int
-    -> Sheet.SheetModel
-    -> Html Msg
-sheetWrapper index sheet =
-    lazy2 sheetColumn []
-        [ sheetList []
-            [ sheetCard index sheet
-            , spacer
-            , spacer
+sheetWrapper : (Int, Int)
+             -> Int
+             -> Sheet.SheetModel
+             -> Html Msg
+sheetWrapper (minBound, maxBound) index sheet =
+    if index >= minBound && index <= maxBound
+    then
+        lazy2 sheetColumn []
+            [ sheetList []
+                  [ sheetCard index sheet
+                  , spacer
+                  , spacer
+                  ]
             ]
-        ]
+    else
+        lazy2 div [ css [ opacity (int 0) ] ]
+            [ text "." ]
 
 
 --------------------------------------------------

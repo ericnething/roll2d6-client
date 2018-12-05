@@ -368,30 +368,6 @@ editLevelView { level } =
 
 editHitDiceView : {r | hitDice : Int, con : Int } -> Html Msg
 editHitDiceView { hitDice, con } =
-    let
-        decrementButton =
-            defaultButton
-                [ onClick
-                    (UpdateHitDice
-                        (Basics.max (1 + con) (hitDice - 1))
-                    )
-                , if hitDice <= (1 + con) then
-                    css [ Css.property "visibility" "hidden" ]
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "-" ]
-
-        incrementButton =
-            defaultButton
-                [ onClick (UpdateHitDice (hitDice + 1))
-                , if hitDice >= 6 then
-                    css [ Css.property "visibility" "hidden" ]
-                  else
-                    css [ opacity (int 0) ]
-                ]
-                [ text "+" ]
-    in
     div
         [ css
             [ Css.width (pct 50)
@@ -400,22 +376,13 @@ editHitDiceView { hitDice, con } =
             ]
         , class "reveal-buttons-on-hover"
         ]
-        [ sectionLabel "Hit Dice"
-        , div
-            [ css
-                [ whiteSpace noWrap
-                ]
-            ]
-            [ decrementButton
-            , span
-                [ css
-                    [ fontSize (Css.em 1.3)
-                    , margin2 (px 0) (Css.em 0.25)
-                    ]
-                ]
-                [ text (String.fromInt (hitDice + con)) ]
-            , incrementButton
-            ]
+        [ sectionLabel "Base Hit Dice"
+        , integerInput
+              { toMsg = UpdateHitDice
+              , mMinBound = Just 1
+              , mMaxBound = Just 6
+              , currentValue = hitDice
+              }
         ]
 
 

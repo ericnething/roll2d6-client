@@ -1,6 +1,10 @@
 'use strict';
 
-var app = Elm.Main.init();
+var app = Elm.Main.init({
+  flags: [ document.documentElement.clientWidth,
+           document.documentElement.clientHeight
+         ]
+});
 
 //----------------------------------------------
 //  Couch DB

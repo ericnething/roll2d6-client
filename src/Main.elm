@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
+import Browser.Events
 import Url exposing (Url)
 import Array exposing (Array)
 import Debouncer.Messages as Debouncer
@@ -38,7 +39,7 @@ import API
 import Invite
 
 
-main : Program () Model Msg
+main : Program (Int, Int) Model Msg
 main =
     Browser.application
         { init = init
@@ -69,6 +70,7 @@ subscriptions model =
 
             _ ->
                 Sub.none
+        , Browser.Events.onResize WindowResized
         ]
 
 
@@ -80,6 +82,7 @@ type alias Model =
     { screen : Screen
     , debouncer : Debouncer Msg
     , navkey : Navigation.Key
+    , viewportSize : (Int, Int)
     }
 
 
@@ -91,19 +94,22 @@ type Screen
     | InviteScreen Invite.Model
 
 
-initialModel : Navigation.Key -> Model
-initialModel key =
+initialModel : (Int, Int) -> Navigation.Key -> Model
+initialModel viewportSize key =
     { screen = LoginScreen Login.initialModel
     , debouncer =
         debounce (fromSeconds 1)
             |> toDebouncer
     , navkey = key
+    , viewportSize = viewportSize
     }
 
 
-init : flags -> Url -> Navigation.Key -> ( Model, Cmd Msg )
-init _ url key =
-    changeRouteTo (Route.fromUrl url) (initialModel key)
+init : (Int, Int) -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init viewportSize url key =
+    changeRouteTo
+    (Route.fromUrl url)
+    (initialModel viewportSize key)
 
 
 
@@ -123,6 +129,7 @@ type Msg
     | GameLoadFailed
     | AuthFailed
     | InviteMsg Invite.Msg
+    | WindowResized Int Int
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -289,6 +296,9 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        WindowResized width height ->
+            ({ model | viewportSize = (width, height) }, Cmd.none)
+
 
 changeRouteTo : Maybe Route -> Model -> (Model, Cmd Msg)
 changeRouteTo route model =
@@ -386,7 +396,7 @@ view model =
             div [] [ text "Loading game..." ]
 
         GameScreen game ->
-            Game.view game
+            Game.view model.viewportSize game
                 |> Html.Styled.map GameMsg
 
         InviteScreen invite ->

@@ -310,8 +310,8 @@ updatePlayerPresenceList presenceList players =
 -- View
 
 
-view : Model -> Html Msg
-view model =
+view : (Int, Int) -> Model -> Html Msg
+view viewportSize model =
     div
         [ css
             [ Css.property "display" "grid"
@@ -322,7 +322,7 @@ view model =
             ]
         ]
         [ lazy topToolbar model
-        , lazy sheetsView model
+        , lazy2 sheetsView viewportSize model
         , lazy sidebar model
         , lazy overlayView model
         ]
@@ -517,14 +517,14 @@ onlinePlayers players_ =
 -- Game Sheets
 --------------------------------------------------
 
-sheetsView : {r |
+sheetsView : (Int, Int)
+           -> {r |
                sheets : Array Sheet.SheetModel
              , sheetsViewportX : Float
              }
            -> Html Msg
-sheetsView { sheets, sheetsViewportX } =
+sheetsView (viewportWidth, _) { sheets, sheetsViewportX } =
     let
-        viewportWidth = 1440
         sheetWidth = 24 * 15
         minBound =
             Basics.max 0
@@ -532,7 +532,7 @@ sheetsView { sheets, sheetsViewportX } =
         maxBound =
             ceiling
             (toFloat minBound +
-                 (viewportWidth / sheetWidth) + 1)
+                 (toFloat viewportWidth / sheetWidth) + 1)
     in
     lazy2 div
         [ css

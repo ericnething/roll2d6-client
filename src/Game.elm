@@ -677,8 +677,8 @@ sheetWrapper (minBound, maxBound) index sheet =
                   ]
             ]
     else
-        lazy2 div [ css [ opacity (int 0) ] ]
-            [ text "." ]
+        div []
+            [ text "᠎" ] -- unicode mongolian vowel separator
 
 
 --------------------------------------------------

@@ -13,9 +13,8 @@ type Overlay
     = EditSheet Int
     | EditGameSettings
     | InstantInvite (WebData String)
-    | ShowPlayerList
+    | ManagePlayers
     | OverlayNone
-
 
 type AccessLevel
     = Owner

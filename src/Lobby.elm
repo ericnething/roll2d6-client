@@ -56,7 +56,7 @@ update navkey msg model =
             case result of
                 Success gameId ->
                     ({ model | overlay = OverlayNone }
-                    , Navigation.pushUrl
+                    , Navigation.replaceUrl
                         navkey
                         (Route.toUrlString (Route.Game gameId))
                     )
@@ -102,7 +102,7 @@ update navkey msg model =
                     case resp.status.code of
                         401 ->
                             ( model
-                            , Navigation.pushUrl
+                            , Navigation.replaceUrl
                                 navkey
                                 (Route.toUrlString Route.Auth)
                             )
@@ -117,7 +117,7 @@ update navkey msg model =
 
         LoadGame id ->
             (model
-            , Navigation.pushUrl
+            , Navigation.replaceUrl
                 navkey
                 (Route.toUrlString (Route.Game id))
             )

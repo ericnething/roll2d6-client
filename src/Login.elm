@@ -32,7 +32,7 @@ update navkey msg model =
             case result of
                 Ok _ ->
                     ( model
-                    , Navigation.pushUrl
+                    , Navigation.replaceUrl
                         navkey
                         (Route.toUrlString Route.Lobby)
                     )

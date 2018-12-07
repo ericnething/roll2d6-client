@@ -140,7 +140,7 @@ update navkey msg model =
             , Cmd.batch
                 [ API.setPresenceOffline model.id
                 , PouchDB.closeEventStream model.ref
-                , Navigation.pushUrl
+                , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
                 ]
@@ -433,7 +433,7 @@ invitePlayerButton =
 showPlayerListButton : Html Msg
 showPlayerListButton =
     toolbarButton
-        [ onClick (OpenOverlay ShowPlayerList)
+        [ onClick (OpenOverlay ManagePlayers)
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.players ]
@@ -512,6 +512,68 @@ onlinePlayers players_ =
                             (chooseColor id))
             _ -> [ text "" ]
         )
+
+-- popOverView : { id : Int
+--               , open : msg
+--               , close : msg
+--               , popoverState : PopOver
+--               , openTrigger : String
+--               , closeTrigger : String
+--               , menu : Html msg
+--               }
+--             -> Html msg
+-- popOverView { id
+--             , open
+--             , close
+--             , popoverState
+--             , openTrigger
+--             , closeTrigger
+--             , menu
+--             } =
+--     div [ css
+--           [ display inlineFlex
+--           , position relative
+--           , verticalAlign top
+--           ]
+--         ]
+--         [ div [ ]
+--               [ case popoverState of
+--                     PopOverNone ->
+--                         defaultButton
+--                         [ onClick open ]
+--                         [ text openTrigger ]
+--                     PopOver id_ ->
+--                         if id_ == id
+--                         then
+--                             defaultButton
+--                             [ onClick close ]
+--                             [ text closeTrigger ]
+--                         else
+--                             defaultButton
+--                             [ onClick open ]
+--                             [ text openTrigger ]
+--               ]
+--         , div [ css
+--                 [ left (px 0)
+--                 , position absolute
+--                 , top (pct 100)
+--                 , zIndex (int 20)
+--                 , Css.width (Css.em 12)
+--                 , backgroundColor (hex "eee")
+--                 ]
+--               ]
+--             [ case popoverState of
+--                     PopOverNone ->
+--                         text ""
+--                     PopOver id_ ->
+--                         if id_ == id
+--                         then
+--                             menu
+--                         else
+--                             text ""
+--             ]
+--         ]
+
 
 --------------------------------------------------
 -- Game Sheets
@@ -717,7 +779,7 @@ overlayView model =
         InstantInvite mInvite ->
             overlay [] [ instantInviteView mInvite ]
 
-        ShowPlayerList ->
+        ManagePlayers ->
             overlay [] [ playerListView model.players ]
 
 
@@ -823,35 +885,66 @@ playerListView mPlayers =
           RemoteData.Loading ->
               text "Loading player list"
           RemoteData.Failure err ->
-              text ("Something went wrong.")-- ++ Debug.toString err)
+              text ("Something went wrong.")
           RemoteData.Success players ->
               div []
-                  [ div [] (List.map playerListItemView players)
+                  [ h2 [ css [ marginTop (px 0) ] ]
+                        [ text "Manage Players" ]
+                  , div [] (List.map playerListItemView players)
                   , defaultButton
                         [ onClick CloseOverlay ]
                         [ text "Close" ]
                   ]
-    ]                  
+    ]
 
 
 playerListItemView : Person -> Html Msg
 playerListItemView player =
-    div []
-        [ text player.username
-        , case player.presence of
-              Online ->
-                  presenceIndicator "00ff00" "online"
-              Offline ->
-                  presenceIndicator "ff0000" "offline"
+    div [ css
+          [ displayFlex
+          , alignItems center
+          , justifyContent spaceBetween
+          ]
+        , class "reveal-buttons-on-hover"
+        ]
+        [ div [ css
+                [ flex2 (int 1) (int 1)
+                , case player.presence of
+                      Online ->
+                          Css.batch []
+                      Offline ->
+                          opacity (num 0.6)
+                ]
+              ]
+              [ text player.username
+              , case player.presence of
+                    Online ->
+                        presenceIndicator "19b419" "online"
+                    Offline ->
+                        presenceIndicator "d71b1b" "offline"
+              ]
+        , defaultButton
+              [ onClick (OpenOverlay ManagePlayers)
+              , css
+                [ backgroundColor (hex "ff0000")
+                , color (hex "fff")
+                , opacity (int 0)
+                , hover
+                    [ backgroundColor (hex "ee0000") ]
+                ]
+              ]
+              [ text "Remove" ]
         ]
 
 
 presenceIndicator : String -> String -> Html msg
 presenceIndicator color status =
     span [ css
-           [ borderRadius (pct 50)
-           , Css.color (hex color)
+           [ borderRadius (Css.em 0.25)
+           , backgroundColor (hex color)
+           , Css.color (hex "fff")
            , margin2 (Css.em 0) (Css.em 0.5)
+           , padding2 (px 0) (Css.em 0.25)
            ]
          ]
         [ text status ]

@@ -151,7 +151,7 @@ update msg model =
             case urlRequest of
                 Internal url ->
                     ( model
-                    , Navigation.pushUrl
+                    , Navigation.replaceUrl
                         model.navkey
                         (Url.toString url)
                     )

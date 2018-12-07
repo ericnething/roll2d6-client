@@ -79,7 +79,7 @@ severityToInt severity =
 
 
 type Consequence
-    = Consequence Severity String
+    = Consequence Severity String Int
 
 
 

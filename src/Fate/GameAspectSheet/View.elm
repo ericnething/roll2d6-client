@@ -12,9 +12,9 @@ import Fate.CharacterSheet.View
     ( inputStyles
     , sectionLabel
     , defaultButton
-    , userSelect_none
     )
 import Css exposing (..)
+import Util.Css exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)

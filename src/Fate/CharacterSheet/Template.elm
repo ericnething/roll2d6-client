@@ -85,9 +85,9 @@ initialCharacterSheet =
             ]
     , consequences =
         Array.fromList
-            [ Consequence Mild ""
-            , Consequence Moderate ""
-            , Consequence Severe ""
+            [ Consequence Mild "" 0
+            , Consequence Moderate "" 0
+            , Consequence Severe "" 0
             ]
     , conditions =
         Array.fromList []
@@ -130,9 +130,9 @@ fateCore =
             ]
     , consequences =
         Array.fromList
-            [ Consequence Mild ""
-            , Consequence Moderate ""
-            , Consequence Severe ""
+            [ Consequence Mild "" 0
+            , Consequence Moderate "" 0
+            , Consequence Severe "" 0
             ]
     , conditions =
         Array.fromList []

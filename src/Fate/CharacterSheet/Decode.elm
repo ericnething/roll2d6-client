@@ -97,11 +97,12 @@ decodeStunt =
 
 decodeConsequence : Decoder Consequence
 decodeConsequence =
-    Decode.succeed (\_ _ a b -> Consequence a b)
+    Decode.succeed (\_ _ a b c -> Consequence a b c)
         |> required "type" (decodeType "Consequence")
         |> required "ctor" (decodeConstructor "Consequence")
         |> required "severity" (int |> andThen decodeSeverity)
         |> required "title" string
+        |> required "invokes" int
 
 
 decodeCondition : Decoder Condition

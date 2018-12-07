@@ -212,7 +212,7 @@ update msg model =
                     Array.push newConsequence model.consequences
                         |> Array.toList
                         |> stableSortWith
-                            (\(Consequence a _) (Consequence b _) ->
+                            (\(Consequence a _ _) (Consequence b _ _) ->
                                 Basics.compare
                                     (severityToInt b)
                                     (severityToInt a)

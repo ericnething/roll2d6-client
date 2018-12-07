@@ -5,12 +5,12 @@ module Fate.CharacterSheet.View
     , inputStyles
     , sectionLabel
     , defaultButton
-    , userSelect_none
     )
 
 import Array exposing (Array)
 import Fate.CharacterSheet.Types exposing (..)
 import Css exposing (..)
+import Util.Css exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
@@ -781,7 +781,7 @@ editConsequenceView consequences =
 
 
 consequenceInput : Int -> Consequence -> Html Msg
-consequenceInput index (Consequence severity title) =
+consequenceInput index (Consequence severity title invokes) =
     div
         [ css
             [ displayFlex
@@ -806,7 +806,7 @@ consequenceInput index (Consequence severity title) =
                 (\newTitle ->
                     UpdateConsequence
                         index
-                        (Consequence severity newTitle)
+                        (Consequence severity newTitle invokes)
                 )
             , value title
             ]
@@ -836,7 +836,7 @@ consequenceButtonList consequences =
             (listDifference
                 consequenceSeverityList
                 (List.map
-                    (\(Consequence a _) -> a)
+                    (\(Consequence a _ _) -> a)
                     (Array.toList consequences)
                 )
             )
@@ -849,7 +849,7 @@ consequenceSeverityButton severity =
             [ marginBottom (Css.em 0.5)
             , marginRight (Css.em 0.5)
             ]
-        , onClick (AddNewConsequence (Consequence severity ""))
+        , onClick (AddNewConsequence (Consequence severity "" 0))
         ]
         [ text (showSeverity severity) ]
 
@@ -941,19 +941,6 @@ editConditionView trackIndex (Condition title stressBoxes) =
 
 
 -- Extra Styles
-
-
-userSelect_none : Css.Style
-userSelect_none =
-    batch
-        [ Css.property "-webkit-touch-callout" "none" -- iOS Safari
-        , Css.property "-webkit-user-select" "none" -- Safari
-        , Css.property "-khtml-user-select" "none" -- Konqueror HTML
-        , Css.property "-moz-user-select" "none" -- Firefox
-        , Css.property "-ms-user-select" "none" -- Internet Explorer/Edge
-        , Css.property "user-select" "none"
-        ]
-
 
 inputStyles : Css.Style
 inputStyles =
@@ -1064,7 +1051,14 @@ aspectView aspects =
                 , class "reveal-buttons-on-hover"
                 ]
                 [ span [] [ text title ]
-                , invokesView index (Aspect title invokes)
+                , invokesView
+                    { toMsg =
+                          (\newInvokes ->
+                               UpdateAspect
+                               index
+                               (Aspect title newInvokes))
+                    , invokes = invokes
+                    }
                 ]
     in
     if Array.isEmpty aspects then
@@ -1084,8 +1078,11 @@ aspectView aspects =
             ]
 
 
-invokesView : Int -> Aspect -> Html Msg
-invokesView index (Aspect title invokes) =
+invokesView : { toMsg : Int -> msg
+              , invokes : Int
+              }
+            -> Html msg
+invokesView { toMsg, invokes } =
     let
         invokeButton =
             styled defaultButton
@@ -1096,22 +1093,12 @@ invokesView index (Aspect title invokes) =
 
         addInvokeButton =
             invokeButton
-                [ onClick
-                    (UpdateAspect
-                        index
-                        (Aspect title (invokes + 1))
-                    )
-                ]
+                [ onClick (toMsg (invokes + 1)) ]
                 [ text "+" ]
 
         removeInvokeButton =
             invokeButton
-                [ onClick
-                    (UpdateAspect
-                        index
-                        (Aspect title (invokes - 1))
-                    )
-                ]
+                [ onClick (toMsg (invokes - 1)) ]
                 [ text "-" ]
 
         content =
@@ -1234,41 +1221,52 @@ stressView stressTracks =
 
 consequencesView : Array Consequence -> Html Msg
 consequencesView consequences =
-    let
-        consequenceView_ (Consequence severity title) =
-            div
-                [ css
-                    [ displayFlex
-                    , alignItems center
-                    ]
-                ]
-                [ div
-                    [ css
-                        [ fontWeight bold
-                        , marginRight (Css.em 0.5)
-                        ]
-                    ]
-                    [ text (showSeverity severity) ]
-                , div []
-                    [ text title ]
-                ]
-    in
     if Array.isEmpty consequences then
         text ""
 
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
+        div [ css
+              [ marginTop (Css.em 1) ]
             ]
-            [ sectionLabel "Consequences"
-            , div [] <|
-                Array.toList <|
-                    Array.map
-                        consequenceView_
-                        consequences
-            ]
+        [ sectionLabel "Consequences"
+        , div [] <|
+            Array.toList <|
+                Array.indexedMap
+                    consequenceView
+                    consequences
+        ]
 
+consequenceView : Int -> Consequence -> Html Msg
+consequenceView index (Consequence severity title invokes) =
+    div [ class "reveal-buttons-on-hover" ]
+        [ div [ css
+                [ fontWeight bold
+                , marginRight (Css.em 0.5)
+                ]
+              ]
+              [ text (showSeverity severity) ]
+        , if String.length title > 0 then
+              div [ css
+                    [ displayFlex
+                    , alignItems flexStart
+                    , justifyContent spaceBetween
+                    , marginBottom (Css.em 0.35)
+                    ]
+                  ]
+                  [ div [ css [ flex2 (int 1) (int 1) ] ]
+                        [ text title ]
+                  , invokesView
+                        { toMsg =
+                              (\newInvokes ->
+                                   UpdateConsequence
+                                   index
+                                   (Consequence severity title newInvokes))
+                        , invokes = invokes
+                        }
+                  ]
+          else
+              text ""
+        ]
 
 conditionsView : Array Condition -> Html Msg
 conditionsView conditions =
@@ -1310,10 +1308,68 @@ refreshView points =
         ]
 
 
-appearance_none : Style
-appearance_none =
-    batch
-        [ Css.property "-webkit-appearance" "none"
-        , Css.property "-moz-appearance" "none"
-        , Css.property "appearance" "none"
+integerInput : { toMsg : Int -> msg
+               , mMinBound : Maybe Int
+               , mMaxBound : Maybe Int
+               , currentValue : Int
+               }
+             -> Html msg
+integerInput { toMsg
+             , mMinBound
+             , mMaxBound
+             , currentValue
+             } =
+    let
+        minBound =
+            case mMinBound of
+                Just min -> min
+                Nothing -> Basics.round (-1/0)
+
+        maxBound =
+            case mMaxBound of
+                Just max -> max
+                Nothing -> Basics.round (1/0)
+
+        decrementButton =
+            defaultButton
+                [ onClick
+                    (toMsg
+                        (Basics.max minBound (currentValue - 1))
+                    )
+                , if currentValue <= minBound then
+                    css [ Css.property "visibility" "hidden" ]
+                  else
+                    css [ opacity (int 0) ]
+                ]
+                [ text "-" ]
+
+        incrementButton =
+            defaultButton
+                [ onClick
+                      (toMsg
+                           (Basics.min maxBound (currentValue + 1))
+                      )
+                , if currentValue >= maxBound then
+                    css [ Css.property "visibility" "hidden" ]
+                  else
+                    css [ opacity (int 0) ]
+                ]
+                [ text "+" ]
+    in
+        div [ css
+              [ whiteSpace noWrap
+              , userSelect_none
+              , textAlign center
+              ]
+            , class "reveal-buttons-on-hover"
+            ]
+        [ decrementButton
+        , span
+              [ css
+                [ fontSize (Css.em 1.3)
+                , margin2 (px 0) (Css.em 0.25)
+                ]
+              ]
+              [ text (String.fromInt currentValue) ]
+        , incrementButton
         ]

@@ -55,12 +55,13 @@ encodeStunt (Stunt title description) =
         ]
 
 encodeConsequence : Consequence -> Value
-encodeConsequence (Consequence severity title) =
+encodeConsequence (Consequence severity title invokes) =
     object
         [ ( "type", string "Consequence" )
         , ( "ctor", string "Consequence" )
         , ( "severity", int (severityToInt severity) )
         , ( "title", string title )
+        , ( "invokes", int invokes )
         ]
 
 encodeCondition : Condition -> Value

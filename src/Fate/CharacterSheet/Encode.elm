@@ -30,36 +30,28 @@ encodeCharacterSheet characterSheet =
 encodeAspect : Aspect -> Value
 encodeAspect (Aspect title invokes) =
     object
-        [ ( "type", string "Aspect" )
-        , ( "ctor", string "Aspect" )
-        , ( "title", string title )
+        [ ( "title", string title )
         , ( "invokes", int invokes )
         ]
 
 encodeSkill : Skill -> Value
 encodeSkill (Skill rating name) =
     object
-        [ ( "type", string "Skill" )
-        , ( "ctor", string "Skill" )
-        , ( "rating", int (skillRatingToInt rating) )
+        [ ( "rating", int (skillRatingToInt rating) )
         , ( "name", string name )
         ]
 
 encodeStunt : Stunt -> Value
 encodeStunt (Stunt title description) =
     object
-        [ ( "type", string "Stunt" )
-        , ( "ctor", string "Stunt" )
-        , ( "title", string title )
+        [ ( "title", string title )
         , ( "description", string description )
         ]
 
 encodeConsequence : Consequence -> Value
 encodeConsequence (Consequence severity title invokes) =
     object
-        [ ( "type", string "Consequence" )
-        , ( "ctor", string "Consequence" )
-        , ( "severity", int (severityToInt severity) )
+        [ ( "severity", int (severityToInt severity) )
         , ( "title", string title )
         , ( "invokes", int invokes )
         ]
@@ -67,26 +59,20 @@ encodeConsequence (Consequence severity title invokes) =
 encodeCondition : Condition -> Value
 encodeCondition (Condition title stressBoxes) =
     object
-        [ ( "type", string "Condition" )
-        , ( "ctor", string "Condition" )
-        , ( "title", string title )
+        [ ( "title", string title )
         , ( "stressBoxes", array encodeStressBox stressBoxes )
         ]
 
 encodeStressBox : StressBox -> Value
 encodeStressBox (StressBox value marked) =
     object
-        [ ( "type", string "StressBox" )
-        , ( "ctor", string "StressBox" )
-        , ( "value", int value )
+        [ ( "value", int value )
         , ( "marked", bool marked )
         ]
 
 encodeStressTrack : StressTrack -> Value
 encodeStressTrack (StressTrack title stressBoxes) =
     object
-        [ ( "type", string "StressTrack" )
-        , ( "ctor", string "StressTrack" )
-        , ( "title", string title )
+        [ ( "title", string title )
         , ( "stressBoxes", array encodeStressBox stressBoxes )
         ]

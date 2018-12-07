@@ -1,6 +1,0 @@
-"type": "[a-zA-Z]*",\n\s*"ctor": "[a-zA-Z]*",
-"type": "[a-zA-Z]*",\n[[:space:]]*"ctor": "[a-zA-Z]*",
-"ctor": "[a-zA-Z]*",
-
-\("severity": -[[:digit:]]+,\)
-\1\n"invokes": 0,

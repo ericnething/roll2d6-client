@@ -70,36 +70,28 @@ decodeConstructor expectedConstructor =
 
 decodeAspect : Decoder Aspect
 decodeAspect =
-    Decode.succeed (\_ _ a b -> Aspect a b)
-        |> required "type" (decodeType "Aspect")
-        |> required "ctor" (decodeConstructor "Aspect")
+    Decode.succeed Aspect
         |> required "title" string
         |> required "invokes" int
 
 
 decodeSkill : Decoder Skill
 decodeSkill =
-    Decode.succeed (\_ _ a b -> Skill a b)
-        |> required "type" (decodeType "Skill")
-        |> required "ctor" (decodeConstructor "Skill")
+    Decode.succeed Skill
         |> required "rating" (int |> andThen decodeSkillRating)
         |> required "name" string
 
 
 decodeStunt : Decoder Stunt
 decodeStunt =
-    Decode.succeed (\_ _ a b -> Stunt a b)
-        |> required "type" (decodeType "Stunt")
-        |> required "ctor" (decodeConstructor "Stunt")
+    Decode.succeed Stunt
         |> required "title" string
         |> required "description" string
 
 
 decodeConsequence : Decoder Consequence
 decodeConsequence =
-    Decode.succeed (\_ _ a b c -> Consequence a b c)
-        |> required "type" (decodeType "Consequence")
-        |> required "ctor" (decodeConstructor "Consequence")
+    Decode.succeed Consequence
         |> required "severity" (int |> andThen decodeSeverity)
         |> required "title" string
         |> required "invokes" int
@@ -107,27 +99,21 @@ decodeConsequence =
 
 decodeCondition : Decoder Condition
 decodeCondition =
-    Decode.succeed (\_ _ a b -> Condition a b)
-        |> required "type" (decodeType "Condition")
-        |> required "ctor" (decodeConstructor "Condition")
+    Decode.succeed Condition
         |> required "title" string
         |> required "stressBoxes" (array decodeStressBox)
 
 
 decodeStressBox : Decoder StressBox
 decodeStressBox =
-    Decode.succeed (\_ _ a b -> StressBox a b)
-        |> required "type" (decodeType "StressBox")
-        |> required "ctor" (decodeConstructor "StressBox")
+    Decode.succeed StressBox
         |> required "value" int
         |> required "marked" bool
 
 
 decodeStressTrack : Decoder StressTrack
 decodeStressTrack =
-    Decode.succeed (\_ _ a b -> StressTrack a b)
-        |> required "type" (decodeType "StressTrack")
-        |> required "ctor" (decodeConstructor "StressTrack")
+    Decode.succeed StressTrack
         |> required "title" string
         |> required "stressBoxes" (array decodeStressBox)
 

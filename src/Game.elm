@@ -295,6 +295,26 @@ update navkey msg model =
             , Cmd.none
             )
 
+        OpenFullSheet index ->
+            ({ model | fullSheet = Just (FullSheet index False) }
+            , Cmd.none
+            )
+
+        CloseFullSheet ->
+            ({ model | fullSheet = Nothing }
+            , Cmd.none
+            )
+
+        ToggleFullSheetEdit ->
+            ({ model
+                 | fullSheet
+                   = Maybe.map
+                     (\(FullSheet index editing) ->
+                          FullSheet index (not editing))
+                     model.fullSheet
+             }, Cmd.none
+            )
+
 
 updatePlayerPresenceList : List PlayerPresence
                          -> List Person
@@ -332,7 +352,13 @@ view viewportSize model =
             ]
         ]
         [ lazy topToolbar model
-        , lazy2 sheetsView viewportSize model
+        , case model.fullSheet of
+              Nothing ->
+                  lazy2 sheetsView viewportSize model
+              Just (FullSheet index editing) ->
+                  fullSheetView
+                  (FullSheet index editing)
+                  (Array.get index model.sheets)
         , lazy sidebar model
         , lazy overlayView model
         ]
@@ -722,6 +748,12 @@ sheetCard index sheet =
                     [ display block ]
                 ]
                 [ text "Edit" ]
+            , defaultButton
+                [ onClick (OpenFullSheet index)
+                , css
+                    [ display block ]
+                ]
+                [ text "View Details" ]
             ]
         , Html.Styled.map
             (SheetMsg index)
@@ -751,6 +783,42 @@ sheetWrapper (minBound, maxBound) index sheet =
     else
         div []
             [ text "᠎" ] -- unicode mongolian vowel separator
+
+
+
+fullSheetView : FullSheet -> Maybe Sheet.SheetModel -> Html Msg
+fullSheetView (FullSheet index editing) mmodel =
+    case mmodel of
+        Nothing ->
+            div [] [ text "Not Found" ]
+        Just sheet ->
+            div [ css
+                  [ margin2 (Css.em 0) auto
+                  , backgroundColor (hex "fff")
+                  , padding (Css.em 2)
+                  , Css.width (Css.em 48)
+                  , borderRadius (Css.em 0.2)
+                  ]
+                ]
+            [ div []
+                  [ defaultButton
+                        [ onClick CloseFullSheet ]
+                        [ text "go back" ]
+                  , defaultButton
+                        [ onClick ToggleFullSheetEdit ]
+                        [ text "Edit" ]
+                  ]
+            , Html.Styled.map
+                (SheetMsg index)
+                (if editing
+                 then
+                     Sheet.editView sheet
+                 else
+                     Sheet.view sheet
+                )
+            ]
+
+
 
 
 --------------------------------------------------

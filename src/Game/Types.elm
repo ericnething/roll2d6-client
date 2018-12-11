@@ -9,6 +9,10 @@ import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 
 
+type alias Index = Int
+
+type FullSheet = FullSheet Index Bool
+
 type Overlay
     = EditSheet Int
     | EditGameSettings
@@ -37,6 +41,7 @@ type alias Model =
     , id : GameId
     , title : String
     , sheets : Array (SheetModel)
+    , fullSheet : Maybe FullSheet
     , overlay : Overlay
     , players : WebData (List Person)
     , chatInput : String
@@ -57,6 +62,7 @@ emptyGameModel ref id gameData eventSource =
     , id = id
     , title = gameData.title
     , sheets = gameData.sheets
+    , fullSheet = Nothing
     , overlay = OverlayNone
     , players = RemoteData.Loading
     , chatInput = ""
@@ -205,5 +211,6 @@ type Msg
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
     | OnScroll Int
-
-
+    | OpenFullSheet Index
+    | CloseFullSheet
+    | ToggleFullSheetEdit

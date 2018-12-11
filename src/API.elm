@@ -8,6 +8,7 @@ module API
     , createInvite
     , joinGame
     , getPlayers
+    , removePlayer
     , ping
     , setPresenceOnline
     , setPresenceOffline
@@ -179,6 +180,24 @@ getPlayers gameId =
     in
         RemoteData.sendRequest request
             |> Cmd.map (Game.PlayerList gameId)
+
+removePlayer : Game.GameId -> Int -> Cmd Game.Msg
+removePlayer gameId playerId =
+    let
+        request =
+            Http.request
+                { method = "DELETE"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId
+                        ++ "/players/" ++ String.fromInt playerId
+                , body = Http.emptyBody
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (Game.PlayerRemoved gameId) request
+
 
 ping : Game.GameId -> Cmd Game.Msg
 ping gameId =

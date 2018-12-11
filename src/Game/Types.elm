@@ -193,6 +193,8 @@ type Msg
     | CreateInvite
     | InviteCreated (WebData String)
     | PlayerList GameId (WebData (List Person))
+    | RemovePlayer Int
+    | PlayerRemoved GameId (Result Http.Error String)
     | ServerEventReceived ServerEvent
     | Ping
     | Pong

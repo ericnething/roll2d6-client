@@ -164,6 +164,16 @@ update navkey msg model =
             , Cmd.none
             )
 
+        RemovePlayer playerId ->
+            ( model, API.removePlayer model.id playerId )
+
+        PlayerRemoved gameId result ->
+            case result of
+                Ok _ ->
+                    ( model, API.getPlayers gameId )
+                Err _ ->
+                    ( model, Cmd.none )
+
         ServerEventReceived (PlayerListUpdated ePlayers) ->
             case ePlayers of
                 Ok players ->
@@ -847,8 +857,9 @@ instantInviteView mInvite =
                         [ type_ "text"
                         , readonly True
                         , value
-                              (Route.toUrlString
-                                   (Route.Invite invite))
+                              ("https://localhost:4430" ++
+                                   Route.toUrlString
+                                       (Route.Invite invite))
                         , css
                               [ inputStyles
                               , backgroundColor (hex "eee")
@@ -924,7 +935,7 @@ playerListItemView player =
                         presenceIndicator "d71b1b" "offline"
               ]
         , defaultButton
-              [ onClick (OpenOverlay ManagePlayers)
+              [ onClick (RemovePlayer player.id)
               , css
                 [ backgroundColor (hex "ff0000")
                 , color (hex "fff")

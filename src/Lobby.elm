@@ -7,6 +7,7 @@ module Lobby
 
 import API
 import Css exposing (..)
+import Util.Css exposing (..)
 import Game.Types as Game
 import Game.GameType as Game
 import Html
@@ -43,10 +44,14 @@ update navkey msg model =
         NewGame ->
             case model.overlay of
                 NewGameSettings { title, gameType } ->
-                    ( model
-                    , API.newGame
-                        (initialGameModel title gameType)
-                    )
+                    if String.length title > 0
+                    then
+                        ( model
+                        , API.newGame
+                            (initialGameModel title gameType)
+                        )
+                    else
+                        ( model, Cmd.none )
 
                 _ ->
                     ( model
@@ -305,12 +310,29 @@ newGameView { title, gameType } =
     div [ css
           [ margin2 (Css.em 4) auto
           , backgroundColor (hex "fff")
-          , padding (Css.em 2)
+          , padding2 (Css.em 2) (Css.em 1)
           , Css.width (Css.em 32)
           , borderRadius (Css.em 0.2)
           ]
         ]
-    [ sectionLabel "Game Title"
+    [ div [ css
+            [ fontWeight bold
+            , fontSize (Css.em 1.2)
+            ]
+          ]
+          [ text "Create a new game" ]
+    , sectionLabel "Select your game type"
+    , radioInputList
+          [ css
+            [ Css.property "column-count" "2"
+            ]
+          ]
+          { toMsg = UpdateNewGameType
+          , options = Game.gameTypeOptions
+          , selected = gameType
+          , showOption = Game.showGameType
+          }
+    , sectionLabel "Enter your game title"
     , input
           [ type_ "text"
           , css [ inputStyles ]
@@ -318,44 +340,32 @@ newGameView { title, gameType } =
           , value title
           ]
           []
-    , sectionLabel "Game Type"
-    , gameTypeOptionListView gameType
-    , defaultButton
-          [ onClick NewGame ]
-          [ text "Create Game" ]
-    , defaultButton
-          [ onClick CloseOverlay
-          , css
-                [ backgroundColor (hex "ff0000")
-                , color (hex "fff")
-                , hover
-                      [ backgroundColor (hex "ee0000") ]
-                ]
-          ]
-          [ text "Cancel" ]
+    , newGameViewButtons
     ]
 
-gameTypeOptionListView : Game.GameType -> Html Msg
-gameTypeOptionListView gameType =
-    div []
-        [ fieldset []
-              (List.map
-                   (gameTypeOptionView gameType)
-                   Game.gameTypeOptions)
+newGameViewButtons : Html Msg
+newGameViewButtons =
+    div [ css
+          [ margin3 (Css.em 2) (px 0) (px 0)
+          ]
+        ]
+        [ defaultButton
+              [ onClick NewGame
+              , css [ marginRight (Css.em 1) ]
+              ]
+              [ text "Create Game" ]
+        , defaultButton
+              [ onClick CloseOverlay
+              , css
+                    [ backgroundColor (hex "ff0000")
+                    , color (hex "fff")
+                    , hover
+                          [ backgroundColor (hex "ee0000") ]
+                    ]
+              ]
+              [ text "Cancel" ]
         ]
 
-gameTypeOptionView : Game.GameType -> Game.GameType -> Html Msg
-gameTypeOptionView gameType option =
-    label [ css [ padding (px 20) ]
-          ]
-    [ input
-          [ type_ "radio"
-          , name "game-type-option"
-          , onInput (always (UpdateNewGameType option))
-          , HA.checked (gameType == option)
-          ] []
-    , text (Game.showGameType option)
-    ]
 
 emptyNewGameSettings : Overlay
 emptyNewGameSettings =
@@ -384,8 +394,57 @@ sectionLabel title =
             , Css.property "font-variant" "small-caps"
             , Css.property "letter-spacing" "0.1em"
             , fontWeight bold
+            , margin3 (Css.em 1) (px 0) (Css.em 0.65)
             ]
         ]
         [ text title ]
 
 
+radioInputList : List (Attribute msg)
+               -> { toMsg : a -> msg
+                 , options : List a
+                 , selected : a
+                 , showOption : a -> String
+                 }
+               -> Html msg
+radioInputList attrs { toMsg, options, selected, showOption } =
+    let
+        optionView option =
+            label [ css
+                    [ display block
+                    , marginBottom (Css.em 0.25)
+                    , fontSize (Css.em 1)
+                    , padding2 (Css.em 0.1) (Css.em 0.6)
+                    , borderRadius (Css.em 0.25)
+                    , userSelect_none
+                    , cursor pointer
+                    , if (selected == option) then
+                          batch
+                          [ backgroundColor (hex "333")
+                          , color (hex "fff")
+                          ]
+                      else
+                          batch
+                          [ hover
+                            [ backgroundColor (hex "eee")
+                            ]
+                          ]
+                    ]
+                  ]
+            [ input
+                  [ type_ "radio"
+                  , name "option"
+                  , onInput (always (toMsg option))
+                  , HA.checked (selected == option)
+                  , css
+                        [ position absolute
+                        , appearance_none
+                        , opacity (int 0)
+                        , Css.height (px 0)
+                        , Css.width (px 0)
+                        ]
+                  ] []
+            , text (showOption option)
+            ]
+    in
+        div attrs (List.map optionView options)

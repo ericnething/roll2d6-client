@@ -2,6 +2,7 @@ module Fate.CharacterSheet.View
     exposing
     ( editView
     , view
+    , compactView
     , inputStyles
     , sectionLabel
     , defaultButton
@@ -25,11 +26,7 @@ import Util
 
 editView : Model -> Html Msg
 editView model =
-    div
-        [ css
-            [ maxWidth (Css.em 32)
-            ]
-        ]
+    div []
         [ editNameView model.name
         , editDescriptionView model.description
         , editAspectView model.aspects
@@ -970,12 +967,35 @@ defaultButton =
 -- Read Only Views
 
 
-view : Model -> Html Msg
-view model =
+compactView : Model -> Html Msg
+compactView model =
     div
         [ css
             [ padding3 (px 0) (Css.em 1) (Css.em 1)
             , overflowWrap breakWord
+            ]
+        ]
+        [ nameView model.name
+        , descriptionView model.description
+        , aspectView model.aspects
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceAround
+                ]
+            ]
+            [ refreshView model.refresh
+            , fatePointsView model.fatePoints
+            ]
+        ]
+
+
+view : Model -> Html Msg
+view model =
+    div
+        [ css
+            [ overflowWrap breakWord
+            -- , padding3 (px 0) (Css.em 1) (Css.em 1)
             ]
         ]
         [ nameView model.name
@@ -1018,8 +1038,8 @@ nameView name =
         [ css
             [ fontWeight bold
             , fontSize (Css.em 1.2)
-            , position sticky
-            , top (px 0)
+            -- , position sticky
+            -- , top (px 0)
             , backgroundColor (hex "fff")
             , borderBottom3 (px 1) solid (hex "ccc")
             , marginBottom (Css.em 0.25)
@@ -1169,7 +1189,7 @@ stuntsView stunts =
         stuntView_ (Stunt title description) =
             div
                 [ css
-                    [ marginBottom (Css.em 0.5)
+                    [ marginBottom (Css.em 0.85)
                     ]
                 ]
                 [ span
@@ -1300,7 +1320,7 @@ refreshView points =
         [ sectionLabel "Refresh"
         , div
             [ css
-                [ fontSize (Css.em 1.2)
+                [ fontSize (Css.em 1.3)
                 , marginLeft (Css.em 1.4)
                 ]
             ]

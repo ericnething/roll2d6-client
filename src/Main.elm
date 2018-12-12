@@ -15,6 +15,7 @@ import Debouncer.Messages as Debouncer
         )
 import Game
 import Game.Types as Game exposing (GameId)
+import Game.Sheets.Types as Sheets
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (lazy)
@@ -343,15 +344,15 @@ changeRouteTo route model =
 maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
 maybeWriteToPouchDB msg newGame =
     case msg of
-        Game.SheetMsg _ _ ->
+        Game.SheetsMsg (Sheets.SheetMsg _ _) ->
             debouncedWriteToPouchDB
                 newGame
 
-        Game.AddSheet _ ->
+        Game.SheetsMsg (Sheets.AddSheet _) ->
             debouncedWriteToPouchDB
                 newGame
 
-        Game.RemoveSheet _ ->
+        Game.SheetsMsg (Sheets.RemoveSheet _) ->
             debouncedWriteToPouchDB
                 newGame
 

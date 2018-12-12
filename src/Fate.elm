@@ -1,6 +1,7 @@
 module Fate exposing
     ( view
     , editView
+    , compactView
     , update
     , Sheet(..)
     , Msg(..)
@@ -47,6 +48,16 @@ update msg model =
 
         _ ->
             (model, Cmd.none)
+
+compactView : Sheet -> Html Msg
+compactView sheet =
+    case sheet of
+        CharacterSheet model ->
+            CharacterSheet.compactView model
+                |> Html.Styled.map CharacterSheetMsg
+        GameAspectSheet model ->
+            GameAspectSheet.view model
+                |> Html.Styled.map GameAspectSheetMsg
 
 view : Sheet -> Html Msg
 view sheet =

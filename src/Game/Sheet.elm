@@ -34,6 +34,18 @@ updateSheet sheetMsg sheetModel =
         _ ->
             (sheetModel, Cmd.none)
 
+compactView : SheetModel -> Html SheetMsg
+compactView sheetModel =
+    case sheetModel of
+        FateSheet model ->
+            Fate.compactView model
+                |> Html.Styled.map FateMsg
+
+        WorldOfDungeonsSheet model ->
+            WorldOfDungeons.view model
+                |> Html.Styled.map WorldOfDungeonsMsg
+
+
 view : SheetModel -> Html SheetMsg
 view sheetModel =
     case sheetModel of

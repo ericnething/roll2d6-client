@@ -4,6 +4,7 @@ module Fate.CharacterSheet
     , Msg
     , editView
     , view
+    , compactView
     , update
     )
 
@@ -22,6 +23,9 @@ editView =
 
 view =
     View.view
+
+compactView =
+    View.compactView
 
 update =
     Update.update

@@ -7,11 +7,10 @@ import RemoteData exposing (WebData)
 import Http
 import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
+import Game.Sheets.Types as Sheets exposing (FullSheet)
 
 
 type alias Index = Int
-
-type FullSheet = FullSheet Index Bool
 
 type Overlay
     = EditSheet Int
@@ -187,9 +186,7 @@ type DiceRollRequest =
 
 type Msg
     = NoOp
-    | SheetMsg Int (SheetMsg)
-    | AddSheet (SheetModel)
-    | RemoveSheet Int
+    | SheetsMsg Sheets.Msg
     | UpdateGameTitle String
     | OpenOverlay Overlay
     | CloseOverlay
@@ -210,7 +207,3 @@ type Msg
     | KeyPressChatInput
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
-    | OnScroll Int
-    | OpenFullSheet Index
-    | CloseFullSheet
-    | ToggleFullSheetEdit

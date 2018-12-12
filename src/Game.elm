@@ -9,13 +9,14 @@ import Array exposing (Array)
 import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
-import Game.Sheet.Types as Sheet
-import Game.Sheet as Sheet
+import Game.Sheets.Types as Sheets
+import Game.Sheets as Sheets
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
+import Common exposing (defaultButton, inputStyles)
 import Time
 import Json.Decode
 import PouchDB exposing (PouchDBRef)
@@ -67,49 +68,14 @@ update : Navigation.Key
        -> ( Model, Cmd Msg )
 update navkey msg model =
     case msg of
-        SheetMsg index submsg ->
-            case Array.get index model.sheets of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just sheet ->
-                    let
-                        ( updatedSheet, cmd ) =
-                            Sheet.updateSheet submsg sheet
-                    in
-                    ( { model
-                        | sheets =
-                            Array.set
-                                index
-                                updatedSheet
-                                model.sheets
-                      }
-                    , Cmd.map (SheetMsg index) cmd
-                    )
-
-        AddSheet sheet ->
-            ( { model
-                | sheets =
-                    Array.push
-                        sheet
-                        model.sheets
-              }
-            , Task.perform
-                OpenOverlay
-                (Task.succeed
-                    (EditSheet (Array.length model.sheets))
+        SheetsMsg submsg ->
+            let
+                ( newModel, cmd ) =
+                    Sheets.update submsg model
+            in
+                ( newModel
+                , Cmd.map SheetsMsg cmd
                 )
-            )
-
-        RemoveSheet index ->
-            ( { model
-                | sheets =
-                    removeIndexFromArray index model.sheets
-              }
-            , Task.perform
-                identity
-                (Task.succeed CloseOverlay)
-            )
 
         UpdateGameTitle title ->
             ( { model | title = title }
@@ -290,31 +256,6 @@ update navkey msg model =
                      (NewDiceRollMessage rollResult))
             )
 
-        OnScroll position ->
-            ({ model | sheetsViewportX = toFloat position }
-            , Cmd.none
-            )
-
-        OpenFullSheet index ->
-            ({ model | fullSheet = Just (FullSheet index False) }
-            , Cmd.none
-            )
-
-        CloseFullSheet ->
-            ({ model | fullSheet = Nothing }
-            , Cmd.none
-            )
-
-        ToggleFullSheetEdit ->
-            ({ model
-                 | fullSheet
-                   = Maybe.map
-                     (\(FullSheet index editing) ->
-                          FullSheet index (not editing))
-                     model.fullSheet
-             }, Cmd.none
-            )
-
 
 updatePlayerPresenceList : List PlayerPresence
                          -> List Person
@@ -352,13 +293,8 @@ view viewportSize model =
             ]
         ]
         [ lazy topToolbar model
-        , case model.fullSheet of
-              Nothing ->
-                  lazy2 sheetsView viewportSize model
-              Just (FullSheet index editing) ->
-                  fullSheetView
-                  (FullSheet index editing)
-                  (Array.get index model.sheets)
+        , Sheets.view viewportSize model
+            |> Html.Styled.map SheetsMsg
         , lazy sidebar model
         , lazy overlayView model
         ]
@@ -378,7 +314,7 @@ topToolbar model =
             , backgroundColor transparent
             , color (hex "fff")
             , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0)
-            , Css.property "grid-column" "1 / -1"
+            , Css.property "grid-column" "1 / 2"
             ]
         ]
         [ div [ css [ displayFlex ] ]
@@ -439,10 +375,11 @@ toolbarButton =
         ]
 
 
+
 addNewSheetButton : GameType -> Html Msg
 addNewSheetButton gameType =
     toolbarButton
-        [ onClick (AddSheet (Sheet.blank gameType))
+        [ onClick (SheetsMsg (Sheets.AddSheet (Sheet.blank gameType)))
         , css [ marginLeft (Css.em 0.5) ]
         ]
         [ Icons.addCharacterSheet ]
@@ -611,212 +548,6 @@ onlinePlayers players_ =
 --         ]
 
 
---------------------------------------------------
--- Game Sheets
---------------------------------------------------
-
-sheetsView : (Int, Int)
-           -> {r |
-               sheets : Array Sheet.SheetModel
-             , sheetsViewportX : Float
-             }
-           -> Html Msg
-sheetsView (viewportWidth, _) { sheets, sheetsViewportX } =
-    let
-        sheetWidth = 24 * 15
-        minBound =
-            Basics.max 0
-                (floor (sheetsViewportX / sheetWidth) - 1)
-        maxBound =
-            ceiling
-            (toFloat minBound +
-                 (toFloat viewportWidth / sheetWidth) + 1)
-    in
-    lazy2 div
-        [ css
-            [ displayFlex
-            , alignItems Css.start
-            , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
-            , overflowX auto
-            , Css.property "height" "calc(100vh - 3.6rem)"
-            , Css.property "display" "grid"
-            , Css.property "grid-auto-columns" "23rem"
-            , Css.property "grid-auto-flow" "column"
-            , Css.property "grid-column-gap" "1rem"
-            , backgroundColor (hex "0079bf")
-            ]
-        , on "scroll" (scrollDecoder OnScroll)
-        ]
-        (Array.toList
-             (Array.indexedMap
-                  (sheetWrapper (Debug.log "Min/MaxBound" (minBound, maxBound)))
-                      sheets))
-
-
-editSheetView :
-    Int
-    -> Maybe Sheet.SheetModel
-    -> Html Msg
-editSheetView index mmodel =
-    case mmodel of
-        Nothing ->
-            div [] [ text "Not Found" ]
-
-        Just sheet ->
-            div
-                [ css
-                    [ margin2 (Css.em 4) auto
-                    , backgroundColor (hex "fff")
-                    , padding (Css.em 2)
-                    , Css.width (Css.em 32)
-                    , borderRadius (Css.em 0.2)
-                    ]
-                ]
-                [ editSheetToolbarView index
-                , Html.Styled.map
-                    (SheetMsg index)
-                    (Sheet.editView sheet)
-                ]
-
-
-editSheetToolbarView : Int -> Html Msg
-editSheetToolbarView index =
-    div
-        [ css
-            [ displayFlex
-            , alignItems center
-            ]
-        ]
-        [ defaultButton
-            [ onClick CloseOverlay ]
-            [ text "Done" ]
-        , defaultButton
-            [ onClick (RemoveSheet index)
-            , css
-                [ backgroundColor (hex "ff0000")
-                , color (hex "fff")
-                , hover
-                    [ backgroundColor (hex "ee0000") ]
-                ]
-            ]
-            [ text "Delete" ]
-        ]
-
-
-sheetColumn =
-    styled div
-        [ displayFlex
-        , Css.property "flex-direction" "column"
-        , Css.property "max-height" "calc(100vh - 3.6rem)"
-        , Css.property "display" "grid"
-        , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-        , Css.property "flex" "0 0 23rem"
-        , overflowY auto
-        ]
-
-
-sheetList =
-    styled div
-        [ displayFlex
-        , flex (int 1)
-        , Css.property "flex-direction" "column"
-        , Css.property "align-content" "start"
-        , Css.property "display" "grid"
-        , Css.property "grid-row-gap" "0.6rem"
-        ]
-
-
-sheetCard : Int -> Sheet.SheetModel -> Html Msg
-sheetCard index sheet =
-    div
-        [ css
-            [ borderRadius (Css.em 0.2)
-            , backgroundColor (hex "fff")
-            , Css.maxWidth (Css.em 23)
-            ]
-        ]
-        [ div
-            [ css
-                [ displayFlex
-                , justifyContent flexStart
-                , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
-                ]
-            ]
-            [ defaultButton
-                [ onClick (OpenOverlay (EditSheet index))
-                , css
-                    [ display block ]
-                ]
-                [ text "Edit" ]
-            , defaultButton
-                [ onClick (OpenFullSheet index)
-                , css
-                    [ display block ]
-                ]
-                [ text "View Details" ]
-            ]
-        , Html.Styled.map
-            (SheetMsg index)
-            (Sheet.view sheet)
-        ]
-
-
-spacer : Html msg
-spacer =
-    div [] []
-
-
-sheetWrapper : (Int, Int)
-             -> Int
-             -> Sheet.SheetModel
-             -> Html Msg
-sheetWrapper (minBound, maxBound) index sheet =
-    if index >= minBound && index <= maxBound
-    then
-        lazy2 sheetColumn []
-            [ sheetList []
-                  [ sheetCard index sheet
-                  , spacer
-                  , spacer
-                  ]
-            ]
-    else
-        div []
-            [ text "᠎" ] -- unicode mongolian vowel separator
-
-
-
-fullSheetView : FullSheet -> Maybe Sheet.SheetModel -> Html Msg
-fullSheetView (FullSheet index editing) mmodel =
-    case mmodel of
-        Nothing ->
-            div [] [ text "Not Found" ]
-        Just sheet ->
-            div [ css
-                  [ margin2 (Css.em 0) auto
-                  , backgroundColor (hex "fff")
-                  , padding (Css.em 2)
-                  , Css.width (Css.em 48)
-                  , borderRadius (Css.em 0.2)
-                  ]
-                ]
-            [ div []
-                  [ defaultButton
-                        [ onClick CloseFullSheet ]
-                        [ text "go back" ]
-                  , defaultButton
-                        [ onClick ToggleFullSheetEdit ]
-                        [ text "Edit" ]
-                  ]
-            , Html.Styled.map
-                (SheetMsg index)
-                (if editing
-                 then
-                     Sheet.editView sheet
-                 else
-                     Sheet.view sheet
-                )
-            ]
 
 
 
@@ -845,11 +576,11 @@ overlayView model =
                 
         EditSheet index ->
             overlay
-            []
-            [ editSheetView
-                  index
-                  (Array.get index model.sheets)
-            ]
+            [] []
+            -- [ editSheetView
+            --       index
+            --       (Array.get index model.sheets)
+            -- ]
                     
         EditGameSettings ->
             overlay [] [ gameSettingsView model ]
@@ -1028,28 +759,6 @@ presenceIndicator color status =
          ]
         [ text status ]
 
-defaultButton =
-    styled button
-        [ whiteSpace noWrap
-        , padding2 (Css.em 0.1) (Css.em 0.5)
-        , backgroundColor (hex "fff")
-        , border3 (px 1) solid (hex "ccc")
-        , borderRadius (px 4)
-        , cursor pointer
-        , hover
-            [ backgroundColor (hex "eee") ]
-        ]
-
-inputStyles =
-    batch
-        [ Css.width (pct 100)
-        , border3 (px 1) solid (hex "888")
-        , borderRadius (px 4)
-        , padding (Css.em 0.25)
-        , flex (int 1)
-        ]
-
-
 --------------------------------------------------
 -- Side Menu
 --------------------------------------------------
@@ -1058,8 +767,10 @@ sidebar : Model -> Html Msg
 sidebar model =
     div [ css
           [ backgroundColor (hex "ddd")
-          , Css.property "height" "calc(100vh - 3.6rem)"
+          , Css.height (vh 100)
           , borderLeft3 (Css.em 0.15) solid (hex "aaa")
+          , Css.property "grid-row" "1 / span 2"
+          , Css.property "grid-column" "2 / span 1"
           ]
 
         ]
@@ -1072,7 +783,7 @@ chatView model =
     div [ css
           [ Css.property "display" "grid"
           , Css.property "grid-template-rows" "1fr auto"
-          , Css.property "height" "calc(100vh - 3.6rem)"
+          , Css.height (vh 100)
           , padding2 (px 0) (Css.em 0.8)
           , displayFlex
           , flexDirection column

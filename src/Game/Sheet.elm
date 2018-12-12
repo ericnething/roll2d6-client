@@ -2,7 +2,7 @@ module Game.Sheet exposing (..)
 
 import Array exposing (Array)
 import Html.Styled exposing (Html)
-import Game.Types exposing (GameType(..))
+import Game.GameType exposing (GameType(..))
 import Game.Sheet.Types exposing (SheetMsg(..), SheetModel(..))
 
 import Fate
@@ -68,14 +68,24 @@ editView sheetModel =
             WorldOfDungeons.editView model
                 |> Html.Styled.map WorldOfDungeonsMsg
 
-blank : GameType -> SheetModel
+blank : GameType -> List (String, SheetModel)
 blank gameType =
     case gameType of
         Fate ->
-            FateSheet Fate.blankCharacterSheet
+            [ ( "Character Sheet"
+              , FateSheet Fate.blankCharacterSheet
+              )
+            , ( "Game Aspect Sheet"
+              , FateSheet Fate.blankGameAspectSheet
+              )
+            ]
 
         WorldOfDungeons ->
-            WorldOfDungeonsSheet WorldOfDungeons.blankCharacterSheet
+            [ ( "Character Sheet"
+              , WorldOfDungeonsSheet
+                  WorldOfDungeons.blankCharacterSheet
+              )
+            ]
 
 
 initialModel : GameType -> Array SheetModel

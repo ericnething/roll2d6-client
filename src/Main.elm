@@ -15,6 +15,7 @@ import Debouncer.Messages as Debouncer
         )
 import Game
 import Game.Types as Game exposing (GameId)
+import Game.GameType as Game
 import Game.Sheets.Types as Sheets
 import Html
 import Html.Styled exposing (..)

@@ -7,6 +7,7 @@ module Game.Encode
 
 import Array exposing (Array)
 import Game.Types as Game
+import Game.GameType as Game
 import Game.Sheet.Types as Sheet
 import Lobby.Types as Lobby
 import Json.Encode exposing (..)

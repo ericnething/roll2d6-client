@@ -8,6 +8,7 @@ module Lobby
 import API
 import Css exposing (..)
 import Game.Types as Game
+import Game.GameType as Game
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)

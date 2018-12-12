@@ -8,7 +8,7 @@ import Http
 import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 import Game.Sheets.Types as Sheets exposing (FullSheet)
-
+import Game.GameType exposing (GameType(..))
 
 type alias Index = Int
 
@@ -69,21 +69,6 @@ emptyGameModel ref id gameData eventSource =
     , sheetsViewportX = 0
     }
 
-type GameType
-    = Fate
-    | WorldOfDungeons
-
-gameTypeOptions : List GameType
-gameTypeOptions =
-    [ Fate
-    , WorldOfDungeons
-    ]
-
-showGameType : GameType -> String
-showGameType gameType =
-    case gameType of
-        Fate -> "Fate"
-        WorldOfDungeons -> "World of Dungeons"
 
 type alias GameData =
     { title : String

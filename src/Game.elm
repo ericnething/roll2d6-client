@@ -9,6 +9,7 @@ import Array exposing (Array)
 import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
+import Game.GameType exposing (..)
 import Game.Sheets.Types as Sheets
 import Game.Sheets as Sheets
 import Html
@@ -354,8 +355,7 @@ buttons gameType =
           , whiteSpace noWrap
           ]
         ]
-    [ addNewSheetButton gameType
-    , invitePlayerButton
+    [ invitePlayerButton
     , gameSettingsButton
     , showPlayerListButton
     ]
@@ -373,17 +373,6 @@ toolbarButton =
             [ backgroundColor (rgba 255 255 255 0.3)
             ]
         ]
-
-
-
-addNewSheetButton : GameType -> Html Msg
-addNewSheetButton gameType =
-    toolbarButton
-        [ onClick (SheetsMsg (Sheets.AddSheet (Sheet.blank gameType)))
-        , css [ marginLeft (Css.em 0.5) ]
-        ]
-        [ Icons.addCharacterSheet ]
-
 
 gameSettingsButton : Html Msg
 gameSettingsButton =

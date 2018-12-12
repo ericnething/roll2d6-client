@@ -16,6 +16,7 @@ import Common exposing (defaultButton, inputStyles)
 import Game.Sheet as Sheet
 import Game.Sheet.Types exposing (SheetModel, SheetMsg)
 import Game.Sheets.Types exposing (..)
+import Game.GameType exposing (GameType)
 import Task
 import Util exposing (removeIndexFromArray)
 import Game.Decode exposing (scrollDecoder)
@@ -123,9 +124,10 @@ sheetsView : (Int, Int)
            -> {r |
                sheets : Array SheetModel
               , sheetsViewportX : Float
+              , gameType : GameType
               }
            -> Html Msg
-sheetsView (viewportWidth, _) { sheets, sheetsViewportX } =
+sheetsView (viewportWidth, _) { sheets, sheetsViewportX, gameType } =
     let
         sheetWidth = 24 * 15
         minBound =
@@ -154,7 +156,7 @@ sheetsView (viewportWidth, _) { sheets, sheetsViewportX } =
         , on "scroll" (scrollDecoder OnScroll)
         , id "sheets-as-columns-container"
         ]
-        (Array.toList <|
+        ((Array.toList <|
              if Array.length sheets > threshold
              then
                  (Array.indexedMap
@@ -167,8 +169,42 @@ sheetsView (viewportWidth, _) { sheets, sheetsViewportX } =
                 Array.indexedMap
                     (sheetWrapper (0, Basics.round (1/0)))
                     sheets
-        )
+        ) ++
+             [ addNewSheetButtons gameType ])
                 
+
+
+addNewSheetButtons : GameType -> Html Msg
+addNewSheetButtons gameType =
+    let
+        addNewSheet (title, blank) =
+            inlineToolbarButton
+            [ onClick (AddSheet blank) ]
+            [ text ("Add a new " ++ title) ]
+    in
+        div [ css
+              [ displayFlex
+              , alignItems stretch
+              , flexDirection column
+              ]
+            ]
+        (List.map addNewSheet (Sheet.blank gameType))
+
+inlineToolbarButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.6) (px 0)
+        , marginBottom (Css.em 1)
+        , marginRight (Css.em 1)
+        , backgroundColor (rgba 255 255 255 0.2)
+        , color (hex "fff")
+        , borderRadius (px 4)
+        , cursor pointer
+        , border (px 0)
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.3)
+            ]
+        ]
 
 
 -- editSheetView :

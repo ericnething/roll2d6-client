@@ -1,6 +1,7 @@
 module Lobby.Types exposing (..)
 
 import Game.Types as Game
+import Game.GameType as Game
 import RemoteData exposing (RemoteData(..), WebData)
 import Http
 

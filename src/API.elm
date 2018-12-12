@@ -14,6 +14,7 @@ module API
     , setPresenceOffline
     , sendChatMessage
     , getChatLog
+    , getMyPlayerId
     )
 
 import Http
@@ -288,3 +289,20 @@ getChatLog gameId =
                 }
     in
         Http.send Game.ChatLogReceived request
+
+
+getMyPlayerId : Game.GameId -> Cmd Game.Msg
+getMyPlayerId gameId =
+    let
+        request =
+            Http.request
+                { method = "GET"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/player-id"
+                , body = Http.emptyBody
+                , expect = Http.expectJson Json.Decode.int
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send Game.MyPlayerId request

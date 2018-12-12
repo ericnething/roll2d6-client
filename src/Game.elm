@@ -40,6 +40,7 @@ import List.Extra as List
 import Chat.Parser as Chat
 import Chat.DiceRoller as DiceRoller
 import Browser.Dom as Dom
+import Http
 
 
 subscriptions : Model -> Sub Msg
@@ -82,6 +83,29 @@ update navkey msg model =
             ( { model | title = title }
             , Cmd.none
             )
+
+        MyPlayerId result ->
+            case result of
+                Ok id ->
+                    ({ model
+                         | myPlayerId = Just id
+                     }, Cmd.none
+                    )
+                Err (Http.BadStatus err) ->
+                    case err.status.code of
+                        401 ->
+                            ( model
+                            , Navigation.replaceUrl
+                                navkey
+                                (Route.toUrlString Route.Auth)
+                            )
+                        404 -> ( model, Cmd.none )
+                        403 -> ( model, Cmd.none )
+                        _ -> ( model, Cmd.none )
+                Err _ ->
+                    ( model
+                    , API.getMyPlayerId model.id
+                    )
 
         OpenOverlay overlay_ ->
             ( { model | overlay = overlay_ }, Cmd.none )

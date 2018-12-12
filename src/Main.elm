@@ -184,7 +184,9 @@ update msg model =
                                 | screen = GameScreen newGame
                               }
                             , Cmd.batch
-                                [ API.getPlayers newGame.id
+                                [ API.getMyPlayerId newGame.id
+                                    |> Cmd.map GameMsg
+                                , API.getPlayers newGame.id
                                     |> Cmd.map GameMsg
                                 , API.setPresenceOnline newGame.id
                                     |> Cmd.map GameMsg

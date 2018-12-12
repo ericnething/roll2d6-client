@@ -46,6 +46,7 @@ type alias Model =
     , chatInput : String
     , chatMessages : List ChatMessage
     , sheetsViewportX : Float
+    , myPlayerId : Maybe Int
     }
 
 
@@ -67,6 +68,7 @@ emptyGameModel ref id gameData eventSource =
     , chatInput = ""
     , chatMessages = []
     , sheetsViewportX = 0
+    , myPlayerId = Nothing
     }
 
 
@@ -192,3 +194,4 @@ type Msg
     | KeyPressChatInput
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
+    | MyPlayerId (Result Http.Error Int)

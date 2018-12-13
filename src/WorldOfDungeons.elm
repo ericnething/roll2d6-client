@@ -45,4 +45,4 @@ editView sheet =
                 |> Html.Styled.map CharacterSheetMsg
 
 blankCharacterSheet =
-    CharacterSheet CharacterSheet.blank
+    CharacterSheet << CharacterSheet.blank

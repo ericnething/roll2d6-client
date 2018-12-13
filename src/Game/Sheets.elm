@@ -21,6 +21,7 @@ import Task
 import Util exposing (removeIndexFromArray)
 import Game.Decode exposing (scrollDecoder)
 import Browser.Dom as Dom
+import Time
 
 update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
@@ -44,6 +45,22 @@ update msg model =
                       }
                     , Cmd.map (SheetMsg index) cmd
                     )
+
+        GenerateNewSheetId toSheet ->
+            ( model
+            , Task.perform
+                (\now ->
+                     let
+                         id = (String.join "-"
+                               << List.map String.fromInt)
+                              [ Time.posixToMillis now
+                              , Maybe.withDefault 0 model.myPlayerId
+                              ]
+                     in
+                         AddSheet (toSheet (Debug.log "New Sheet Id" id))
+                )
+                Time.now
+            )
 
         AddSheet sheet ->
             ( { model
@@ -177,9 +194,9 @@ sheetsView (viewportWidth, _) { sheets, sheetsViewportX, gameType } =
 addNewSheetButtons : GameType -> Html Msg
 addNewSheetButtons gameType =
     let
-        addNewSheet (title, blank) =
+        addNewSheet (title, toSheet) =
             inlineToolbarButton
-            [ onClick (AddSheet blank) ]
+            [ onClick (GenerateNewSheetId toSheet) ]
             [ text ("Add a new " ++ title) ]
     in
         div [ css

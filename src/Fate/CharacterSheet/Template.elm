@@ -11,8 +11,8 @@ emptyAspect =
     Aspect "" 0
 
 
-blank : CharacterSheet
-blank =
+blank : String -> CharacterSheet
+blank id =
     { name = ""
     , description = ""
     , aspects =

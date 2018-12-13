@@ -15,10 +15,12 @@ type alias Model r =
     , fullSheet : Maybe FullSheet
     , sheetsViewportX : Float
     , gameType : GameType
+    , myPlayerId : Maybe Int
     }
 
 type Msg
     = SheetMsg Index SheetMsg
+    | GenerateNewSheetId (String -> SheetModel)
     | AddSheet SheetModel
     | RemoveSheet Index
     | OnScroll Int

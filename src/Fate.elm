@@ -81,7 +81,7 @@ editView sheet =
 
 
 blankCharacterSheet =
-    CharacterSheet Fate.CharacterSheet.Template.blank
+    CharacterSheet << Fate.CharacterSheet.Template.blank
 
 blankGameAspectSheet =
-    GameAspectSheet GameAspectSheet.blank
+    GameAspectSheet << GameAspectSheet.blank

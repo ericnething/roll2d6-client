@@ -38,7 +38,8 @@ type alias Attributes r =
     , cha : Int
     }
 
-blankCharacterSheet =
+blankCharacterSheet : String -> CharacterSheet
+blankCharacterSheet id =
     { name = "Einhildur"
     , class = "Ranger"
     , level = 1

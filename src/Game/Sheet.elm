@@ -68,21 +68,21 @@ editView sheetModel =
             WorldOfDungeons.editView model
                 |> Html.Styled.map WorldOfDungeonsMsg
 
-blank : GameType -> List (String, SheetModel)
+blank : GameType -> List (String, String -> SheetModel)
 blank gameType =
     case gameType of
         Fate ->
             [ ( "Character Sheet"
-              , FateSheet Fate.blankCharacterSheet
+              , FateSheet << Fate.blankCharacterSheet
               )
             , ( "Game Aspect Sheet"
-              , FateSheet Fate.blankGameAspectSheet
+              , FateSheet << Fate.blankGameAspectSheet
               )
             ]
 
         WorldOfDungeons ->
             [ ( "Character Sheet"
-              , WorldOfDungeonsSheet
+              , WorldOfDungeonsSheet <<
                   WorldOfDungeons.blankCharacterSheet
               )
             ]
@@ -92,8 +92,8 @@ initialModel : GameType -> Array SheetModel
 initialModel gameType =
     case gameType of
         Fate ->
-            Array.fromList
-                [ FateSheet Fate.blankGameAspectSheet ]
+            Array.fromList []
+                -- [ FateSheet Fate.blankGameAspectSheet ]
 
         WorldOfDungeons ->
             Array.fromList []

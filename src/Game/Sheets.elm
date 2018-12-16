@@ -374,7 +374,7 @@ fullSheetCard (FullSheet index editing) mmodel =
             div [] [ text "Not Found" ]
         Just sheet ->
             div [ css
-                  [ Css.property "grid-template-columns" "16em 32em"
+                  [ Css.property "grid-template-columns" "12em 32em"
                   , Css.property "display" "grid"
                   , Css.property "grid-template-rows" "minmax(auto, 1fr)"
                   , Css.property "grid-gap" "1em"
@@ -385,18 +385,27 @@ fullSheetCard (FullSheet index editing) mmodel =
                 [ editSheetToolbarView (FullSheet index editing)
                 , div [ css
                         [ backgroundColor (hex "fff")
-                        , padding (Css.em 1)
+                        , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
                         , Css.width (Css.em 32)
                         , borderRadius (Css.em 0.2)
-                        -- , margin2 (Css.em 0) auto
                         ]
                       ]
-                      [ toggleSwitch
-                            { offTitle = "Locked"
-                            , onTitle = "Editing"
-                            , isActive = editing
-                            , toMsg = always ToggleFullSheetEdit
-                            }
+                      [ div [ css
+                              [ displayFlex
+                              , justifyContent spaceBetween
+                              , alignItems center
+                              ]
+                            ]
+                            [ defaultButton
+                                  [ onClick CloseFullSheet ]
+                                  [ text "← Go back to all sheets" ]
+                            , toggleSwitch
+                                  { offTitle = "Locked"
+                                  , onTitle = "Editing"
+                                  , isActive = editing
+                                  , toMsg = always ToggleFullSheetEdit
+                                  }
+                            ]
                       , Html.Styled.map
                             (SheetMsg index)
                             (if editing
@@ -412,11 +421,6 @@ fullSheetCard (FullSheet index editing) mmodel =
 editSheetToolbarView : FullSheet -> Html Msg
 editSheetToolbarView (FullSheet index isActive) =
     let
-        doneButton =
-            defaultButton
-                [ onClick CloseFullSheet ]
-                [ text "← Go back to all sheets" ]
-
         deleteButton =
             defaultButton
                 [ onClick (RemoveSheet index)
@@ -445,8 +449,7 @@ editSheetToolbarView (FullSheet index isActive) =
               , flexDirection column
               ]
             ]
-        [ doneButton
-        , sectionLabel "Assigned to"
+        [ sectionLabel "Assigned to"
         , div [ css
                 [ borderTop3 (px 1) solid (hex "fff")
                 , paddingTop (Css.em 1)

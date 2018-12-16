@@ -56,8 +56,10 @@ editView model =
         , editConditionsView model.conditions
         , div
             [ css
-                [ displayFlex
-                , justifyContent spaceAround
+                [ Css.property "grid-template-columns" "1fr 1fr"
+                , Css.property "display" "grid"
+                , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+                , Css.property "grid-gap" "1em"
                 ]
             ]
             [ editRefreshView model.refresh
@@ -93,8 +95,7 @@ editRefreshView points =
     in
     div
         [ css
-            [ Css.width (pct 50)
-            , marginTop (Css.em 1)
+            [ marginTop (Css.em 1)
             ]
         , class "reveal-buttons-on-hover"
         ]
@@ -143,8 +144,7 @@ fatePointsView points =
     in
     div
         [ css
-            [ Css.width (pct 50)
-            , marginTop (Css.em 1)
+            [ marginTop (Css.em 1)
             ]
         , class "reveal-buttons-on-hover"
         ]
@@ -1000,9 +1000,11 @@ compactView model =
         , aspectView model.aspects
         , div
             [ css
-                [ displayFlex
-                , justifyContent spaceAround
-                ]
+              [ Css.property "grid-template-columns" "1fr 1fr"
+              , Css.property "display" "grid"
+              , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+              , Css.property "grid-gap" "1em"
+              ]
             ]
             [ refreshView model.refresh
             , fatePointsView model.fatePoints
@@ -1027,9 +1029,11 @@ view model =
         , conditionsView model.conditions
         , div
             [ css
-                [ displayFlex
-                , justifyContent spaceAround
-                ]
+              [ Css.property "grid-template-columns" "1fr 1fr"
+              , Css.property "display" "grid"
+              , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+              , Css.property "grid-gap" "1em"
+              ]
             ]
             [ refreshView model.refresh
             , fatePointsView model.fatePoints
@@ -1333,8 +1337,7 @@ refreshView : Int -> Html Msg
 refreshView points =
     div
         [ css
-            [ Css.width (pct 50)
-            , marginTop (Css.em 1)
+            [ marginTop (Css.em 1)
             ]
         ]
         [ sectionLabel "Refresh"

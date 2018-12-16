@@ -998,17 +998,60 @@ compactView model =
         [ nameView model.name
         , descriptionView model.description
         , aspectView model.aspects
-        , div
-            [ css
-              [ Css.property "grid-template-columns" "1fr 1fr"
-              , Css.property "display" "grid"
-              , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-              , Css.property "grid-gap" "1em"
-              ]
+        , compactConsequencesView model.consequences
+        , fatePointsView model.fatePoints
+        ]
+
+compactConsequencesView : Array Consequence -> Html Msg
+compactConsequencesView consequences =
+    let
+        hasFilledSlots =
+            (\length -> length > 0)
+            << Array.length
+            << Array.filter
+                (\(Consequence _ title _) -> String.length title > 0)
+            <| consequences
+    in
+        if hasFilledSlots
+        then
+            div [ css
+                  [ marginTop (Css.em 1) ]
+                ]
+            [ sectionLabel "Consequences"
+            , div [] <|
+                Array.toList <|
+                    Array.indexedMap
+                        compactConsequenceView
+                        consequences
             ]
-            [ refreshView model.refresh
-            , fatePointsView model.fatePoints
-            ]
+        else
+            text ""
+
+
+compactConsequenceView : Int -> Consequence -> Html Msg
+compactConsequenceView index (Consequence severity title invokes) =
+    div [ class "reveal-buttons-on-hover" ]
+        [ if String.length title > 0 then
+              div [ css
+                    [ displayFlex
+                    , alignItems flexStart
+                    , justifyContent spaceBetween
+                    , marginBottom (Css.em 0.35)
+                    ]
+                  ]
+                  [ div [ css [ flex2 (int 1) (int 1) ] ]
+                        [ text title ]
+                  , invokesView
+                        { toMsg =
+                              (\newInvokes ->
+                                   UpdateConsequence
+                                   index
+                                   (Consequence severity title newInvokes))
+                        , invokes = invokes
+                        }
+                  ]
+          else
+              text ""
         ]
 
 

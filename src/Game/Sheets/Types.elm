@@ -44,7 +44,7 @@ type Msg
     | AddSheet SheetModel
     | RemoveSheet Index
     | OnScroll Int
-    | OpenFullSheet Index
+    | OpenFullSheet Index Bool
     | CloseFullSheet
     | ToggleFullSheetEdit
     | RestoreScrollX (Result Dom.Error ())

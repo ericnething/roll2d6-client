@@ -90,7 +90,7 @@ update msg model =
                         model.sheets
               }
             , Task.perform
-                OpenFullSheet
+                (\id -> OpenFullSheet id True)
                 (Task.succeed (Array.length model.sheets))
             )
 
@@ -109,8 +109,8 @@ update msg model =
             , Cmd.none
             )
 
-        OpenFullSheet index ->
-            ({ model | fullSheet = Just (FullSheet index False) }
+        OpenFullSheet index editing ->
+            ({ model | fullSheet = Just (FullSheet index editing) }
             , Cmd.none
             )
 
@@ -310,7 +310,7 @@ sheetCard index sheet =
                 ]
             ]
             [ defaultButton
-                [ onClick (OpenFullSheet index)
+                [ onClick (OpenFullSheet index False)
                 , css
                     [ display block ]
                 ]

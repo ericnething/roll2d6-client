@@ -95,8 +95,8 @@ view model =
                 , backgroundColor (hex "36393f")
                 , Css.minHeight (vh 100)
                 , displayFlex
-                , alignItems center
                 , justifyContent spaceAround
+                , paddingTop (vh 12)
                 ]
             ]
             [ formView model
@@ -141,7 +141,6 @@ formView model =
         [ css
             [ maxWidth (Css.em 20)
             , padding (Css.em 0.5)
-            , Css.property "transform" "translateY(-12vh)"
             ]
         ]
         [ h1

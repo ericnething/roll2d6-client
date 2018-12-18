@@ -296,10 +296,11 @@ gameDataDecoder =
     field "gameType" gameTypeDecoder
         |> andThen
            (\gameType ->
-                map3 Game.GameData
+                map4 Game.GameData
                 (field "title" string)
                 (succeed gameType)
-                (field "sheets" (array (sheetDecoder gameType)))
+                (field "sheets" (dict (sheetDecoder gameType)))
+                (field "sheetsOrdering" (array string))
            )
 
 

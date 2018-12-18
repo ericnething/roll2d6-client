@@ -25,7 +25,7 @@ module Game.Sheets exposing
 
 
 import Array exposing (Array)
-
+import Dict exposing (Dict)
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
@@ -42,12 +42,13 @@ import Util exposing (removeIndexFromArray)
 import Game.Decode exposing (scrollDecoder)
 import Browser.Dom as Dom
 import Time
+import API exposing (generateNewSheetId)
 
 update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
     case msg of
-        SheetMsg index submsg ->
-            case Array.get index model.sheets of
+        SheetMsg id submsg ->
+            case Dict.get id model.sheets of
                 Nothing ->
                     ( model, Cmd.none )
 
@@ -58,59 +59,69 @@ update msg model =
                     in
                     ( { model
                         | sheets =
-                            Array.set
-                                index
+                            Dict.insert
+                                id
                                 newSheet
                                 model.sheets
                       }
-                    , Cmd.map (SheetMsg index) cmd
+                    , Cmd.map (SheetMsg id) cmd
                     )
 
-        GenerateNewSheetId toSheet ->
+        GenerateNewSheetId withSheet ->
             ( model
-            , Task.perform
-                (\now ->
-                     let
-                         id = (String.join "-"
-                               << List.map String.fromInt)
-                              [ Time.posixToMillis now
-                              , Maybe.withDefault 0 model.myPlayerId
-                              ]
-                     in
-                         AddSheet (toSheet (Debug.log "New Sheet Id" id))
-                )
-                Time.now
+            , API.generateNewSheetId model.id withSheet
             )
 
-        AddSheet sheet ->
-            ( { model
-                | sheets =
-                    Array.push
-                        sheet
-                        model.sheets
-              }
-            , Task.perform
-                (\id -> OpenFullSheet id True)
-                (Task.succeed (Array.length model.sheets))
-            )
+        NewSheetId sheet result ->
+            case result of
+                Ok id ->
+                    ( model
+                    , Task.perform
+                        identity
+                        (Task.succeed (AddSheet id sheet))
+                    )
 
-        RemoveSheet index ->
+                Err _ ->
+                    ( model, Cmd.none )
+
+        AddSheet id sheet ->
             ( { model
-                | sheets =
-                    removeIndexFromArray index model.sheets
+                  | sheets = Dict.insert id sheet model.sheets
+                  , sheetsOrdering = Array.push id model.sheetsOrdering
               }
             , Task.perform
                 identity
-                (Task.succeed CloseFullSheet)
+                (Task.succeed (OpenFullSheet id True))
             )
+
+        RemoveSheet id ->
+            (model, API.deleteSheetId model.id id)
+
+        SheetRemoved result ->
+            case result of
+                Ok id ->
+                    ( { model
+                          | sheets = Dict.remove id model.sheets
+                          , sheetsOrdering =
+                              Array.filter
+                              (\id_ -> id_ /= id)
+                              model.sheetsOrdering
+                      }
+                    , Task.perform
+                        identity
+                        (Task.succeed CloseFullSheet)
+                    )
+
+                Err _ ->
+                    (model, Cmd.none)
 
         OnScroll position ->
             ({ model | sheetsViewportX = toFloat position }
             , Cmd.none
             )
 
-        OpenFullSheet index editing ->
-            ({ model | fullSheet = Just (FullSheet index editing) }
+        OpenFullSheet id editing ->
+            ({ model | fullSheet = Just (FullSheet id editing) }
             , Cmd.none
             )
 
@@ -125,8 +136,8 @@ update msg model =
             ({ model
                  | fullSheet
                    = Maybe.map
-                     (\(FullSheet index editing) ->
-                          FullSheet index (not editing))
+                     (\(FullSheet id editing) ->
+                          FullSheet id (not editing))
                      model.fullSheet
              }, Cmd.none
             )
@@ -148,10 +159,10 @@ view viewportSize model =
     case model.fullSheet of
         Nothing ->
             lazy2 sheetsView viewportSize model
-        Just (FullSheet index editing) ->
+        Just (FullSheet id editing) ->
             fullSheetView
-            (FullSheet index editing)
-            (Array.get index model.sheets)
+            (FullSheet id editing)
+            (Dict.get id model.sheets)
 
 --------------------------------------------------
 -- Game Sheets
@@ -159,23 +170,38 @@ view viewportSize model =
 
 sheetsView : (Int, Int)
            -> {r |
-               sheets : Array SheetModel
+               sheets : Dict SheetId SheetModel
+              , sheetsOrdering : Array SheetId
               , sheetsViewportX : Float
               , gameType : GameType
               }
            -> Html Msg
-sheetsView (viewportWidth, _) { sheets, sheetsViewportX, gameType } =
+sheetsView (viewportWidth, _) { sheets
+                              , sheetsOrdering
+                              , sheetsViewportX
+                              , gameType
+                              } =
     let
         sheetWidth = 24 * 15
-        minBound =
-            Basics.max 0
-                (floor (sheetsViewportX / sheetWidth) - 1)
-        maxBound =
-            ceiling
-            (toFloat minBound +
-                 (toFloat viewportWidth / sheetWidth) + 1)
-
         threshold = 20
+        minBound =
+            if Array.length sheetsOrdering > threshold
+            then
+                Basics.max 0
+                    (floor (sheetsViewportX / sheetWidth) - 1)
+            else
+                0
+
+        maxBound =
+            if Array.length sheetsOrdering > threshold
+            then
+                ceiling
+                (toFloat minBound +
+                     (toFloat viewportWidth / sheetWidth) + 1)
+            else
+                Basics.round (1/0)
+            
+        _ = Debug.log "Min/MaxBound" (minBound, maxBound)
     in
     lazy2 div
         [ css
@@ -193,30 +219,37 @@ sheetsView (viewportWidth, _) { sheets, sheetsViewportX, gameType } =
         , on "scroll" (scrollDecoder OnScroll)
         , id "sheets-as-columns-container"
         ]
-        ((Array.toList <|
-             if Array.length sheets > threshold
-             then
-                 (Array.indexedMap
-                      (sheetWrapper
-                           (Debug.log
-                                "Min/MaxBound"
-                                (minBound, maxBound)))
-                      sheets)
-            else
-                Array.indexedMap
-                    (sheetWrapper (0, Basics.round (1/0)))
-                    sheets
-        ) ++
-             [ addNewSheetButtons gameType ])
-                
+        (sheetsOrdering
+             |> Array.foldl
+                (\sheetId (index, acc) ->
+                     case Dict.get sheetId sheets of
+                         Just sheet ->
+                             ( index + 1
+                             , Array.push
+                                 (sheetWrapper
+                                      (minBound, maxBound)
+                                      index
+                                      sheetId
+                                      sheet)
+                                 acc
+                             )
+                         Nothing ->
+                             (index, acc)
+                )
+                (0, Array.empty)
+             |> Tuple.second
+             |> Array.push (addNewSheetButtons gameType)
+             |> Array.toList
+         )
+
 
 
 addNewSheetButtons : GameType -> Html Msg
 addNewSheetButtons gameType =
     let
-        addNewSheet (title, toSheet) =
+        addNewSheet (title, sheetModel) =
             inlineToolbarButton
-            [ onClick (GenerateNewSheetId toSheet) ]
+            [ onClick (GenerateNewSheetId sheetModel) ]
             [ text ("Add a new " ++ title) ]
     in
         div [ css
@@ -243,33 +276,6 @@ inlineToolbarButton =
             ]
         ]
 
-
--- editSheetView :
---     Int
---     -> Maybe SheetModel
---     -> Html Msg
--- editSheetView index mmodel =
---     case mmodel of
---         Nothing ->
---             div [] [ text "Not Found" ]
-
---         Just sheet ->
---             div
---                 [ css
---                     [ margin2 (Css.em 4) auto
---                     , backgroundColor (hex "fff")
---                     , padding (Css.em 2)
---                     -- , Css.width (Css.em 32)
---                     , borderRadius (Css.em 0.2)
---                     ]
---                 ]
---                 [ editSheetToolbarView index
---                 , Html.Styled.map
---                     (SheetMsg index)
---                     (Sheet.editView sheet)
---                 ]
-
-
 sheetColumn =
     styled div
         [ displayFlex
@@ -293,8 +299,8 @@ sheetList =
         ]
 
 
-sheetCard : Int -> SheetModel -> Html Msg
-sheetCard index sheet =
+sheetCard : SheetId -> SheetModel -> Html Msg
+sheetCard id sheet =
     div
         [ css
             [ borderRadius (Css.em 0.2)
@@ -310,14 +316,14 @@ sheetCard index sheet =
                 ]
             ]
             [ defaultButton
-                [ onClick (OpenFullSheet index False)
+                [ onClick (OpenFullSheet id False)
                 , css
                     [ display block ]
                 ]
                 [ text "View Details" ]
             ]
         , Html.Styled.map
-            (SheetMsg index)
+            (SheetMsg id)
             (Sheet.compactView sheet)
         ]
 
@@ -329,14 +335,15 @@ spacer =
 
 sheetWrapper : (Int, Int)
              -> Int
+             -> SheetId
              -> SheetModel
              -> Html Msg
-sheetWrapper (minBound, maxBound) index sheet =
+sheetWrapper (minBound, maxBound) index id sheet =
     if index >= minBound && index <= maxBound
     then
         lazy2 sheetColumn []
             [ sheetList []
-                  [ sheetCard index sheet
+                  [ sheetCard id sheet
                   , spacer
                   , spacer
                   ]

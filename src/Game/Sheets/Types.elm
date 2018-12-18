@@ -21,30 +21,40 @@
 module Game.Sheets.Types exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Game.GameType exposing (GameType)
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 import Browser.Dom as Dom
+import Http
 
 type alias Index = Int
 
-type FullSheet = FullSheet Index Bool
+type FullSheet = FullSheet SheetId Bool
+
+type alias SheetId = String
+
+type alias GameId = String
 
 type alias Model r =
     { r |
-      sheets : Array SheetModel
+      sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
     , sheetsViewportX : Float
     , gameType : GameType
     , myPlayerId : Maybe Int
+    , id : GameId
+    , sheetsOrdering : Array SheetId
     }
 
 type Msg
-    = SheetMsg Index SheetMsg
-    | GenerateNewSheetId (String -> SheetModel)
-    | AddSheet SheetModel
-    | RemoveSheet Index
+    = SheetMsg SheetId SheetMsg
+    | GenerateNewSheetId SheetModel
+    | NewSheetId SheetModel (Result Http.Error SheetId)
+    | AddSheet SheetId SheetModel
+    | RemoveSheet SheetId
+    | SheetRemoved (Result Http.Error SheetId)
     | OnScroll Int
-    | OpenFullSheet Index Bool
+    | OpenFullSheet SheetId Bool
     | CloseFullSheet
     | ToggleFullSheetEdit
     | RestoreScrollX (Result Dom.Error ())

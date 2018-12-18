@@ -35,6 +35,8 @@ module API
     , sendChatMessage
     , getChatLog
     , getMyPlayerId
+    , generateNewSheetId
+    , deleteSheetId
     )
 
 import Http
@@ -43,6 +45,8 @@ import Json.Encode exposing (encode)
 import Lobby.Types as Lobby
 import Login.Types as Login
 import Game.Types as Game
+import Game.Sheets.Types as Sheets
+import Game.Sheet.Types as Sheet
 import Invite
 import Game.Decode
     exposing
@@ -326,3 +330,38 @@ getMyPlayerId gameId =
                 }
     in
         Http.send Game.MyPlayerId request
+
+
+generateNewSheetId : Game.GameId -> Sheet.SheetModel -> Cmd Sheets.Msg
+generateNewSheetId gameId sheet =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/new-sheet-id"
+                , body = Http.emptyBody
+                , expect = Http.expectJson Json.Decode.string
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (Sheets.NewSheetId sheet) request
+
+
+deleteSheetId : Game.GameId -> Sheets.SheetId -> Cmd Sheets.Msg
+deleteSheetId gameId sheetId =
+    let
+        request =
+            Http.request
+                { method = "DELETE"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId
+                        ++ "/sheet-id/" ++ sheetId
+                , body = Http.emptyBody
+                , expect = Http.expectJson Json.Decode.string
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (Sheets.SheetRemoved) request

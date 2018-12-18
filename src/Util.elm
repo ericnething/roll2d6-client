@@ -18,7 +18,7 @@
 -- Public License along with this program. If not, see
 -- <https://www.gnu.org/licenses/>.
 
-module Util exposing (catMaybes, listDifference, removeIndexFromArray, stringToNatWithDefault, stringToNatWithDefaultNonZero)
+module Util exposing (..)
 
 import Array exposing (Array)
 import List.Extra exposing (dropWhile, takeWhile)

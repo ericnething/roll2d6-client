@@ -118,7 +118,8 @@ encodeGame game =
         [ ( "_id", string "game" )
         , ( "title", string game.title )
         , ( "gameType", encodeGameType game.gameType )
-        , ( "sheets", array encodeSheet game.sheets )
+        , ( "sheets", dict identity encodeSheet game.sheets )
+        , ( "sheetsOrdering", array string game.sheetsOrdering )
         ]
 
 
@@ -128,7 +129,8 @@ encodeGameData game =
         [ ( "_id", string "game" )
         , ( "title", string game.title )
         , ( "gameType", encodeGameType game.gameType )
-        , ( "sheets", array encodeSheet game.sheets )
+        , ( "sheets", dict identity encodeSheet game.sheets )
+        , ( "sheetsOrdering", array string game.sheetsOrdering )
         ]
 
 encodeSheet : Sheet.SheetModel -> Value

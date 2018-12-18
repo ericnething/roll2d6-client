@@ -25,6 +25,8 @@ module Lobby
     , view
     )
 
+import Array exposing (Array)
+import Dict exposing (Dict)
 import API
 import Css exposing (..)
 import Util.Css exposing (..)
@@ -47,7 +49,8 @@ initialGameModel : String -> Game.GameType -> Game.GameData
 initialGameModel title gameType =
     { title = title
     , gameType = gameType
-    , sheets = Sheet.initialModel gameType
+    , sheets = Dict.empty --Sheet.initialModel gameType
+    , sheetsOrdering = Array.fromList []
     }
 
 init : ( Model, Cmd Msg )

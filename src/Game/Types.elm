@@ -21,13 +21,14 @@
 module Game.Types exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Json.Decode exposing (Value)
 import PouchDB exposing (PouchDBRef)
 import RemoteData exposing (WebData)
 import Http
 import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
-import Game.Sheets.Types as Sheets exposing (FullSheet)
+import Game.Sheets.Types as Sheets exposing (FullSheet, SheetId)
 import Game.GameType exposing (GameType(..))
 
 type alias Index = Int
@@ -59,7 +60,7 @@ type alias Model =
     , gameType : GameType
     , id : GameId
     , title : String
-    , sheets : Array (SheetModel)
+    , sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
     , overlay : Overlay
     , players : WebData (List Person)
@@ -67,6 +68,7 @@ type alias Model =
     , chatMessages : List ChatMessage
     , sheetsViewportX : Float
     , myPlayerId : Maybe Int
+    , sheetsOrdering : Array SheetId
     }
 
 
@@ -89,13 +91,15 @@ emptyGameModel ref id gameData eventSource =
     , chatMessages = []
     , sheetsViewportX = 0
     , myPlayerId = Nothing
+    , sheetsOrdering = gameData.sheetsOrdering
     }
 
 
 type alias GameData =
     { title : String
     , gameType : GameType
-    , sheets : Array SheetModel
+    , sheets : Dict SheetId SheetModel
+    , sheetsOrdering : Array SheetId
     }
 
 
@@ -108,6 +112,7 @@ mergeGameData model gameData =
     { model
         | title = gameData.title
         , sheets = gameData.sheets
+        , sheetsOrdering = gameData.sheetsOrdering
     }
 
 
@@ -115,7 +120,8 @@ emptyGameData : GameType -> GameData
 emptyGameData gameType =
     { title = "New Game"
     , gameType = gameType
-    , sheets = Array.fromList []
+    , sheets = Dict.empty
+    , sheetsOrdering = Array.fromList []
     }
 
 

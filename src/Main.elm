@@ -218,7 +218,10 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
 
-                Err _ ->
+                Err err ->
+                    let
+                        _ = Debug.log "GameLoad Error:" err
+                    in
                     (model, Cmd.none)
 
         GameLoadFailed ->
@@ -371,11 +374,11 @@ maybeWriteToPouchDB msg newGame =
             debouncedWriteToPouchDB
                 newGame
 
-        Game.SheetsMsg (Sheets.AddSheet _) ->
+        Game.SheetsMsg (Sheets.AddSheet _ _) ->
             debouncedWriteToPouchDB
                 newGame
 
-        Game.SheetsMsg (Sheets.RemoveSheet _) ->
+        Game.SheetsMsg (Sheets.SheetRemoved _) ->
             debouncedWriteToPouchDB
                 newGame
 
@@ -387,13 +390,14 @@ maybeWriteToPouchDB msg newGame =
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
-debouncedWriteToPouchDB { ref, title, gameType, sheets } =
+debouncedWriteToPouchDB { ref, title, gameType, sheets, sheetsOrdering } =
     Task.perform identity
         (Task.succeed
             (WriteToPouchDB ref
                  { title = title
                  , gameType = gameType
                  , sheets = sheets
+                 , sheetsOrdering = sheetsOrdering
                  }
                 |> provideInput
                 |> DebounceMsg

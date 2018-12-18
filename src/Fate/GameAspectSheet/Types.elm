@@ -28,8 +28,8 @@ type alias Model = GameAspectSheet
 type alias GameAspectSheet =
     { scenes : Array Scene }
 
-emptyGameAspectSheet : String -> GameAspectSheet
-emptyGameAspectSheet id =
+emptyGameAspectSheet : GameAspectSheet
+emptyGameAspectSheet =
     { scenes = Array.fromList
           [
            { title = "Game Aspects"

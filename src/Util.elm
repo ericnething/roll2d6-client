@@ -69,3 +69,33 @@ removeIndexFromArray index array =
         |> List.filter (\( idx, _ ) -> idx /= index)
         |> List.map Tuple.second
         |> Array.fromList
+
+
+findArrayIndexOf : a -> Array a -> Maybe Int
+findArrayIndexOf x xs =
+    Tuple.second <|
+    Array.foldl
+    (\a (index, acc) ->
+         if a == x
+         then
+             (index, Just index)
+         else
+             (index + 1, acc)
+    )
+    (0, Nothing)
+    xs
+
+swapArray : Int -> Int -> Array a -> Array a
+swapArray indexA indexB array =
+    let
+        ma = Array.get indexA array
+        mb = Array.get indexB array
+    in
+        case (ma, mb) of
+            (Just a, Just b) ->
+                array
+                    |> Array.set indexA b
+                    |> Array.set indexB a
+            _ ->
+                array
+

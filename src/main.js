@@ -237,3 +237,12 @@ app.ports.closeEventStream.subscribe(function (eventSource) {
   console.log("Close EventStream");
   eventSource.close();
 });
+
+
+//----------------------------------------------
+//  Drag and Drop
+//----------------------------------------------
+
+app.ports.dragstart.subscribe(function (event) {
+  event.dataTransfer.setData('text', '');
+});

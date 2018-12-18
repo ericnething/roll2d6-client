@@ -45,7 +45,7 @@ import Lobby
 import Lobby.Types as Lobby
 import Login
 import Login.Types as Login
-import PouchDB exposing (PouchDBRef)
+import Ports exposing (PouchDBRef)
 import Game.Decode
     exposing
         ( decodeGame
@@ -83,9 +83,9 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ PouchDB.gameLoaded GameLoaded
-        , PouchDB.gameLoadFailed (always GameLoadFailed)
-        , PouchDB.authFailed (always AuthFailed)
+        [ Ports.gameLoaded GameLoaded
+        , Ports.gameLoadFailed (always GameLoadFailed)
+        , Ports.authFailed (always AuthFailed)
         , case model.screen of
             GameScreen game ->
                 Sub.map GameMsg (Game.subscriptions game)
@@ -193,7 +193,7 @@ update msg model =
             Debouncer.update update updateDebouncer submsg model
 
         WriteToPouchDB ref game ->
-            ( model, PouchDB.put ( ref, encodeGameData game ) )
+            ( model, Ports.put ( ref, encodeGameData game ) )
 
         GameLoaded value ->
             case decodeGame value of
@@ -352,7 +352,7 @@ changeRouteTo route model =
                 
         Just (Route.Game gameId) ->
             ( { model | screen = LoadingScreen }
-            , PouchDB.loadGame
+            , Ports.loadGame
                 ( encodeGameData (Game.emptyGameData Game.Fate)
                 , gameId )
             )
@@ -379,6 +379,10 @@ maybeWriteToPouchDB msg newGame =
                 newGame
 
         Game.SheetsMsg (Sheets.SheetRemoved _) ->
+            debouncedWriteToPouchDB
+                newGame
+
+        Game.SheetsMsg (Sheets.UpdateSheetsOrdering _) ->
             debouncedWriteToPouchDB
                 newGame
 

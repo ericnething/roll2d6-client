@@ -18,7 +18,7 @@
 -- Public License along with this program. If not, see
 -- <https://www.gnu.org/licenses/>.
 
-port module PouchDB exposing (..)
+port module Ports exposing (..)
 
 import Json.Decode
 import Json.Encode exposing (Value)
@@ -43,3 +43,6 @@ port closeEventStream : Value -> Cmd msg
 
 type alias PouchDBRef =
     Value
+
+
+port dragstart : Value -> Cmd msg

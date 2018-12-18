@@ -26,6 +26,7 @@ import Game.GameType exposing (GameType)
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 import Browser.Dom as Dom
 import Http
+import Json.Decode
 
 type alias Index = Int
 
@@ -44,7 +45,13 @@ type alias Model r =
     , myPlayerId : Maybe Int
     , id : GameId
     , sheetsOrdering : Array SheetId
+    , movingSheet : Maybe SheetId
     }
+
+type VisualShift
+    = NoShift
+    | ShiftLeft (Array SheetId)
+    | ShiftRight (Array SheetId)
 
 type Msg
     = SheetMsg SheetId SheetMsg
@@ -58,4 +65,9 @@ type Msg
     | CloseFullSheet
     | ToggleFullSheetEdit
     | RestoreScrollX (Result Dom.Error ())
-
+    | UpdateSheetsOrdering (Array SheetId)
+    | DragStart SheetId Json.Decode.Value
+    | DragEnd
+    | DragEnter SheetId
+    | DragOver SheetId
+    | Drop SheetId

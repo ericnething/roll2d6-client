@@ -23,7 +23,7 @@ module Game.Types exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode exposing (Value)
-import PouchDB exposing (PouchDBRef)
+import Ports exposing (PouchDBRef)
 import RemoteData exposing (WebData)
 import Http
 import Time
@@ -69,6 +69,7 @@ type alias Model =
     , sheetsViewportX : Float
     , myPlayerId : Maybe Int
     , sheetsOrdering : Array SheetId
+    , movingSheet : Maybe SheetId
     }
 
 
@@ -92,6 +93,7 @@ emptyGameModel ref id gameData eventSource =
     , sheetsViewportX = 0
     , myPlayerId = Nothing
     , sheetsOrdering = gameData.sheetsOrdering
+    , movingSheet = Nothing
     }
 
 

@@ -40,7 +40,7 @@ import Html.Styled.Events exposing (..)
 import Common exposing (defaultButton, inputStyles)
 import Time
 import Json.Decode
-import PouchDB exposing (PouchDBRef)
+import Ports exposing (PouchDBRef)
 import Game.Decode
     exposing
     ( decodeGameData
@@ -66,17 +66,17 @@ import Http
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ PouchDB.getResponse UpdateCurrentGame
-        , PouchDB.changesReceived (always ChangesReceived)
-        , PouchDB.sse_playerListUpdated
+        [ Ports.getResponse UpdateCurrentGame
+        , Ports.changesReceived (always ChangesReceived)
+        , Ports.sse_playerListUpdated
             (ServerEventReceived
                  << PlayerListUpdated
                  << decodePlayerList)
-        , PouchDB.sse_playerPresenceUpdated
+        , Ports.sse_playerPresenceUpdated
             (ServerEventReceived
                  << PlayerPresenceUpdated
                  << decodePlayerPresence)
-        , PouchDB.sse_chatMessageReceived
+        , Ports.sse_chatMessageReceived
             (ServerEventReceived
                  << ChatMessagesReceived
                  << decodeChatMessageList)
@@ -144,13 +144,13 @@ update navkey msg model =
                     ( model, Cmd.none )
 
         ChangesReceived ->
-            ( model, PouchDB.get model.ref )
+            ( model, Ports.get model.ref )
 
         ExitToLobby ->
             ( model
             , Cmd.batch
                 [ API.setPresenceOffline model.id
-                , PouchDB.closeEventStream model.ref
+                , Ports.closeEventStream model.ref
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)

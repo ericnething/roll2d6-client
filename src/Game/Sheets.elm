@@ -38,11 +38,13 @@ import Game.Sheet.Types exposing (SheetModel, SheetMsg)
 import Game.Sheets.Types exposing (..)
 import Game.GameType exposing (GameType)
 import Task
-import Util exposing (removeIndexFromArray)
+import Util exposing (removeIndexFromArray, findArrayIndexOf, swapArray)
 import Game.Decode exposing (scrollDecoder)
 import Browser.Dom as Dom
 import Time
 import API exposing (generateNewSheetId)
+import Ports
+import DragDrop
 
 update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
@@ -144,6 +146,59 @@ update msg model =
 
         RestoreScrollX _ ->
             (model, Cmd.none)
+
+        DragStart dragId event ->
+            ({ model
+                 | movingSheet = Just dragId
+             }
+            , Ports.dragstart event
+            )
+
+        DragEnd ->
+            ({ model
+                 | movingSheet = Nothing
+             }
+            , Cmd.none
+            )
+
+        DragEnter dropId ->
+            (model, Cmd.none)
+
+        DragOver dropId ->
+            (model, Cmd.none)
+
+        Drop dropId ->
+            let
+                ordering =
+                    case ( model.movingSheet
+                               |> Maybe.andThen
+                                  (\dragId ->
+                                       findArrayIndexOf
+                                       dragId
+                                       model.sheetsOrdering
+                                  )
+                         , findArrayIndexOf dropId model.sheetsOrdering
+                         ) of
+                        (Just a, Just b) ->
+                            swapArray a b model.sheetsOrdering
+                        _ ->
+                            model.sheetsOrdering
+            in
+                ({ model
+                     | movingSheet = Nothing
+                }
+                , Task.perform
+                    identity
+                    (Task.succeed
+                         (UpdateSheetsOrdering ordering))
+                )
+
+        UpdateSheetsOrdering ordering ->
+            ({ model
+                 | sheetsOrdering = ordering
+             }
+            , Cmd.none
+            )
         
 
 restoreScrollX : String -> Float -> Cmd Msg
@@ -202,6 +257,8 @@ sheetsView (viewportWidth, _) { sheets
                 Basics.round (1/0)
             
         _ = Debug.log "Min/MaxBound" (minBound, maxBound)
+
+        -- shift = sheetsVisualShift dragDrop sheetsOrdering
     in
     lazy2 div
         [ css
@@ -227,10 +284,13 @@ sheetsView (viewportWidth, _) { sheets
                              ( index + 1
                              , Array.push
                                  (sheetWrapper
-                                      (minBound, maxBound)
-                                      index
-                                      sheetId
-                                      sheet)
+                                      { bounds = (minBound, maxBound)
+                                      , index = index
+                                      , sheetId = sheetId
+                                      , sheet = sheet
+                                      -- , shift = shift
+                                      }
+                                 )
                                  acc
                              )
                          Nothing ->
@@ -242,6 +302,49 @@ sheetsView (viewportWidth, _) { sheets
              |> Array.toList
          )
 
+sheetsVisualShift : (Maybe SheetId, Maybe SheetId)
+                  -> Array SheetId
+                  -> VisualShift
+sheetsVisualShift (mdragId, mdropId) sheetsOrdering =
+    let
+        getSlice dragId xs =
+            case xs of
+                (indexA, a) :: (indexB, b) :: _ ->
+                    if
+                        
+                        -- The dragged item comes first in the array,
+                        -- meaning that the drop target must be on the
+                        -- right, and therefore the dragged item has
+                        -- been moved to the right.
+                        
+                        a == dragId
+                    then
+                        ShiftLeft
+                        (Array.slice
+                             (indexA + 1)
+                             (indexB + 1)
+                             sheetsOrdering)
+                    else
+                        
+                        -- The dragged item comes second in the array,
+                        -- meaning that the drop target must be on the
+                        -- left, and therefore the dragged item has
+                        -- been moved to the left.
+                        
+                        ShiftRight
+                        (Array.slice indexB indexA sheetsOrdering)
+                _ ->
+                    NoShift
+    in
+    case (mdragId, mdropId) of
+        (Just dragId, Just dropId) ->
+            sheetsOrdering
+                |> Array.toIndexedList
+                |> List.filter
+                   (\(index, id) -> id == dragId || id == dropId)
+                |> getSlice dragId
+        _ ->
+            NoShift
 
 
 addNewSheetButtons : GameType -> Html Msg
@@ -301,49 +404,87 @@ sheetList =
 
 sheetCard : SheetId -> SheetModel -> Html Msg
 sheetCard id sheet =
-    div
-        [ css
-            [ borderRadius (Css.em 0.2)
-            , backgroundColor (hex "fff")
-            , Css.maxWidth (Css.em 23)
-            ]
+    div [ css
+          [ borderRadius (Css.em 0.2)
+          , backgroundColor (hex "fff")
+          , Css.maxWidth (Css.em 23)
+          ]
         ]
-        [ div
-            [ css
-                [ displayFlex
-                , justifyContent flexStart
-                , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
-                ]
+    [ div [ css
+            [ displayFlex
+            , justifyContent flexStart
+            , padding3 (Css.em 0.6) (Css.em 0.6) (px 0)
+            , justifyContent spaceBetween
             ]
-            [ defaultButton
-                [ onClick (OpenFullSheet id False)
-                , css
-                    [ display block ]
-                ]
-                [ text "View Details" ]
-            ]
-        , Html.Styled.map
-            (SheetMsg id)
-            (Sheet.compactView sheet)
-        ]
+          ]
+          [ viewDetailsButton id
+          , moveButton id
+          ]
+    , Html.Styled.map
+        (SheetMsg id)
+        (Sheet.compactView sheet)
+    ]
 
+
+viewDetailsButton : SheetId -> Html Msg
+viewDetailsButton id =
+    defaultButton
+        [ onClick (OpenFullSheet id False)
+        , css
+              [ display block ]
+        ]
+        [ text "View Details" ]
+
+moveButton : SheetId -> Html Msg
+moveButton id =
+    div [ DragDrop.draggable
+        , DragDrop.onDragStart (DragStart id)
+        , DragDrop.onDragEnd DragEnd
+        ]
+        [ text "Move" ]
 
 spacer : Html msg
 spacer =
     div [] []
 
 
-sheetWrapper : (Int, Int)
-             -> Int
-             -> SheetId
-             -> SheetModel
+sheetWrapper : { bounds : (Int, Int)
+               , index : Int
+               , sheetId : SheetId
+               , sheet : SheetModel
+               -- , shift : VisualShift
+               }
              -> Html Msg
-sheetWrapper (minBound, maxBound) index id sheet =
+sheetWrapper { bounds, index, sheetId, sheet } =
+    let
+        (minBound, maxBound) = bounds
+        -- transform =
+        --     case shift of
+        --         NoShift ->
+        --             Css.batch []
+        --         ShiftLeft array ->
+        --             if Array.length (Array.filter ((==) sheetId) array) == 1
+        --             then
+        --                 Css.property "transform" ("translateX(-24em)")
+        --             else
+        --                 Css.batch []
+                        
+        --         ShiftRight array ->
+        --             if Array.length (Array.filter ((==) sheetId) array) == 1
+        --             then
+        --                 Css.property "transform" ("translateX(24em)")
+        --             else
+        --                 Css.batch []
+    in
     if index >= minBound && index <= maxBound
     then
         lazy2 sheetColumn []
-            [ sheetList []
-                  [ sheetCard id sheet
+            [ sheetList
+                  [ DragDrop.onDragEnter (DragEnter sheetId)
+                  , DragDrop.onDrop (Drop sheetId)
+                  , DragDrop.onDragOver (DragOver sheetId)
+                  ]
+                  [ sheetCard sheetId sheet
                   , spacer
                   , spacer
                   ]

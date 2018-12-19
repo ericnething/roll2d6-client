@@ -519,6 +519,12 @@ moveButton id =
     div [ DragDrop.draggable
         , DragDrop.onDragStart (DragStart id)
         , DragDrop.onDragEnd DragEnd
+        , css
+              [ hover
+                    [ Css.property "cursor" "grab" ]
+              , active
+                    [ Css.property "cursor" "grabbing" ]
+              ]
         ]
         [ text "Move" ]
 

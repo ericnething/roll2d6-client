@@ -45,8 +45,12 @@ type alias Model r =
     , myPlayerId : Maybe Int
     , id : GameId
     , sheetsOrdering : Array SheetId
-    , movingSheet : Maybe SheetId
+    , movingSheet : MovingSheet
     }
+
+type MovingSheet
+    = NotMoving
+    | MovingSheet SheetId (Maybe SheetId)
 
 type VisualShift
     = NoShift

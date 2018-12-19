@@ -150,29 +150,41 @@ update msg model =
 
         DragStart dragId event ->
             ({ model
-                 | movingSheet = Just dragId
+                 | movingSheet = MovingSheet dragId Nothing
              }
             , Ports.dragstart event
             )
 
         DragEnd ->
             ({ model
-                 | movingSheet = Nothing
+                 | movingSheet = NotMoving
              }
             , Cmd.none
             )
 
         DragEnter dropId ->
-            (model, Cmd.none)
+            let
+                movingSheet =
+                    case model.movingSheet of
+                        NotMoving ->
+                            NotMoving
+                        MovingSheet dragId _ ->
+                            MovingSheet dragId (Just dropId)
+            in
+                ({ model
+                     | movingSheet = movingSheet
+                 }
+                , Cmd.none
+                )
 
         DragOver dropId ->
             (model, Cmd.none)
 
         Drop dropId ->
             case model.movingSheet of
-                Nothing ->
+                NotMoving ->
                     (model, Cmd.none)
-                Just dragId ->
+                MovingSheet dragId _ ->
                     let
                         ordering =
                             moveSheet
@@ -182,7 +194,7 @@ update msg model =
                                 }
                     in
                         ({ model
-                             | movingSheet = Nothing
+                             | movingSheet = NotMoving
                          }
                         , Task.perform
                             identity
@@ -285,12 +297,14 @@ sheetsView : (Int, Int)
               , sheetsOrdering : Array SheetId
               , sheetsViewportX : Float
               , gameType : GameType
+              , movingSheet : MovingSheet
               }
            -> Html Msg
 sheetsView (viewportWidth, _) { sheets
                               , sheetsOrdering
                               , sheetsViewportX
                               , gameType
+                              , movingSheet
                               } =
     let
         sheetWidth = 24 * 15
@@ -313,8 +327,6 @@ sheetsView (viewportWidth, _) { sheets
                 Basics.round (1/0)
             
         _ = Debug.log "Min/MaxBound" (minBound, maxBound)
-
-        -- shift = sheetsVisualShift dragDrop sheetsOrdering
     in
     lazy2 div
         [ css
@@ -344,7 +356,18 @@ sheetsView (viewportWidth, _) { sheets
                                       , index = index
                                       , sheetId = sheetId
                                       , sheet = sheet
-                                      -- , shift = shift
+                                      , shift =
+                                          case movingSheet of
+                                              MovingSheet _ (Just dropId) ->
+                                                  if
+                                                      dropId == sheetId
+                                                  then
+                                                      True
+                                                  else
+                                                      False
+                                              _ ->
+                                                  False
+                                                      
                                       }
                                  )
                                  acc
@@ -508,37 +531,29 @@ sheetWrapper : { bounds : (Int, Int)
                , index : Int
                , sheetId : SheetId
                , sheet : SheetModel
-               -- , shift : VisualShift
+               , shift : Bool
                }
              -> Html Msg
-sheetWrapper { bounds, index, sheetId, sheet } =
+sheetWrapper { bounds, index, sheetId, sheet, shift } =
     let
         (minBound, maxBound) = bounds
-        -- transform =
-        --     case shift of
-        --         NoShift ->
-        --             Css.batch []
-        --         ShiftLeft array ->
-        --             if Array.length (Array.filter ((==) sheetId) array) == 1
-        --             then
-        --                 Css.property "transform" ("translateX(-24em)")
-        --             else
-        --                 Css.batch []
-                        
-        --         ShiftRight array ->
-        --             if Array.length (Array.filter ((==) sheetId) array) == 1
-        --             then
-        --                 Css.property "transform" ("translateX(24em)")
-        --             else
-        --                 Css.batch []
     in
     if index >= minBound && index <= maxBound
     then
-        lazy2 sheetColumn []
+        lazy2 sheetColumn [ DragDrop.onDragEnter (DragEnter sheetId)
+                          , DragDrop.onDrop (Drop sheetId)
+                          , DragDrop.onDragOver (DragOver sheetId)
+                          ]
             [ sheetList
-                  [ DragDrop.onDragEnter (DragEnter sheetId)
-                  , DragDrop.onDrop (Drop sheetId)
-                  , DragDrop.onDragOver (DragOver sheetId)
+                  [ css
+                    [ if shift
+                      then
+                          Css.property
+                          "transform"
+                          "translateY(2em)"
+                      else
+                          Css.batch []
+                    ]
                   ]
                   [ sheetCard sheetId sheet
                   , spacer

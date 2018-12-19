@@ -28,7 +28,7 @@ import RemoteData exposing (WebData)
 import Http
 import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
-import Game.Sheets.Types as Sheets exposing (FullSheet, SheetId)
+import Game.Sheets.Types as Sheets exposing (FullSheet, SheetId, MovingSheet)
 import Game.GameType exposing (GameType(..))
 
 type alias Index = Int
@@ -69,7 +69,7 @@ type alias Model =
     , sheetsViewportX : Float
     , myPlayerId : Maybe Int
     , sheetsOrdering : Array SheetId
-    , movingSheet : Maybe SheetId
+    , movingSheet : MovingSheet
     }
 
 
@@ -93,7 +93,7 @@ emptyGameModel ref id gameData eventSource =
     , sheetsViewportX = 0
     , myPlayerId = Nothing
     , sheetsOrdering = gameData.sheetsOrdering
-    , movingSheet = Nothing
+    , movingSheet = Sheets.NotMoving
     }
 
 

@@ -25,6 +25,7 @@ module Game.Sheets exposing
 
 
 import Array exposing (Array)
+import List.Extra as List
 import Dict exposing (Dict)
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (..)
@@ -168,30 +169,47 @@ update msg model =
             (model, Cmd.none)
 
         Drop dropId ->
-            let
-                ordering =
-                    case ( model.movingSheet
-                               |> Maybe.andThen
-                                  (\dragId ->
-                                       findArrayIndexOf
-                                       dragId
-                                       model.sheetsOrdering
-                                  )
-                         , findArrayIndexOf dropId model.sheetsOrdering
-                         ) of
-                        (Just a, Just b) ->
-                            swapArray a b model.sheetsOrdering
-                        _ ->
+            case model.movingSheet of
+                Nothing ->
+                    (model, Cmd.none)
+                Just dragId ->
+                    let
+                        mab =
                             model.sheetsOrdering
-            in
-                ({ model
-                     | movingSheet = Nothing
-                }
-                , Task.perform
-                    identity
-                    (Task.succeed
-                         (UpdateSheetsOrdering ordering))
-                )
+                                |> Array.toList
+                                |> List.filter
+                                   (\id -> id == dragId || id == dropId)
+                                |> (\xs ->
+                                        case xs of
+                                            a :: b :: _ ->
+                                                Just (a, b)
+                                            _ ->
+                                                Nothing
+                                   )
+                                
+                        ordering =
+                            case mab of
+                                Nothing ->
+                                    model.sheetsOrdering
+                                Just (a, b) ->
+                                    if
+                                        a == dragId
+                                    then
+                                        moveToAfter dragId dropId
+                                        model.sheetsOrdering
+                                    else
+                                        moveToBefore dragId dropId
+                                        model.sheetsOrdering
+
+                    in
+                        ({ model
+                             | movingSheet = Nothing
+                         }
+                        , Task.perform
+                            identity
+                            (Task.succeed
+                                 (UpdateSheetsOrdering ordering))
+                        )
 
         UpdateSheetsOrdering ordering ->
             ({ model
@@ -199,7 +217,43 @@ update msg model =
              }
             , Cmd.none
             )
-        
+
+
+moveToBefore : a -> a -> Array a -> Array a
+moveToBefore a b array =
+    array
+        |> Array.toList
+        |> List.filter ((/=) a)
+        |> List.foldl
+           (\x acc ->
+                if x == b
+                then
+                    b :: a :: acc
+                else
+                    x :: acc
+           )
+           []
+        |> List.reverse
+        |> Array.fromList
+
+
+moveToAfter : a -> a -> Array a -> Array a
+moveToAfter a b array =
+    array
+        |> Array.toList
+        |> List.filter ((/=) a)
+        |> List.foldl
+           (\x acc ->
+                if x == b
+                then
+                    a :: b :: acc
+                else
+                    x :: acc
+           )
+           []
+        |> List.reverse
+        |> Array.fromList
+
 
 restoreScrollX : String -> Float -> Cmd Msg
 restoreScrollX id xpos =

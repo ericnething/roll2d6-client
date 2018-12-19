@@ -174,33 +174,12 @@ update msg model =
                     (model, Cmd.none)
                 Just dragId ->
                     let
-                        mab =
-                            model.sheetsOrdering
-                                |> Array.toList
-                                |> List.filter
-                                   (\id -> id == dragId || id == dropId)
-                                |> (\xs ->
-                                        case xs of
-                                            a :: b :: _ ->
-                                                Just (a, b)
-                                            _ ->
-                                                Nothing
-                                   )
-                                
                         ordering =
-                            case mab of
-                                Nothing ->
-                                    model.sheetsOrdering
-                                Just (a, b) ->
-                                    if
-                                        a == dragId
-                                    then
-                                        moveToAfter dragId dropId
-                                        model.sheetsOrdering
-                                    else
-                                        moveToBefore dragId dropId
-                                        model.sheetsOrdering
-
+                            moveSheet
+                                { ordering = model.sheetsOrdering
+                                , from = dragId
+                                , to = dropId
+                                }
                     in
                         ({ model
                              | movingSheet = Nothing
@@ -219,8 +198,31 @@ update msg model =
             )
 
 
-moveToBefore : a -> a -> Array a -> Array a
-moveToBefore a b array =
+moveSheet : { ordering : Array SheetId
+            , from : SheetId
+            , to : SheetId
+            } -> Array SheetId
+moveSheet { from, to, ordering } =
+    let
+        move xs =
+            case xs of
+                a :: b :: _ ->
+                    if
+                        a == from
+                    then
+                        moveAfter from to ordering
+                    else
+                        moveBefore from to ordering
+                _ ->
+                    ordering
+    in
+        ordering
+            |> Array.toList
+            |> List.filter (\id -> id == from || id == to)
+            |> move
+
+moveBefore : a -> a -> Array a -> Array a
+moveBefore a b array =
     array
         |> Array.toList
         |> List.filter ((/=) a)
@@ -237,8 +239,8 @@ moveToBefore a b array =
         |> Array.fromList
 
 
-moveToAfter : a -> a -> Array a -> Array a
-moveToAfter a b array =
+moveAfter : a -> a -> Array a -> Array a
+moveAfter a b array =
     array
         |> Array.toList
         |> List.filter ((/=) a)

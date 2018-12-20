@@ -21,6 +21,7 @@
 module Game.Sheets exposing
     ( view
     , update
+    , sheetPermissionsView
     )
 
 
@@ -47,6 +48,7 @@ import Time
 import API exposing (generateNewSheetId)
 import Ports
 import DragDrop
+import RemoteData as RemoteData exposing (WebData)
 
 update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
@@ -210,6 +212,21 @@ update msg model =
             , Cmd.none
             )
 
+        OpenSheetPermissions _ ->
+            -- This is handled in Game.elm to open the overlay
+            (model, Cmd.none)
+
+        UpdateSheetPermissions sheetId sheetPermission ->
+            ({ model
+                 | sheetPermissions =
+                     Dict.insert
+                         sheetId
+                         sheetPermission
+                         model.sheetPermissions
+             }
+            , Cmd.none
+            )
+
 
 moveSheet : { ordering : Array SheetId
             , from : SheetId
@@ -285,9 +302,18 @@ view viewportSize model =
             lazy2 sheetsView viewportSize model
         Just (FullSheet id editing) ->
             fullSheetView
-            model.myPlayerInfo
-            (FullSheet id editing)
-            (Dict.get id model.sheets)
+                { player = model.myPlayerInfo
+                , fullSheet = FullSheet id editing
+                , sheetModel = Dict.get id model.sheets
+                , permissions =
+                    model.sheetPermissions
+                        |> Dict.get id
+                        |> Maybe.map
+                           (\perm -> (perm, model.players))
+                }
+                
+
+            
 
 --------------------------------------------------
 -- Game Sheets
@@ -598,19 +624,49 @@ fullSheetWrapper =
         , overflowY auto
         ]
 
-fullSheetView : Person -> FullSheet -> Maybe SheetModel -> Html Msg
-fullSheetView player fullsheet mmodel =
+fullSheetView : { player : Person
+                , fullSheet : FullSheet
+                , sheetModel : Maybe SheetModel
+                , permissions : Maybe (SheetPermission, WebData (List Person))
+                }
+              -> Html Msg
+fullSheetView { player, fullSheet, sheetModel, permissions } =
     fullSheetWrapper []
         [ sheetList []
-              [ fullSheetCard player fullsheet mmodel
+              [ fullSheetCard
+                    { player = player
+                    , fullSheet = fullSheet
+                    , sheetModel = sheetModel
+                    , permissions = permissions
+                    }
               , spacer
               , spacer
               ]
         ]
 
-fullSheetCard : Person -> FullSheet -> Maybe SheetModel -> Html Msg
-fullSheetCard player (FullSheet index editing) mmodel =
-    case mmodel of
+fullSheetCard : { player : Person
+                , fullSheet : FullSheet
+                , sheetModel : Maybe SheetModel
+                , permissions : Maybe (SheetPermission, WebData (List Person))
+                }
+              -> Html Msg
+fullSheetCard { player
+              , fullSheet
+              , sheetModel
+              , permissions
+              } =
+    let
+        (FullSheet sheetId editing) = fullSheet
+
+        editToggle =
+            toggleSwitch
+            { offTitle = "Locked"
+            , onTitle = "Editing"
+            , isActive = editing
+            , toMsg = always ToggleFullSheetEdit
+            }
+    in
+    case sheetModel of
         Nothing ->
             div [] [ text "Not Found" ]
         Just sheet ->
@@ -624,8 +680,10 @@ fullSheetCard player (FullSheet index editing) mmodel =
                   ]
                 ]
                 [ editSheetToolbarView
-                      player
-                      (FullSheet index editing)
+                      { player = player
+                      , fullSheet = fullSheet
+                      , permissions = permissions
+                      }
                 , div [ css
                         [ backgroundColor (hex "fff")
                         , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
@@ -644,17 +702,18 @@ fullSheetCard player (FullSheet index editing) mmodel =
                                   [ text "← Go back to all sheets" ]
                             , case player.accessLevel of
                                   Player ->
-                                      text ""
+                                      if hasPermission
+                                          (Maybe.map Tuple.first permissions)
+                                          player.id
+                                      then
+                                          editToggle
+                                      else
+                                          text ""
                                   _ ->
-                                      toggleSwitch
-                                      { offTitle = "Locked"
-                                      , onTitle = "Editing"
-                                      , isActive = editing
-                                      , toMsg = always ToggleFullSheetEdit
-                                      }
+                                      editToggle
                             ]
                       , Html.Styled.map
-                            (SheetMsg index)
+                            (SheetMsg sheetId)
                             (if editing
                              then
                                  Sheet.editView sheet
@@ -665,12 +724,18 @@ fullSheetCard player (FullSheet index editing) mmodel =
                 ]
 
 
-editSheetToolbarView : Person -> FullSheet -> Html Msg
-editSheetToolbarView player (FullSheet index isActive) =
+editSheetToolbarView : { player : Person
+                       , fullSheet : FullSheet
+                       , permissions : Maybe (SheetPermission, WebData (List Person))
+                       }
+                     -> Html Msg
+editSheetToolbarView { player, fullSheet, permissions } =
     let
+        (FullSheet sheetId isActive) = fullSheet
+
         deleteButton =
             defaultButton
-                [ onClick (RemoveSheet index)
+                [ onClick (RemoveSheet sheetId)
                 , css
                       [ backgroundColor (hex "ff0000")
                       , color (hex "fff")
@@ -694,9 +759,19 @@ editSheetToolbarView player (FullSheet index isActive) =
               , displayFlex
               , alignItems flexStart
               , flexDirection column
+              , Css.color (hex "fff")
               ]
             ]
         [ sectionLabel "Assigned to"
+        , assignedToSheetView permissions
+        , case player.accessLevel of
+              Player ->
+                  text ""
+              _ ->
+                  defaultButton
+                  [ onClick (OpenSheetPermissions sheetId) ]
+                  [ text "Manage Permissions" ]
+
         , case player.accessLevel of
               Player ->
                   text ""
@@ -713,6 +788,29 @@ editSheetToolbarView player (FullSheet index isActive) =
                   , deleteButton
                   ]
         ]
+
+assignedToSheetView : Maybe (SheetPermission, WebData (List Person))
+                    -> Html Msg
+assignedToSheetView mpermissions =
+    case mpermissions of
+        Just (permissions, RemoteData.Success players) ->
+            case permissions of
+                SomePlayers ids ->
+                    ul []
+                        (List.map
+                             (\player ->
+                                  if List.member player.id ids
+                                  then
+                                      li [] [ text player.username ]
+                                  else
+                                      text ""
+                             )
+                             players
+                        )
+                AllPlayers ->
+                    ul [] [ li [] [ text "Everyone" ] ]
+        _ ->
+            text ""
 
 toggleSwitch : { offTitle : String
                , onTitle : String
@@ -796,3 +894,123 @@ toggleSwitch { offTitle, onTitle, isActive, toMsg } =
             ]
             [ text (if isActive then onTitle else offTitle) ]
         ]
+
+
+--------------------------------------------------
+-- Sheet Permissions
+--------------------------------------------------
+
+sheetPermissionsView : SheetId
+                     -> { r |
+                          myPlayerInfo : Person
+                        , players : WebData (List Person)
+                        , sheetPermissions : Dict SheetId SheetPermission
+                        }
+                     -> Html Msg
+sheetPermissionsView sheetId { myPlayerInfo
+                             , players
+                             , sheetPermissions
+                             } =
+    let
+        allPlayersToggle =
+            div [ css
+                  [ displayFlex
+                  , alignItems center
+                  , justifyContent spaceBetween
+                  ]
+                ]
+                [ div [] [ text "Everyone" ]
+                , toggleSwitch
+                      { offTitle = ""
+                      , onTitle = ""
+                      , isActive =
+                          case Dict.get sheetId sheetPermissions of
+                              Just AllPlayers ->
+                                  True
+                              _ ->
+                                  False
+                      , toMsg =
+                          \isActive ->
+                              if
+                                  isActive
+                              then
+                                  UpdateSheetPermissions
+                                  sheetId
+                                  AllPlayers
+                              else
+                                  UpdateSheetPermissions
+                                  sheetId
+                                  (SomePlayers [])
+                      }
+                ]
+        toSheetPermission playerId isActive =
+            case Dict.get sheetId sheetPermissions of
+                Just (SomePlayers ids) ->
+                    if
+                        isActive
+                    then
+                        SomePlayers (playerId :: ids)
+                    else
+                        SomePlayers (List.filter ((/=) playerId) ids)
+
+                Just AllPlayers ->
+                    SomePlayers [ playerId ]
+
+                Nothing ->
+                    if
+                        isActive
+                    then
+                        SomePlayers [playerId]
+                    else
+                        SomePlayers []
+
+        playerView player =
+            div [ css
+                  [ displayFlex
+                  , alignItems center
+                  , justifyContent spaceBetween
+                  ]
+                ]
+                [ div [] [ text player.username ]
+                , toggleSwitch
+                      { offTitle = ""
+                      , onTitle = ""
+                      , isActive =
+                          case Dict.get sheetId sheetPermissions of
+                              Just (SomePlayers ids) ->
+                                  if List.member player.id ids
+                                  then
+                                      True
+                                  else
+                                      False
+                              _ ->
+                                  False
+                      , toMsg =
+                          UpdateSheetPermissions sheetId
+                          << toSheetPermission player.id
+                      }
+                ]
+    in
+        case players of
+            RemoteData.Success players_ ->
+                div []
+                    (allPlayersToggle ::
+                         List.map playerView players_)
+
+            _ ->
+                text "Loading failed"
+
+
+hasPermission : Maybe SheetPermission
+              -> PersonId
+              -> Bool
+hasPermission mpermissions playerId =
+    case mpermissions of
+        Just AllPlayers ->
+            True
+
+        Just (SomePlayers ids) ->
+            List.member playerId ids
+
+        Nothing ->
+            False

@@ -20,8 +20,10 @@
 
 module Game.Person exposing (..)
 
+type alias PersonId = Int
+
 type alias Person =
-    { id : Int
+    { id : PersonId
     , accessLevel : AccessLevel
     , username : String
     , presence : Presence

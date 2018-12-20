@@ -91,6 +91,15 @@ update : Navigation.Key
        -> ( Model, Cmd Msg )
 update navkey msg model =
     case msg of
+        SheetsMsg (Sheets.OpenSheetPermissions sheetId) ->
+            ( model
+            , Task.perform
+                identity
+                (Task.succeed
+                     (OpenOverlay
+                          (ManageSheetPermissions sheetId)))
+            )
+
         SheetsMsg submsg ->
             let
                 ( newModel, cmd ) =
@@ -592,15 +601,7 @@ overlayView model =
     case model.overlay of
         OverlayNone ->
             text ""
-                
-        EditSheet index ->
-            overlay
-            [] []
-            -- [ editSheetView
-            --       index
-            --       (Array.get index model.sheets)
-            -- ]
-                    
+
         EditGameSettings ->
             overlay [] [ gameSettingsView model ]
 
@@ -609,6 +610,25 @@ overlayView model =
 
         ManagePlayers ->
             overlay [] [ playerListView model.players ]
+
+        ManageSheetPermissions sheetId ->
+            overlay []
+                [ div [ css
+                        [ margin2 (Css.em 4) auto
+                        , backgroundColor (hex "fff")
+                        , padding (Css.em 2)
+                        , Css.width (Css.em 32)
+                        , borderRadius (Css.em 0.2)
+                        ]
+                      ]
+                      [ h1 [] [ text "Players who can edit this sheet" ]
+                      , Sheets.sheetPermissionsView sheetId model
+                            |> Html.Styled.map SheetsMsg
+                      , defaultButton
+                            [ onClick CloseOverlay ]
+                            [ text "Done" ]
+                      ]
+                ]
 
 
 --------------------------------------------------
@@ -777,6 +797,7 @@ presenceIndicator color status =
            ]
          ]
         [ text status ]
+
 
 --------------------------------------------------
 -- Side Menu

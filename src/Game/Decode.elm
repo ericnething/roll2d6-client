@@ -38,6 +38,7 @@ import Array exposing (Array)
 import Game.Types as Game
 import Game.GameType as Game
 import Game.Person as Game
+import Game.Sheets.Types as Sheets
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Lobby.Types as Lobby
@@ -298,12 +299,23 @@ gameDataDecoder =
     field "gameType" gameTypeDecoder
         |> andThen
            (\gameType ->
-                map4 Game.GameData
+                map5 Game.GameData
                 (field "title" string)
                 (succeed gameType)
                 (field "sheets" (dict (sheetDecoder gameType)))
                 (field "sheetsOrdering" (array string))
+                (field "sheetPermissions" (dict sheetPermissionDecoder))
            )
+
+
+sheetPermissionDecoder : Decoder Sheets.SheetPermission
+sheetPermissionDecoder =
+    oneOf
+        [ (field "somePlayers" (list int))
+              |> Decode.map Sheets.SomePlayers
+        , (field "allPlayers" bool)
+              |> Decode.map (always Sheets.AllPlayers)
+        ]
 
 
 sheetDecoder : Game.GameType -> Decoder (Sheet.SheetModel)

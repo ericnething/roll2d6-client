@@ -392,30 +392,34 @@ maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
 maybeWriteToPouchDB msg newGame =
     case msg of
         Game.SheetsMsg (Sheets.SheetMsg _ _) ->
-            debouncedWriteToPouchDB
-                newGame
+            debouncedWriteToPouchDB newGame
 
         Game.SheetsMsg (Sheets.AddSheet _ _) ->
-            debouncedWriteToPouchDB
-                newGame
+            debouncedWriteToPouchDB newGame
 
         Game.SheetsMsg (Sheets.SheetRemoved _) ->
-            debouncedWriteToPouchDB
-                newGame
+            debouncedWriteToPouchDB newGame
 
         Game.SheetsMsg (Sheets.UpdateSheetsOrdering _) ->
-            debouncedWriteToPouchDB
-                newGame
+            debouncedWriteToPouchDB newGame
+
+        Game.SheetsMsg (Sheets.UpdateSheetPermissions _ _) ->
+            debouncedWriteToPouchDB newGame
 
         Game.UpdateGameTitle _ ->
-            debouncedWriteToPouchDB
-                newGame
+            debouncedWriteToPouchDB newGame
 
         _ ->
             Cmd.none
 
 debouncedWriteToPouchDB : Game.Model -> Cmd Msg
-debouncedWriteToPouchDB { ref, title, gameType, sheets, sheetsOrdering } =
+debouncedWriteToPouchDB { ref
+                        , title
+                        , gameType
+                        , sheets
+                        , sheetsOrdering
+                        , sheetPermissions
+                        } =
     Task.perform identity
         (Task.succeed
             (WriteToPouchDB ref
@@ -423,6 +427,7 @@ debouncedWriteToPouchDB { ref, title, gameType, sheets, sheetsOrdering } =
                  , gameType = gameType
                  , sheets = sheets
                  , sheetsOrdering = sheetsOrdering
+                 , sheetPermissions = sheetPermissions
                  }
                 |> provideInput
                 |> DebounceMsg

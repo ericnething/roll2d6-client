@@ -29,6 +29,7 @@ import Array exposing (Array)
 import Game.Types as Game
 import Game.GameType as Game
 import Game.Sheet.Types as Sheet
+import Game.Sheets.Types as Sheets
 import Lobby.Types as Lobby
 import Json.Encode exposing (..)
 import Maybe
@@ -120,6 +121,7 @@ encodeGame game =
         , ( "gameType", encodeGameType game.gameType )
         , ( "sheets", dict identity encodeSheet game.sheets )
         , ( "sheetsOrdering", array string game.sheetsOrdering )
+        , ( "sheetPermissions" , dict identity encodeSheetPermission game.sheetPermissions)
         ]
 
 
@@ -131,6 +133,7 @@ encodeGameData game =
         , ( "gameType", encodeGameType game.gameType )
         , ( "sheets", dict identity encodeSheet game.sheets )
         , ( "sheetsOrdering", array string game.sheetsOrdering )
+        , ( "sheetPermissions" , dict identity encodeSheetPermission game.sheetPermissions)
         ]
 
 encodeSheet : Sheet.SheetModel -> Value
@@ -161,3 +164,12 @@ encodeNewGameSettings { title, gameType } =
         [ ( "title", string title )
         , ( "gameType", encodeGameType gameType )
         ]
+
+encodeSheetPermission : Sheets.SheetPermission -> Value
+encodeSheetPermission permission =
+    case permission of
+        Sheets.SomePlayers playerIds ->
+            object [ ( "somePlayers", list int playerIds) ]
+            
+        Sheets.AllPlayers ->
+            object [ ( "allPlayers", bool True ) ]

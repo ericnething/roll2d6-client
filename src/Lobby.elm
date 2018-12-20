@@ -51,6 +51,7 @@ initialGameModel title gameType =
     , gameType = gameType
     , sheets = Dict.empty --Sheet.initialModel gameType
     , sheetsOrdering = Array.fromList []
+    , sheetPermissions = Dict.empty
     }
 
 init : ( Model, Cmd Msg )

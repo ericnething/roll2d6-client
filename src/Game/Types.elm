@@ -27,18 +27,28 @@ import Ports exposing (PouchDBRef)
 import RemoteData exposing (WebData)
 import Http
 import Time
-import Game.Sheet.Types exposing (SheetMsg, SheetModel)
-import Game.Sheets.Types as Sheets exposing (FullSheet, SheetId, MovingSheet)
+import Game.Sheet.Types
+    exposing
+    ( SheetMsg
+    , SheetModel
+    )
+import Game.Sheets.Types as Sheets
+    exposing
+    ( FullSheet
+    , SheetId
+    , MovingSheet
+    , SheetPermission
+    )
 import Game.GameType exposing (GameType(..))
 import Game.Person exposing (..)
 
 type alias Index = Int
 
 type Overlay
-    = EditSheet Int
-    | EditGameSettings
+    = EditGameSettings
     | InstantInvite (WebData String)
     | ManagePlayers
+    | ManageSheetPermissions SheetId
     | OverlayNone
 
 type alias EventSourceRef = Value
@@ -59,6 +69,7 @@ type alias Model =
     , myPlayerInfo : Person
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
+    , sheetPermissions : Dict SheetId SheetPermission
     }
 
 
@@ -84,6 +95,7 @@ emptyGameModel ref id gameData eventSource playerInfo =
     , myPlayerInfo = playerInfo
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
+    , sheetPermissions = gameData.sheetPermissions
     }
 
 
@@ -92,6 +104,7 @@ type alias GameData =
     , gameType : GameType
     , sheets : Dict SheetId SheetModel
     , sheetsOrdering : Array SheetId
+    , sheetPermissions : Dict SheetId SheetPermission
     }
 
 
@@ -105,6 +118,7 @@ mergeGameData model gameData =
         | title = gameData.title
         , sheets = gameData.sheets
         , sheetsOrdering = gameData.sheetsOrdering
+        , sheetPermissions = gameData.sheetPermissions
     }
 
 
@@ -114,6 +128,7 @@ emptyGameData gameType =
     , gameType = gameType
     , sheets = Dict.empty
     , sheetsOrdering = Array.fromList []
+    , sheetPermissions = Dict.empty
     }
 
 type ServerEvent

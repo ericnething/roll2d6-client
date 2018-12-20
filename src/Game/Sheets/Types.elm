@@ -28,6 +28,7 @@ import Game.Person exposing (..)
 import Browser.Dom as Dom
 import Http
 import Json.Decode
+import RemoteData exposing (WebData)
 
 type alias Index = Int
 
@@ -47,6 +48,8 @@ type alias Model r =
     , id : GameId
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
+    , players : WebData (List Person)
+    , sheetPermissions : Dict SheetId SheetPermission
     }
 
 type MovingSheet
@@ -57,6 +60,10 @@ type VisualShift
     = NoShift
     | ShiftLeft (Array SheetId)
     | ShiftRight (Array SheetId)
+
+type SheetPermission
+    = AllPlayers
+    | SomePlayers (List PersonId)
 
 type Msg
     = SheetMsg SheetId SheetMsg
@@ -76,3 +83,5 @@ type Msg
     | DragEnter SheetId
     | DragOver SheetId
     | Drop SheetId
+    | OpenSheetPermissions SheetId
+    | UpdateSheetPermissions SheetId SheetPermission

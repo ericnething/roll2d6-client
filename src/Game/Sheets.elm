@@ -554,9 +554,7 @@ sheetWrapper { bounds, index, sheetId, sheet, shift } =
                   [ css
                     [ if shift
                       then
-                          Css.property
-                          "transform"
-                          "translateY(2em)"
+                          Css.property "transform" "translateY(1em)"
                       else
                           Css.batch []
                     ]

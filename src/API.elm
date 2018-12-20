@@ -34,7 +34,7 @@ module API
     , setPresenceOffline
     , sendChatMessage
     , getChatLog
-    , getMyPlayerId
+    , getMyPlayerInfo
     , generateNewSheetId
     , deleteSheetId
     )
@@ -42,6 +42,7 @@ module API
 import Http
 import Json.Decode exposing (decodeValue)
 import Json.Encode exposing (encode)
+import Main.Types as Main
 import Lobby.Types as Lobby
 import Login.Types as Login
 import Game.Types as Game
@@ -55,6 +56,7 @@ import Game.Decode
         , gameIdDecoder
         , gameListDecoder
         , playerListDecoder
+        , playerDecoder
         , chatMessageListDecoder
         )
 import Game.Encode
@@ -315,21 +317,22 @@ getChatLog gameId =
         Http.send Game.ChatLogReceived request
 
 
-getMyPlayerId : Game.GameId -> Cmd Game.Msg
-getMyPlayerId gameId =
+getMyPlayerInfo : Game.GameId -> Cmd Main.Msg
+getMyPlayerInfo gameId =
     let
         request =
             Http.request
                 { method = "GET"
                 , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/player-id"
+                , url = domain ++ "/games/" ++ gameId
+                        ++ "/my-player-info"
                 , body = Http.emptyBody
-                , expect = Http.expectJson Json.Decode.int
+                , expect = Http.expectJson playerDecoder
                 , timeout = Nothing
                 , withCredentials = False
                 }
     in
-        Http.send Game.MyPlayerId request
+        Http.send Main.PlayerInfoLoaded request
 
 
 generateNewSheetId : Game.GameId -> Sheet.SheetModel -> Cmd Sheets.Msg

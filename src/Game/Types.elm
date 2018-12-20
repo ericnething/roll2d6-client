@@ -30,6 +30,7 @@ import Time
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
 import Game.Sheets.Types as Sheets exposing (FullSheet, SheetId, MovingSheet)
 import Game.GameType exposing (GameType(..))
+import Game.Person exposing (..)
 
 type alias Index = Int
 
@@ -39,18 +40,6 @@ type Overlay
     | InstantInvite (WebData String)
     | ManagePlayers
     | OverlayNone
-
-type AccessLevel
-    = Owner
-    | GameMaster
-    | Player
-
-type alias Person =
-    { id : Int
-    , accessLevel : AccessLevel
-    , username : String
-    , presence : Presence
-    }
 
 type alias EventSourceRef = Value
 
@@ -67,7 +56,7 @@ type alias Model =
     , chatInput : String
     , chatMessages : List ChatMessage
     , sheetsViewportX : Float
-    , myPlayerId : Maybe Int
+    , myPlayerInfo : Person
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
     }
@@ -77,8 +66,9 @@ emptyGameModel : PouchDBRef
                -> GameId
                -> GameData
                -> EventSourceRef
+               -> Person
                -> Model
-emptyGameModel ref id gameData eventSource =
+emptyGameModel ref id gameData eventSource playerInfo =
     { ref = ref
     , eventSource = eventSource
     , gameType = gameData.gameType
@@ -91,7 +81,7 @@ emptyGameModel ref id gameData eventSource =
     , chatInput = ""
     , chatMessages = []
     , sheetsViewportX = 0
-    , myPlayerId = Nothing
+    , myPlayerInfo = playerInfo
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
     }
@@ -124,16 +114,6 @@ emptyGameData gameType =
     , gameType = gameType
     , sheets = Dict.empty
     , sheetsOrdering = Array.fromList []
-    }
-
-
-type Presence
-    = Online
-    | Offline
-
-type alias PlayerPresence =
-    { id : Int
-    , presence : Presence
     }
 
 type ServerEvent
@@ -222,4 +202,4 @@ type Msg
     | KeyPressChatInput
     | DiceRollResult DiceRoll
     | ChatLogReceived (Result Http.Error (List ChatMessage))
-    | MyPlayerId (Result Http.Error Int)
+

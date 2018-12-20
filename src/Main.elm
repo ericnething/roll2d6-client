@@ -20,6 +20,7 @@
 
 module Main exposing (main)
 
+import Main.Types exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
 import Browser.Events
@@ -96,26 +97,6 @@ subscriptions model =
         ]
 
 
-
--- Model
-
-
-type alias Model =
-    { screen : Screen
-    , debouncer : Debouncer Msg
-    , navkey : Navigation.Key
-    , viewportSize : (Int, Int)
-    }
-
-
-type Screen
-    = LoginScreen Login.Model
-    | LobbyScreen Lobby.Model
-    | LoadingScreen
-    | GameScreen Game.Model
-    | InviteScreen Invite.Model
-
-
 initialModel : (Int, Int) -> Navigation.Key -> Model
 initialModel viewportSize key =
     { screen = LoginScreen Login.initialModel
@@ -132,26 +113,6 @@ init viewportSize url key =
     changeRouteTo
     (Route.fromUrl url)
     (initialModel viewportSize key)
-
-
-
--- Update
-
-
-type Msg
-    = NavigateToUrl UrlRequest
-    | UrlChanged Url
-    | RouteChanged (Maybe Route)
-    | GameMsg Game.Msg
-    | LobbyMsg Lobby.Msg
-    | LoginMsg Login.ConsumerMsg
-    | WriteToPouchDB PouchDBRef Game.GameData
-    | DebounceMsg (Debouncer.Msg Msg)
-    | GameLoaded Json.Decode.Value
-    | GameLoadFailed
-    | AuthFailed
-    | InviteMsg Invite.Msg
-    | WindowResized Int Int
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -197,23 +158,21 @@ update msg model =
 
         GameLoaded value ->
             case decodeGame value of
-                Ok newGame ->
+                Ok toGameModel ->
                     case model.screen of
-                        LoadingScreen ->
-                            ( { model
-                                | screen = GameScreen newGame
-                              }
-                            , Cmd.batch
-                                [ API.getMyPlayerId newGame.id
-                                    |> Cmd.map GameMsg
-                                , API.getPlayers newGame.id
-                                    |> Cmd.map GameMsg
-                                , API.setPresenceOnline newGame.id
-                                    |> Cmd.map GameMsg
-                                , API.getChatLog newGame.id
-                                    |> Cmd.map GameMsg
-                                ]
-                            )
+                        LoadingScreen progress ->
+                            let
+                                updatedProgress =
+                                    { progress
+                                        | toGameModel = Just toGameModel
+                                    }
+                            in
+                                ({ model
+                                     | screen =
+                                         LoadingScreen updatedProgress
+                                 }
+                                , loadGameScreenIfDone updatedProgress
+                                )
 
                         _ ->
                             ( model, Cmd.none )
@@ -230,6 +189,65 @@ update msg model =
                 model.navkey
                 (Route.toUrlString Route.Lobby)
             )
+
+        PlayerInfoLoaded result ->
+            case result of
+                Ok playerInfo ->
+                    case model.screen of
+                        LoadingScreen progress ->
+                            let
+                                updatedProgress =
+                                    { progress
+                                        | myPlayerInfo = Just playerInfo
+                                    }
+                            in
+                                ({ model
+                                     | screen =
+                                       LoadingScreen updatedProgress
+                                 }
+                                , loadGameScreenIfDone updatedProgress
+                                )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                Err (Http.BadStatus err) ->
+                    case err.status.code of
+                        401 ->
+                            ( model
+                            , Navigation.replaceUrl
+                                navkey
+                                (Route.toUrlString Route.Auth)
+                            )
+
+                        _ ->
+                            let
+                                _ = Debug.log "GameLoad Error:" err
+                            in
+                                (model, Cmd.none)
+
+                Err err ->
+                    let
+                        _ = Debug.log "GameLoad Error:" err
+                    in
+                    (model, Cmd.none)
+
+        LoadGameScreen { toGameModel, myPlayerInfo } ->
+            let
+                game = toGameModel myPlayerInfo
+            in
+                ({ model
+                     | screen = GameScreen game
+                 }
+                , Cmd.batch
+                    [ API.getPlayers game.id
+                          |> Cmd.map GameMsg
+                    , API.setPresenceOnline game.id
+                          |> Cmd.map GameMsg
+                    , API.getChatLog game.id
+                          |> Cmd.map GameMsg
+                    ]
+                )
 
         AuthFailed ->
             ( model
@@ -351,10 +369,13 @@ changeRouteTo route model =
                 )
                 
         Just (Route.Game gameId) ->
-            ( { model | screen = LoadingScreen }
-            , Ports.loadGame
-                ( encodeGameData (Game.emptyGameData Game.Fate)
-                , gameId )
+            ( { model | screen = LoadingScreen emptyLoadingProgress }
+            , Cmd.batch
+                [ Ports.loadGame
+                      ( encodeGameData (Game.emptyGameData Game.Fate)
+                      , gameId )
+                , API.getMyPlayerInfo gameId
+                ]
             )
 
         Just (Route.Invite inviteId) ->
@@ -409,7 +430,19 @@ debouncedWriteToPouchDB { ref, title, gameType, sheets, sheetsOrdering } =
         )
 
 
-
+loadGameScreenIfDone : LoadingProgress -> Cmd Msg
+loadGameScreenIfDone { myPlayerInfo, toGameModel } =
+    case (myPlayerInfo, toGameModel) of
+        (Just pi, Just gm) ->
+            Task.perform 
+            LoadGameScreen
+            (Task.succeed
+                 { myPlayerInfo = pi
+                 , toGameModel = gm
+                 })
+        _ ->
+            Cmd.none
+              
 -- View
 
 
@@ -424,7 +457,7 @@ view model =
             Lobby.view submodel
                 |> Html.Styled.map LobbyMsg
 
-        LoadingScreen ->
+        LoadingScreen _ ->
             div [] [ text "Loading game..." ]
 
         GameScreen game ->

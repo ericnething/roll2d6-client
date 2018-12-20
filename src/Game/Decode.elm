@@ -26,6 +26,7 @@ module Game.Decode exposing
     , gameIdDecoder
     , gameListDecoder
     , playerListDecoder
+    , playerDecoder
     , decodePlayerList
     , decodePlayerPresence
     , chatMessageListDecoder
@@ -36,6 +37,7 @@ module Game.Decode exposing
 import Array exposing (Array)
 import Game.Types as Game
 import Game.GameType as Game
+import Game.Person as Game
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Lobby.Types as Lobby
@@ -272,12 +274,12 @@ gameIdDecoder =
     string
 
 
-decodeGame : Value -> Result Error (Game.Model)
+decodeGame : Value -> Result Error (Game.Person -> Game.Model)
 decodeGame value =
     decodeValue gameDecoder value
 
 
-gameDecoder : Decoder (Game.Model)
+gameDecoder : Decoder (Game.Person -> Game.Model)
 gameDecoder =
     map4 Game.emptyGameModel
         (field "ref" value)

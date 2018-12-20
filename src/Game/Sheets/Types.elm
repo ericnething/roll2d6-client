@@ -24,6 +24,7 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Game.GameType exposing (GameType)
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
+import Game.Person exposing (..)
 import Browser.Dom as Dom
 import Http
 import Json.Decode
@@ -42,7 +43,7 @@ type alias Model r =
     , fullSheet : Maybe FullSheet
     , sheetsViewportX : Float
     , gameType : GameType
-    , myPlayerId : Maybe Int
+    , myPlayerInfo : Person
     , id : GameId
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet

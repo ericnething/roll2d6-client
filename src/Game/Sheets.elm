@@ -38,6 +38,7 @@ import Game.Sheet as Sheet
 import Game.Sheet.Types exposing (SheetModel, SheetMsg)
 import Game.Sheets.Types exposing (..)
 import Game.GameType exposing (GameType)
+import Game.Person exposing (..)
 import Task
 import Util exposing (removeIndexFromArray, findArrayIndexOf, swapArray)
 import Game.Decode exposing (scrollDecoder)
@@ -284,6 +285,7 @@ view viewportSize model =
             lazy2 sheetsView viewportSize model
         Just (FullSheet id editing) ->
             fullSheetView
+            model.myPlayerInfo
             (FullSheet id editing)
             (Dict.get id model.sheets)
 
@@ -298,6 +300,7 @@ sheetsView : (Int, Int)
               , sheetsViewportX : Float
               , gameType : GameType
               , movingSheet : MovingSheet
+              , myPlayerInfo : Person
               }
            -> Html Msg
 sheetsView (viewportWidth, _) { sheets
@@ -305,6 +308,7 @@ sheetsView (viewportWidth, _) { sheets
                               , sheetsViewportX
                               , gameType
                               , movingSheet
+                              , myPlayerInfo
                               } =
     let
         sheetWidth = 24 * 15
@@ -368,6 +372,7 @@ sheetsView (viewportWidth, _) { sheets
                                               _ ->
                                                   False
                                                       
+                                      , player = myPlayerInfo
                                       }
                                  )
                                  acc
@@ -377,7 +382,15 @@ sheetsView (viewportWidth, _) { sheets
                 )
                 (0, Array.empty)
              |> Tuple.second
-             |> Array.push (addNewSheetButtons gameType)
+             |> (\array ->
+                     case myPlayerInfo.accessLevel of
+                         Player ->
+                             array
+                         _ ->
+                             Array.push
+                             (addNewSheetButtons gameType)
+                             array
+                )
              |> Array.toList
          )
 
@@ -481,8 +494,8 @@ sheetList =
         ]
 
 
-sheetCard : SheetId -> SheetModel -> Html Msg
-sheetCard id sheet =
+sheetCard : Person -> SheetId -> SheetModel -> Html Msg
+sheetCard player id sheet =
     div [ css
           [ borderRadius (Css.em 0.2)
           , backgroundColor (hex "fff")
@@ -497,7 +510,11 @@ sheetCard id sheet =
             ]
           ]
           [ viewDetailsButton id
-          , moveButton id
+          , case player.accessLevel of
+                Player ->
+                    text ""
+                _ ->
+                    moveButton id
           ]
     , Html.Styled.map
         (SheetMsg id)
@@ -538,9 +555,10 @@ sheetWrapper : { bounds : (Int, Int)
                , sheetId : SheetId
                , sheet : SheetModel
                , shift : Bool
+               , player : Person
                }
              -> Html Msg
-sheetWrapper { bounds, index, sheetId, sheet, shift } =
+sheetWrapper { bounds, index, sheetId, sheet, shift, player } =
     let
         (minBound, maxBound) = bounds
     in
@@ -559,7 +577,7 @@ sheetWrapper { bounds, index, sheetId, sheet, shift } =
                           Css.batch []
                     ]
                   ]
-                  [ sheetCard sheetId sheet
+                  [ sheetCard player sheetId sheet
                   , spacer
                   , spacer
                   ]
@@ -580,18 +598,18 @@ fullSheetWrapper =
         , overflowY auto
         ]
 
-fullSheetView : FullSheet -> Maybe SheetModel -> Html Msg
-fullSheetView fullsheet mmodel =
+fullSheetView : Person -> FullSheet -> Maybe SheetModel -> Html Msg
+fullSheetView player fullsheet mmodel =
     fullSheetWrapper []
         [ sheetList []
-              [ fullSheetCard fullsheet mmodel
+              [ fullSheetCard player fullsheet mmodel
               , spacer
               , spacer
               ]
         ]
 
-fullSheetCard : FullSheet -> Maybe SheetModel -> Html Msg
-fullSheetCard (FullSheet index editing) mmodel =
+fullSheetCard : Person -> FullSheet -> Maybe SheetModel -> Html Msg
+fullSheetCard player (FullSheet index editing) mmodel =
     case mmodel of
         Nothing ->
             div [] [ text "Not Found" ]
@@ -605,7 +623,9 @@ fullSheetCard (FullSheet index editing) mmodel =
                   , margin2 (px 0) auto
                   ]
                 ]
-                [ editSheetToolbarView (FullSheet index editing)
+                [ editSheetToolbarView
+                      player
+                      (FullSheet index editing)
                 , div [ css
                         [ backgroundColor (hex "fff")
                         , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
@@ -622,12 +642,16 @@ fullSheetCard (FullSheet index editing) mmodel =
                             [ defaultButton
                                   [ onClick CloseFullSheet ]
                                   [ text "← Go back to all sheets" ]
-                            , toggleSwitch
-                                  { offTitle = "Locked"
-                                  , onTitle = "Editing"
-                                  , isActive = editing
-                                  , toMsg = always ToggleFullSheetEdit
-                                  }
+                            , case player.accessLevel of
+                                  Player ->
+                                      text ""
+                                  _ ->
+                                      toggleSwitch
+                                      { offTitle = "Locked"
+                                      , onTitle = "Editing"
+                                      , isActive = editing
+                                      , toMsg = always ToggleFullSheetEdit
+                                      }
                             ]
                       , Html.Styled.map
                             (SheetMsg index)
@@ -641,8 +665,8 @@ fullSheetCard (FullSheet index editing) mmodel =
                 ]
 
 
-editSheetToolbarView : FullSheet -> Html Msg
-editSheetToolbarView (FullSheet index isActive) =
+editSheetToolbarView : Person -> FullSheet -> Html Msg
+editSheetToolbarView player (FullSheet index isActive) =
     let
         deleteButton =
             defaultButton
@@ -673,14 +697,21 @@ editSheetToolbarView (FullSheet index isActive) =
               ]
             ]
         [ sectionLabel "Assigned to"
-        , div [ css
-                [ borderTop3 (px 1) solid (hex "fff")
-                , paddingTop (Css.em 1)
-                , margin3 (Css.em 1) (px 0) (Css.em 0.65)
-                , Css.color (hex "fff")
-                ]
-              ] [ text "If you delete this sheet, there is no way to recover it later." ]
-        , deleteButton
+        , case player.accessLevel of
+              Player ->
+                  text ""
+              _ ->
+                  div []
+                  [ div [ css
+                          [ borderTop3 (px 1) solid (hex "fff")
+                          , paddingTop (Css.em 1)
+                          , margin3 (Css.em 1) (px 0) (Css.em 0.65)
+                          , Css.color (hex "fff")
+                          ]
+                        ]
+                        [ text "If you delete this sheet, there is no way to recover it later." ]
+                  , deleteButton
+                  ]
         ]
 
 toggleSwitch : { offTitle : String

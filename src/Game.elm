@@ -341,11 +341,10 @@ topToolbar model =
             ]
         ]
         [ div [ css [ displayFlex ] ]
-              [ exitGameButton
-              , onlinePlayers model.players
+              [ onlinePlayers model.players
               ]
         , gameTitle model.title
-        , buttons model.gameType
+        , buttons model.myPlayerInfo
         ]
 
 
@@ -365,22 +364,31 @@ gameTitle title =
 exitGameButton : Html Msg
 exitGameButton =
     toolbarButton [ onClick ExitToLobby
-                  , css [ marginRight (Css.em 1) ]
+                  , css
+                        [ marginLeft (Css.em 0.5)
+                        , lineHeight (num 1.6)
+                        ]
                   ]
     [ text "Exit Game" ]
 
-buttons : GameType -> Html Msg
-buttons gameType =
+buttons : Person -> Html Msg
+buttons player =
     div [ css
           [ displayFlex
           , alignItems center
           , whiteSpace noWrap
           ]
         ]
-    [ invitePlayerButton
-    , gameSettingsButton
-    , showPlayerListButton
-    ]
+    (case player.accessLevel of
+         Player ->
+             [ exitGameButton ]
+         _ ->
+             [ invitePlayerButton
+             , gameSettingsButton
+             , showPlayerListButton
+             , exitGameButton
+             ]
+    )
 
 toolbarButton =
     styled button

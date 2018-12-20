@@ -216,7 +216,7 @@ update msg model =
                         401 ->
                             ( model
                             , Navigation.replaceUrl
-                                navkey
+                                model.navkey
                                 (Route.toUrlString Route.Auth)
                             )
 

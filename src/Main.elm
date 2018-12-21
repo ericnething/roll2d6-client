@@ -127,8 +127,8 @@ updateDebouncer =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let _ = Debug.log "DEBUG: " msg
-    in
+    -- let _ = Debug.log "DEBUG: " msg
+    -- in
       case msg of
         NavigateToUrl urlRequest ->
             case urlRequest of
@@ -178,9 +178,9 @@ update msg model =
                             ( model, Cmd.none )
 
                 Err err ->
-                    let
-                        _ = Debug.log "GameLoad Error:" err
-                    in
+                    -- let
+                    --     _ = Debug.log "GameLoad Error:" err
+                    -- in
                     (model, Cmd.none)
 
         GameLoadFailed ->
@@ -221,15 +221,15 @@ update msg model =
                             )
 
                         _ ->
-                            let
-                                _ = Debug.log "GameLoad Error:" err
-                            in
+                            -- let
+                            --     _ = Debug.log "GameLoad Error:" err
+                            -- in
                                 (model, Cmd.none)
 
                 Err err ->
-                    let
-                        _ = Debug.log "GameLoad Error:" err
-                    in
+                    -- let
+                    --     _ = Debug.log "GameLoad Error:" err
+                    -- in
                     (model, Cmd.none)
 
         LoadGameScreen { toGameModel, myPlayerInfo } ->

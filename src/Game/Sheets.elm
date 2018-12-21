@@ -356,7 +356,7 @@ sheetsView (viewportWidth, _) { sheets
             else
                 Basics.round (1/0)
             
-        _ = Debug.log "Min/MaxBound" (minBound, maxBound)
+        -- _ = Debug.log "Min/MaxBound" (minBound, maxBound)
     in
     lazy2 div
         [ css

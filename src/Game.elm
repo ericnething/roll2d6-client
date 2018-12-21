@@ -377,11 +377,11 @@ topToolbar model =
             , Css.property "grid-column" "1 / 2"
             ]
         ]
-        [ div [ css [ displayFlex ] ]
-              [ onlinePlayers model.players
-              ]
+        [ buttons model.myPlayerInfo
         , gameTitle model.title
-        , buttons model.myPlayerInfo
+        , div [ css [ displayFlex ] ]
+            [ onlinePlayers model.players
+            ]
         ]
 
 
@@ -402,8 +402,7 @@ exitGameButton : Html Msg
 exitGameButton =
     toolbarButton [ onClick ExitToLobby
                   , css
-                        [ marginLeft (Css.em 0.5)
-                        , lineHeight (num 1.6)
+                        [ lineHeight (num 1.6)
                         ]
                   ]
     [ text "Exit Game" ]
@@ -420,10 +419,10 @@ buttons player =
          Player ->
              [ exitGameButton ]
          _ ->
-             [ invitePlayerButton
+             [ exitGameButton
+             , invitePlayerButton
              , gameSettingsButton
              , showPlayerListButton
-             , exitGameButton
              ]
     )
 

@@ -127,8 +127,8 @@ updateDebouncer =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    -- let _ = Debug.log "DEBUG: " msg
-    -- in
+    let _ = Debug.log "DEBUG: " msg
+    in
       case msg of
         NavigateToUrl urlRequest ->
             case urlRequest of

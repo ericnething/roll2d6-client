@@ -92,8 +92,16 @@ update msg model =
 
         AddSheet id sheet ->
             ( { model
-                  | sheets = Dict.insert id sheet model.sheets
-                  , sheetsOrdering = Array.push id model.sheetsOrdering
+                  | sheets =
+                      Dict.insert id sheet model.sheets
+
+                  , sheetsOrdering =
+                      Array.push id model.sheetsOrdering
+
+                  , sheetPermissions =
+                      Dict.insert id
+                      (SomePlayers [])
+                      model.sheetPermissions
               }
             , Task.perform
                 identity
@@ -112,6 +120,8 @@ update msg model =
                               Array.filter
                               (\id_ -> id_ /= id)
                               model.sheetsOrdering
+                          , sheetPermissions =
+                              Dict.remove id model.sheetPermissions
                       }
                     , Task.perform
                         identity

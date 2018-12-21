@@ -223,7 +223,7 @@ removePlayer gameId playerId =
                 , withCredentials = False
                 }
     in
-        Http.send (Game.PlayerRemoved gameId) request
+        Http.send (Game.PlayerRemoved gameId playerId) request
 
 
 ping : Game.GameId -> Cmd Game.Msg

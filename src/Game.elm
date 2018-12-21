@@ -26,6 +26,7 @@ module Game
     )
 
 import Array exposing (Array)
+import Dict
 import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
@@ -165,10 +166,26 @@ update navkey msg model =
         RemovePlayer playerId ->
             ( model, API.removePlayer model.id playerId )
 
-        PlayerRemoved gameId result ->
+        PlayerRemoved gameId playerId result ->
             case result of
                 Ok _ ->
-                    ( model, API.getPlayers gameId )
+                    ({ model
+                         | sheetPermissions =
+                             Dict.map
+                             (\_ permission ->
+                                  case permission of
+                                      Sheets.SomePlayers ids ->
+                                          Sheets.SomePlayers
+                                          (List.filter
+                                               ((/=) playerId)
+                                               ids)
+                                      Sheets.AllPlayers ->
+                                          Sheets.AllPlayers
+                             )
+                             model.sheetPermissions
+                     }
+                    , API.getPlayers gameId
+                    )
                 Err _ ->
                     ( model, Cmd.none )
 

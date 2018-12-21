@@ -406,6 +406,9 @@ maybeWriteToPouchDB msg newGame =
         Game.SheetsMsg (Sheets.UpdateSheetPermissions _ _) ->
             debouncedWriteToPouchDB newGame
 
+        Game.PlayerRemoved _ _ _ ->
+            debouncedWriteToPouchDB newGame
+
         Game.UpdateGameTitle _ ->
             debouncedWriteToPouchDB newGame
 

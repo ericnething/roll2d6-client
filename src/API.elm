@@ -37,11 +37,12 @@ module API
     , getMyPlayerInfo
     , generateNewSheetId
     , deleteSheetId
+    , updateGameTitle
     )
 
 import Http
 import Json.Decode exposing (decodeValue)
-import Json.Encode exposing (encode)
+import Json.Encode
 import Main.Types as Main
 import Lobby.Types as Lobby
 import Login.Types as Login
@@ -367,4 +368,22 @@ deleteSheetId gameId sheetId =
                 , withCredentials = False
                 }
     in
-        Http.send (Sheets.SheetRemoved) request
+        Http.send Sheets.SheetRemoved request
+
+
+updateGameTitle : Game.GameId -> String -> Cmd Game.Msg
+updateGameTitle gameId title =
+    let
+        request =
+            Http.request
+                { method = "POST"
+                , headers = []
+                , url = domain ++ "/games/" ++ gameId ++ "/title"
+                , body = Http.jsonBody
+                         (Json.Encode.string title)
+                , expect = Http.expectString
+                , timeout = Nothing
+                , withCredentials = False
+                }
+    in
+        Http.send (always Game.GameTitleUpdated) request

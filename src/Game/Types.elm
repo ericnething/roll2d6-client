@@ -198,6 +198,8 @@ type Msg
     = NoOp
     | SheetsMsg Sheets.Msg
     | UpdateGameTitle String
+    | UpdateGameTitleInDB
+    | GameTitleUpdated
     | OpenOverlay Overlay
     | CloseOverlay
     | UpdateCurrentGame Value

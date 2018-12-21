@@ -115,6 +115,17 @@ update navkey msg model =
             , Cmd.none
             )
 
+        UpdateGameTitleInDB ->
+            ( model
+            , Cmd.batch
+                [ API.updateGameTitle model.id model.title
+                , Task.perform identity (Task.succeed CloseOverlay)
+                ]
+            )
+
+        GameTitleUpdated ->
+            (model, Cmd.none)
+
         OpenOverlay overlay_ ->
             ( { model | overlay = overlay_ }, Cmd.none )
 
@@ -674,7 +685,7 @@ gameSettingsView model =
                 []
             ]
         , defaultButton
-            [ onClick CloseOverlay ]
+            [ onClick UpdateGameTitleInDB ]
             [ text "Done" ]
         ]
 

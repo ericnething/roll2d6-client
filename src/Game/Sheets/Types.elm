@@ -48,7 +48,7 @@ type alias Model r =
     , id : GameId
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
-    , players : WebData (List Person)
+    , players : List Person
     , sheetPermissions : Dict SheetId SheetPermission
     }
 

@@ -178,10 +178,11 @@ update msg model =
                             ( model, Cmd.none )
 
                 Err err ->
-                    -- let
-                    --     _ = Debug.log "GameLoad Error:" err
-                    -- in
-                    (model, Cmd.none)
+                    ( model
+                    , Navigation.replaceUrl
+                        model.navkey
+                            (Route.toUrlString Route.Lobby)
+                    )
 
         GameLoadFailed ->
             ( model
@@ -190,7 +191,7 @@ update msg model =
                 (Route.toUrlString Route.Lobby)
             )
 
-        PlayerInfoLoaded result ->
+        MyPlayerInfoLoaded result ->
             case result of
                 Ok playerInfo ->
                     case model.screen of
@@ -211,38 +212,50 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
 
-                Err (Http.BadStatus err) ->
-                    case err.status.code of
-                        401 ->
-                            ( model
-                            , Navigation.replaceUrl
-                                model.navkey
-                                (Route.toUrlString Route.Auth)
-                            )
+                Err err ->
+                    ( model
+                    , Navigation.replaceUrl
+                        model.navkey
+                            (Route.toUrlString Route.Lobby)
+                    )
+
+        PlayerListLoaded result ->
+            case result of
+                Ok players ->
+                    case model.screen of
+                        LoadingScreen progress ->
+                            let
+                                updatedProgress =
+                                    { progress
+                                        | players = Just players
+                                    }
+                            in
+                                ({ model
+                                     | screen =
+                                       LoadingScreen updatedProgress
+                                 }
+                                , loadGameScreenIfDone updatedProgress
+                                )
 
                         _ ->
-                            -- let
-                            --     _ = Debug.log "GameLoad Error:" err
-                            -- in
-                                (model, Cmd.none)
+                            ( model, Cmd.none )
 
                 Err err ->
-                    -- let
-                    --     _ = Debug.log "GameLoad Error:" err
-                    -- in
-                    (model, Cmd.none)
+                    ( model
+                    , Navigation.replaceUrl
+                        model.navkey
+                            (Route.toUrlString Route.Lobby)
+                    )
 
-        LoadGameScreen { toGameModel, myPlayerInfo } ->
+        LoadGameScreen { toGameModel, myPlayerInfo, players } ->
             let
-                game = toGameModel myPlayerInfo
+                game = toGameModel myPlayerInfo players
             in
                 ({ model
                      | screen = GameScreen game
                  }
                 , Cmd.batch
-                    [ API.getPlayers game.id
-                          |> Cmd.map GameMsg
-                    , API.setPresenceOnline game.id
+                    [ API.setPresenceOnline game.id
                           |> Cmd.map GameMsg
                     , API.getChatLog game.id
                           |> Cmd.map GameMsg
@@ -375,6 +388,7 @@ changeRouteTo route model =
                       ( encodeGameData (Game.emptyGameData Game.Fate)
                       , gameId )
                 , API.getMyPlayerInfo gameId
+                , API.getPlayers gameId
                 ]
             )
 
@@ -439,14 +453,15 @@ debouncedWriteToPouchDB { ref
 
 
 loadGameScreenIfDone : LoadingProgress -> Cmd Msg
-loadGameScreenIfDone { myPlayerInfo, toGameModel } =
-    case (myPlayerInfo, toGameModel) of
-        (Just pi, Just gm) ->
+loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =
+    case (toGameModel, myPlayerInfo, players) of
+        (Just toGameModel_, Just myPlayerInfo_, Just players_) ->
             Task.perform 
             LoadGameScreen
             (Task.succeed
-                 { myPlayerInfo = pi
-                 , toGameModel = gm
+                 { toGameModel = toGameModel_
+                 , myPlayerInfo = myPlayerInfo_
+                 , players = players_
                  })
         _ ->
             Cmd.none

@@ -62,7 +62,7 @@ type alias Model =
     , sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
     , overlay : Overlay
-    , players : WebData (List Person)
+    , players : List Person
     , chatInput : String
     , chatMessages : List ChatMessage
     , sheetsViewportX : Float
@@ -78,8 +78,9 @@ emptyGameModel : PouchDBRef
                -> GameData
                -> EventSourceRef
                -> Person
+               -> List Person
                -> Model
-emptyGameModel ref id gameData eventSource playerInfo =
+emptyGameModel ref id gameData eventSource myPlayerInfo players =
     { ref = ref
     , eventSource = eventSource
     , gameType = gameData.gameType
@@ -88,11 +89,11 @@ emptyGameModel ref id gameData eventSource playerInfo =
     , sheets = gameData.sheets
     , fullSheet = Nothing
     , overlay = OverlayNone
-    , players = RemoteData.Loading
+    , players = players
     , chatInput = ""
     , chatMessages = []
     , sheetsViewportX = 0
-    , myPlayerInfo = playerInfo
+    , myPlayerInfo = myPlayerInfo
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
     , sheetPermissions = gameData.sheetPermissions
@@ -207,7 +208,6 @@ type Msg
     | ExitToLobby
     | CreateInvite
     | InviteCreated (WebData String)
-    | PlayerList GameId (WebData (List Person))
     | RemovePlayer Int
     | PlayerRemoved GameId PersonId (Result Http.Error String)
     | ServerEventReceived ServerEvent

@@ -168,12 +168,6 @@ update navkey msg model =
             , Cmd.none
             )
 
-
-        PlayerList gameId players ->
-            ({ model | players = players }
-            , Cmd.none
-            )
-
         RemovePlayer playerId ->
             ( model, API.removePlayer model.id playerId )
 
@@ -195,7 +189,7 @@ update navkey msg model =
                              )
                              model.sheetPermissions
                      }
-                    , API.getPlayers gameId
+                    , Cmd.none
                     )
                 Err _ ->
                     ( model, Cmd.none )
@@ -203,10 +197,7 @@ update navkey msg model =
         ServerEventReceived (PlayerListUpdated ePlayers) ->
             case ePlayers of
                 Ok players ->
-                    ({ model
-                         | players
-                             = RemoteData.succeed players
-                     }
+                    ({ model | players = players }
                     , Cmd.none
                     )
                 Err err ->
@@ -217,10 +208,9 @@ update navkey msg model =
                 Ok presenceList ->
                     ({ model
                          | players
-                             = model.players
-                                   |> RemoteData.map
-                                      (updatePlayerPresenceList
-                                           presenceList)
+                             = updatePlayerPresenceList
+                               presenceList
+                               model.players
                      }
                     , Cmd.none
                     )
@@ -483,8 +473,8 @@ invitePlayersCircleButton =
         [ text "+" ]
 
 
-onlinePlayers : WebData (List Person) -> Html Msg
-onlinePlayers players_ =
+onlinePlayers : List Person -> Html Msg
+onlinePlayers players =
     let
         avatar name bg =
             div
@@ -528,17 +518,14 @@ onlinePlayers players_ =
             , marginRight (Css.em 1)
             ]
         ]
-        (case players_ of
-            RemoteData.Success players ->
-                players
-                    |> List.filter
-                       (\{ presence } -> presence == Online )
-                    |> List.map
-                       (\{ username, id } ->
-                            avatar
-                            (String.left 1 username)
-                            (chooseColor id))
-            _ -> [ text "" ]
+        (players
+             |> List.filter
+                (\{ presence } -> presence == Online )
+             |> List.map
+                (\{ username, id } ->
+                     avatar
+                     (String.left 1 username)
+                     (chooseColor id))
         )
 
 -- popOverView : { id : Int
@@ -745,8 +732,8 @@ instantInviteView mInvite =
 -- Player List
 --------------------------------------------------
 
-playerListView : WebData (List Person) -> Html Msg
-playerListView mPlayers =
+playerListView : List Person -> Html Msg
+playerListView players =
     div [ css
           [ margin2 (Css.em 4) auto
           , backgroundColor (hex "fff")
@@ -755,22 +742,14 @@ playerListView mPlayers =
           , borderRadius (Css.em 0.2)
           ]
         ]
-    [ case mPlayers of
-          RemoteData.NotAsked ->
-              text "Not Asked"
-          RemoteData.Loading ->
-              text "Loading player list"
-          RemoteData.Failure err ->
-              text ("Something went wrong.")
-          RemoteData.Success players ->
-              div []
-                  [ h2 [ css [ marginTop (px 0) ] ]
-                        [ text "Manage Players" ]
-                  , div [] (List.map playerListItemView players)
-                  , defaultButton
-                        [ onClick CloseOverlay ]
-                        [ text "Close" ]
-                  ]
+    [ div []
+          [ h2 [ css [ marginTop (px 0) ] ]
+                [ text "Manage Players" ]
+          , div [] (List.map playerListItemView players)
+          , defaultButton
+                [ onClick CloseOverlay ]
+                [ text "Close" ]
+          ]
     ]
 
 

@@ -637,7 +637,7 @@ fullSheetWrapper =
 fullSheetView : { player : Person
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, WebData (List Person))
+                , permissions : Maybe (SheetPermission, List Person)
                 }
               -> Html Msg
 fullSheetView { player, fullSheet, sheetModel, permissions } =
@@ -657,7 +657,7 @@ fullSheetView { player, fullSheet, sheetModel, permissions } =
 fullSheetCard : { player : Person
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, WebData (List Person))
+                , permissions : Maybe (SheetPermission, List Person)
                 }
               -> Html Msg
 fullSheetCard { player
@@ -734,11 +734,12 @@ fullSheetCard { player
                 ]
 
 
-editSheetToolbarView : { player : Person
-                       , fullSheet : FullSheet
-                       , permissions : Maybe (SheetPermission, WebData (List Person))
-                       }
-                     -> Html Msg
+editSheetToolbarView :
+    { player : Person
+    , fullSheet : FullSheet
+    , permissions : Maybe (SheetPermission, List Person)
+    }
+    -> Html Msg
 editSheetToolbarView { player, fullSheet, permissions } =
     let
         (FullSheet sheetId isActive) = fullSheet
@@ -799,11 +800,11 @@ editSheetToolbarView { player, fullSheet, permissions } =
                   ]
         ]
 
-assignedToSheetView : Maybe (SheetPermission, WebData (List Person))
+assignedToSheetView : Maybe (SheetPermission, List Person)
                     -> Html Msg
 assignedToSheetView mpermissions =
     case mpermissions of
-        Just (permissions, RemoteData.Success players) ->
+        Just (permissions, players) ->
             case permissions of
                 SomePlayers ids ->
                     ul []
@@ -910,13 +911,14 @@ toggleSwitch { offTitle, onTitle, isActive, toMsg } =
 -- Sheet Permissions
 --------------------------------------------------
 
-sheetPermissionsView : SheetId
-                     -> { r |
-                          myPlayerInfo : Person
-                        , players : WebData (List Person)
-                        , sheetPermissions : Dict SheetId SheetPermission
-                        }
-                     -> Html Msg
+sheetPermissionsView
+    : SheetId
+    -> { r |
+         myPlayerInfo : Person
+       , players : List Person
+       , sheetPermissions : Dict SheetId SheetPermission
+       }
+    -> Html Msg
 sheetPermissionsView sheetId { myPlayerInfo
                              , players
                              , sheetPermissions
@@ -1001,14 +1003,8 @@ sheetPermissionsView sheetId { myPlayerInfo
                       }
                 ]
     in
-        case players of
-            RemoteData.Success players_ ->
-                div []
-                    (allPlayersToggle ::
-                         List.map playerView players_)
-
-            _ ->
-                text "Loading failed"
+        div []
+            (allPlayersToggle :: List.map playerView players)
 
 
 hasPermission : Maybe SheetPermission

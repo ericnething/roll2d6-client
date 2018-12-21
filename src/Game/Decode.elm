@@ -275,12 +275,19 @@ gameIdDecoder =
     string
 
 
-decodeGame : Value -> Result Error (Game.Person -> Game.Model)
+decodeGame : Value
+           -> Result Error
+              (Game.Person
+              -> List Game.Person
+              -> Game.Model)
 decodeGame value =
     decodeValue gameDecoder value
 
 
-gameDecoder : Decoder (Game.Person -> Game.Model)
+gameDecoder : Decoder
+              (Game.Person
+              -> List Game.Person
+              -> Game.Model)
 gameDecoder =
     map4 Game.emptyGameModel
         (field "ref" value)

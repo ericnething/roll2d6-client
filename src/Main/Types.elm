@@ -45,12 +45,16 @@ type alias Model =
 
 type alias LoadingProgress =
     { myPlayerInfo : Maybe Game.Person
-    , toGameModel : Maybe (Game.Person -> Game.Model)
+    , toGameModel : Maybe (Game.Person
+                          -> List Game.Person
+                          -> Game.Model)
+    , players : Maybe (List Game.Person)
     }
 
 emptyLoadingProgress =
     { myPlayerInfo = Nothing
     , toGameModel = Nothing
+    , players = Nothing
     }    
 
 type Screen
@@ -72,10 +76,14 @@ type Msg
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
     | GameLoadFailed
-    | PlayerInfoLoaded (Result Http.Error Game.Person)
+    | MyPlayerInfoLoaded (Result Http.Error Game.Person)
+    | PlayerListLoaded (Result Http.Error (List Game.Person))
     | LoadGameScreen
-      { toGameModel : Game.Person -> Game.Model
+      { toGameModel : Game.Person
+                    -> List Game.Person
+                    -> Game.Model
       , myPlayerInfo : Game.Person
+      , players : List Game.Person
       }
     | AuthFailed
     | InviteMsg Invite.Msg

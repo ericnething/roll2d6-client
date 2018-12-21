@@ -192,7 +192,7 @@ joinGame inviteId =
     in
         Http.send (Invite.JoinGame inviteId) request
 
-getPlayers : Game.GameId -> Cmd Game.Msg
+getPlayers : Game.GameId -> Cmd Main.Msg
 getPlayers gameId =
     let
         request =
@@ -206,8 +206,7 @@ getPlayers gameId =
                 , withCredentials = False
                 }
     in
-        RemoteData.sendRequest request
-            |> Cmd.map (Game.PlayerList gameId)
+        Http.send Main.PlayerListLoaded request
 
 removePlayer : Game.GameId -> Int -> Cmd Game.Msg
 removePlayer gameId playerId =
@@ -333,7 +332,7 @@ getMyPlayerInfo gameId =
                 , withCredentials = False
                 }
     in
-        Http.send Main.PlayerInfoLoaded request
+        Http.send Main.MyPlayerInfoLoaded request
 
 
 generateNewSheetId : Game.GameId -> Sheet.SheetModel -> Cmd Sheets.Msg

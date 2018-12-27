@@ -66,6 +66,7 @@ editView model =
             , fatePointsView model.fatePoints
             ]
         , editStuntView model.stunts
+        , editNotesView model.notes
         ]
 
 
@@ -956,6 +957,23 @@ editConditionView trackIndex (Condition title stressBoxes) =
         ]
 
 
+editNotesView : String -> Html Msg
+editNotesView notes =
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
+        ]
+        [ sectionLabel "Notes"
+        , textarea
+            [ rows 10
+            , css [ inputStyles ]
+            , onInput UpdateNotes
+            , value notes
+            ]
+            []
+        ]
+
+
 
 -- Extra Styles
 
@@ -1082,6 +1100,7 @@ view model =
             , fatePointsView model.fatePoints
             ]
         , stuntsView model.stunts
+        , notesView model.notes
         ]
 
 
@@ -1391,6 +1410,22 @@ refreshView points =
                 ]
             ]
             [ text (String.fromInt points) ]
+        ]
+
+
+notesView : String -> Html Msg
+notesView notes =
+    div
+        [ css
+            [ marginTop (Css.em 1)
+            ]
+        ]
+        [ sectionLabel "Notes"
+        , div [ css
+                [ whiteSpace preWrap
+                ]
+              ]
+              [ text notes ]
         ]
 
 

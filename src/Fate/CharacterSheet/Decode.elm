@@ -42,6 +42,7 @@ decodeCharacterSheet =
         |> required "stress" (array decodeStressTrack)
         |> required "consequences" (array decodeConsequence)
         |> required "conditions" (array decodeCondition)
+        |> required "notes" string
 
 
 

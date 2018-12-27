@@ -49,6 +49,7 @@ blank =
         Array.fromList []
     , conditions =
         Array.fromList []
+    , notes = ""
     }
 
 
@@ -111,6 +112,7 @@ initialCharacterSheet =
             ]
     , conditions =
         Array.fromList []
+    , notes = ""
     }
 
 
@@ -156,6 +158,7 @@ fateCore =
             ]
     , conditions =
         Array.fromList []
+    , notes = ""
     }
 
 
@@ -210,6 +213,7 @@ dresdenFilesAccelerated =
                     ]
                 )
             ]
+    , notes = ""
     }
 
 
@@ -249,6 +253,7 @@ tachyonSquadronShip =
         Array.fromList []
     , conditions =
         Array.fromList []
+    , notes = ""
     }
 
 
@@ -342,6 +347,7 @@ sarissa_dfa =
                     ]
                 )
             ]
+    , notes = ""
     }
 
 
@@ -462,4 +468,5 @@ harryDresden_dfa =
                     ]
                 )
             ]
+    , notes = ""
     }

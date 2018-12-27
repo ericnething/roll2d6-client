@@ -336,3 +336,8 @@ update msg model =
               }
             , Cmd.none
             )
+
+        UpdateNotes notes ->
+            ( { model | notes = notes }
+            , Cmd.none
+            )

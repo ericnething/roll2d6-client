@@ -36,6 +36,7 @@ type alias CharacterSheet =
     , stress : Array StressTrack
     , consequences : Array Consequence
     , conditions : Array Condition
+    , notes : String
     }
 
 
@@ -278,3 +279,4 @@ type Msg
     | UpdateConditionBox Int Int StressBox
     | AddConditionBox Index StressBox
     | RemoveConditionBox Index
+    | UpdateNotes String

@@ -45,6 +45,7 @@ encodeCharacterSheet characterSheet =
         , ( "stress", array encodeStressTrack characterSheet.stress )
         , ( "consequences", array encodeConsequence characterSheet.consequences )
         , ( "conditions", array encodeCondition characterSheet.conditions )
+        , ( "notes", string characterSheet.notes )
         ]
 
 encodeAspect : Aspect -> Value

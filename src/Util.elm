@@ -99,3 +99,20 @@ swapArray indexA indexB array =
             _ ->
                 array
 
+arrayAll : (a -> Bool) -> Array a -> Bool
+arrayAll pred array =
+    if Array.isEmpty array
+    then
+        False
+    else
+        Array.foldl
+        (\a acc -> pred a && acc)
+        True
+        array
+
+arrayAny : (a -> Bool) -> Array a -> Bool
+arrayAny pred array =
+    Array.foldl
+    (\a acc -> pred a || acc)
+    False
+    array

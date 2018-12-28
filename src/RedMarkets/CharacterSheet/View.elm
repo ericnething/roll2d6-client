@@ -41,6 +41,8 @@ import Util
         ( listDifference
         , stringToNatWithDefault
         , stringToNatWithDefaultNonZero
+        , arrayAll
+        , arrayAny
         )
 
 
@@ -613,23 +615,30 @@ woundsView { rightLegWounds
                 , Css.property
                     "grid-template-rows"
                     "repeat(3, auto)"
+                , Css.property "grid-row-gap" "1em"
                 ]
               ]
             (List.map
                  (\(loc, w) -> woundLocationView loc w)
+                 wounds)
+        , div [ css
+                [ marginTop (Css.em 1) ]
+              ]
+            (List.map
+                 (\(loc, w) -> woundStatusEffect loc w)
                  wounds)
         ]
 
 
 woundLocationView : WoundLocation -> Array Wound -> Html Msg
 woundLocationView location wounds =
-    div [ css
-          [ case location of
+    let
+        gridPosition =
+            case location of
                 Head ->
                     batch
                     [ Css.property "grid-row" "1"
                     , Css.property "grid-column" "2/3"
-                    , marginBottom (Css.em 1)
                     ]
 
                 RightArm ->
@@ -660,9 +669,9 @@ woundLocationView location wounds =
                     batch
                     [ Css.property "grid-row" "3"
                     , Css.property "grid-column" "3"
-                    ]           
-          ]
-        ]
+                    ]
+    in
+    div [ css [ gridPosition ] ]
     [ div [] [ text (showWoundLocation location) ]
     , div [ css
             [ Css.property "display" "grid"
@@ -675,6 +684,149 @@ woundLocationView location wounds =
              (Array.indexedMap (woundView location) wounds))
     ]
 
+
+woundStatusEffect : WoundLocation -> Array Wound -> Html Msg
+woundStatusEffect location wounds =
+    -- if there is at least one empty wound slot
+    if arrayAny ((==) NoWound) wounds
+    then
+        -- there are no status effects
+        text ""
+    else
+        -- if all slots are filled with kill wounds
+        if arrayAll ((==) Kill) wounds
+        then
+            -- there is a kill status effect
+            killStatusEffect location
+        else
+            -- otherwise, there is a stun status effect
+            stunStatusEffect location
+
+stunStatusEffect : WoundLocation -> Html Msg
+stunStatusEffect location =
+    let
+        titleStyles =
+            css
+            [ fontWeight bold
+            ]
+
+        hobbled at =
+            [ div [ titleStyles ]
+                  [ text ("Hobbled (" ++ at ++ ")") ]
+            , bulletedListView
+              [ "No athletics checks possible until partially healed, but character can still move"
+              ]
+            ]
+
+        winged at =
+            [ div [ titleStyles ]
+                  [ text ("Winged (" ++ at ++ ")") ]
+            , bulletedListView
+              [ "No cumbersome weapons or gear available"
+              , "If this hand is dominant, all checks with the other arm are at Precision requirements"
+              ]
+            ]
+
+        gassed =
+            [ div [ titleStyles ]
+                  [ text "Gassed (Torso)" ]
+            , bulletedListView
+              [ "The character becomes Gassed"
+              ]
+            ]
+
+        unconscious =
+            [ div [ titleStyles ]
+                  [ text "Unconscious (Head)" ]
+            , bulletedListView
+              [ "The character is Unconscious"
+              ]
+            ]
+    in
+    case location of
+        Head ->
+            div [] unconscious
+
+        RightArm ->
+            div [] (winged "Right Arm")
+
+        Torso ->
+            div [] gassed
+
+        LeftArm ->
+            div [] (winged "Left Arm")
+
+        RightLeg ->
+            div [] (hobbled "Right Leg")
+
+        LeftLeg ->
+            div [] (hobbled "Left Leg")
+
+
+killStatusEffect : WoundLocation -> Html Msg
+killStatusEffect location =
+    let
+        titleStyles =
+            css
+            [ fontWeight bold
+            ]
+
+        lamed at =
+            [ div [ titleStyles ]
+                  [ text ("Lamed (" ++ at ++ ")") ]
+            , bulletedListView
+              [ "Bleeding out"
+              , "No athletics checks possible until partially healed, and character can't move without assistance"
+              ]
+            ]
+
+        maimed at =
+            [ div [ titleStyles ]
+                  [ text ("Maimed (" ++ at ++ ")") ]
+            , bulletedListView
+              [ "No cumbersome weapons or gear available"
+              , "If this hand is dominant, all checks with the other arm are at Precision requirements"
+              ]
+            ]
+
+        death at =
+            [ div [ titleStyles ]
+                  [ text ("Death (" ++ at ++ ")") ]
+            , bulletedListView
+              [ "The character Dies."
+              ]
+            ]
+    in
+    case location of
+        Head ->
+            div [] (death "Head")
+
+        RightArm ->
+            div [] (maimed "Right Arm")
+
+        Torso ->
+            div [] (death "Torso")
+
+        LeftArm ->
+            div [] (maimed "Left Arm")
+
+        RightLeg ->
+            div [] (lamed "Right Leg")
+
+        LeftLeg ->
+            div [] (lamed "Left Leg")
+
+
+bulletedListView : List String -> Html Msg
+bulletedListView items =
+    ul []
+    (List.map
+         (\item ->
+              li [ css
+                   [ marginBottom (Css.em 0.25) ]
+                 ]
+              [ text item ])
+         items)
 
 woundView : WoundLocation -> Index -> Wound -> Html Msg
 woundView location index wound =

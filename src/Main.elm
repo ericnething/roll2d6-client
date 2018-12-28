@@ -178,10 +178,12 @@ update msg model =
                             ( model, Cmd.none )
 
                 Err err ->
+                    let _ = Debug.log "Game Load Failed" err
+                    in
                     ( model
-                    , Navigation.replaceUrl
-                        model.navkey
-                            (Route.toUrlString Route.Lobby)
+                    , Task.perform
+                        identity
+                        (Task.succeed GameLoadFailed)
                     )
 
         GameLoadFailed ->

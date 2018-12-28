@@ -175,12 +175,16 @@ showWoundLocation location =
 
 type alias Gear =
     { title : String
-    , charges : Int
+    , charges : Array Charge
     , upkeep : Int
     , effect : String
     , qualities : String
     , upgrades : String
     }
+
+type Charge
+    = Charge
+    | NoCharge
 
 type alias Index =
     Int
@@ -217,5 +221,10 @@ type Msg
     | UpdateGear Index Gear
     | AddNewGear Gear
     | RemoveGear Index
+    | UpdateGearCharge
+      { gearIndex : Index
+      , chargeIndex : Index
+      , charge : Charge
+      }
       -- Notes
     | UpdateNotes String

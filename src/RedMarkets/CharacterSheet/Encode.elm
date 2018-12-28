@@ -117,9 +117,20 @@ encodeGear : Gear -> Value
 encodeGear gear =
     object
         [ ( "title", string gear.title )
-        , ( "charges", int gear.charges )
+        , ( "charges", array encodeCharge gear.charges )
         , ( "upkeep", int gear.upkeep )
         , ( "effect", string gear.effect )
         , ( "qualities", string gear.qualities )
         , ( "upgrades", string gear.upgrades )
         ]
+
+
+encodeCharge : Charge -> Value
+encodeCharge charge =
+    case charge of
+        Charge ->
+            string "Charge"
+
+        NoCharge ->
+            string "NoCharge"
+

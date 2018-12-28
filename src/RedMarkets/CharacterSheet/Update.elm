@@ -190,6 +190,30 @@ update msg model =
             , Cmd.none
             )
 
+        UpdateGearCharge { gearIndex, chargeIndex, charge } ->
+            let
+                newModel =
+                    case Array.get gearIndex model.gear of
+                        Nothing ->
+                            model
+
+                        Just item ->
+                            { model
+                                | gear =
+                                    Array.set
+                                    gearIndex
+                                    ({ item
+                                         | charges =
+                                             Array.set
+                                             chargeIndex
+                                             charge
+                                             item.charges
+                                     })
+                                    model.gear
+                            }
+            in
+                ( newModel, Cmd.none )
+
         UpdateNotes notes ->
             ( { model | notes = notes }
             , Cmd.none

@@ -461,28 +461,24 @@ potentialsView { str, spd, adp, int, cha, wil } =
             ]
     in
         div [ css
-              [ marginTop (Css.em 1) ]
+              [ marginTop (Css.em 1)
+              , Css.property "display" "grid"
+              , Css.property "grid-template-columns" "repeat(2, 1fr)"
+              , Css.property "grid-gap" "0.65em"
+              ]
             ]
         (List.map (\(name, p) -> potentialView name p) potentials)
 
 
 potentialView : String -> Potential -> Html Msg
 potentialView name (Potential rating skills) =
-    div [ css
-          [ Css.property "display" "grid"
-          , Css.property "grid-template-columns" "1fr 2fr"
-          , Css.property "grid-gap" "1em"
-          , marginTop (Css.em 1)
-          ]
-        ]
-    [ div []
-      [ div [ css
-              [ fontSize (Css.em 1.2)
-              , fontWeight bold
-              ]
+    div []
+    [ div [ css
+            [ fontSize (Css.em 1.1)
+            , fontWeight bold
             ]
-            [ text (name ++ " " ++ (String.fromInt rating)) ]
-      ]
+          ]
+          [ text (name ++ " " ++ (String.fromInt rating)) ]
     , div []
         (Array.toList (Array.map skillView skills))
     ]
@@ -714,7 +710,7 @@ stunStatusEffect location =
             [ div [ titleStyles ]
                   [ text ("Hobbled (" ++ at ++ ")") ]
             , bulletedListView
-              [ "No athletics checks possible until partially healed, but character can still move"
+              [ text "No athletics checks possible until partially healed, but character can still move"
               ]
             ]
 
@@ -722,8 +718,8 @@ stunStatusEffect location =
             [ div [ titleStyles ]
                   [ text ("Winged (" ++ at ++ ")") ]
             , bulletedListView
-              [ "No cumbersome weapons or gear available"
-              , "If this hand is dominant, all checks with the other arm are at Precision requirements"
+              [ text "No cumbersome weapons or gear available"
+              , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
               ]
             ]
 
@@ -731,7 +727,7 @@ stunStatusEffect location =
             [ div [ titleStyles ]
                   [ text "Gassed (Torso)" ]
             , bulletedListView
-              [ "The character becomes Gassed"
+              [ text "The character becomes Gassed"
               ]
             ]
 
@@ -739,7 +735,7 @@ stunStatusEffect location =
             [ div [ titleStyles ]
                   [ text "Unconscious (Head)" ]
             , bulletedListView
-              [ "The character is Unconscious"
+              [ text "The character is Unconscious"
               ]
             ]
     in
@@ -775,8 +771,8 @@ killStatusEffect location =
             [ div [ titleStyles ]
                   [ text ("Lamed (" ++ at ++ ")") ]
             , bulletedListView
-              [ "Bleeding out"
-              , "No athletics checks possible until partially healed, and character can't move without assistance"
+              [ text "Bleeding out"
+              , text "No athletics checks possible until partially healed, and character can't move without assistance"
               ]
             ]
 
@@ -784,8 +780,8 @@ killStatusEffect location =
             [ div [ titleStyles ]
                   [ text ("Maimed (" ++ at ++ ")") ]
             , bulletedListView
-              [ "No cumbersome weapons or gear available"
-              , "If this hand is dominant, all checks with the other arm are at Precision requirements"
+              [ text "No cumbersome weapons or gear available"
+              , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
               ]
             ]
 
@@ -793,7 +789,7 @@ killStatusEffect location =
             [ div [ titleStyles ]
                   [ text ("Death (" ++ at ++ ")") ]
             , bulletedListView
-              [ "The character Dies."
+              [ text "The character Dies."
               ]
             ]
     in
@@ -817,7 +813,7 @@ killStatusEffect location =
             div [] (lamed "Left Leg")
 
 
-bulletedListView : List String -> Html Msg
+bulletedListView : List (Html msg) -> Html msg
 bulletedListView items =
     ul []
     (List.map
@@ -825,8 +821,9 @@ bulletedListView items =
               li [ css
                    [ marginBottom (Css.em 0.25) ]
                  ]
-              [ text item ])
+              [ item ])
          items)
+
 
 woundView : WoundLocation -> Index -> Wound -> Html Msg
 woundView location index wound =
@@ -885,18 +882,18 @@ gearListView gear =
             [ marginTop (Css.em 1) ]
         ]
     [ sectionLabel "Gear"
-    , div [] (Array.toList (Array.map gearView gear))
+    , div [] (Array.toList (Array.indexedMap gearView gear))
     ]
 
 
-gearView : Gear -> Html Msg
-gearView { title
-         , charges
-         , upkeep
-         , effect
-         , qualities
-         , upgrades
-         } =
+gearView : Index -> Gear -> Html Msg
+gearView gearIndex { title
+               , charges
+               , upkeep
+               , effect
+               , qualities
+               , upgrades
+               } =
     div
         [ css
           [ marginBottom (Css.em 1)
@@ -910,10 +907,19 @@ gearView { title
               [ text title ]
         , div [ css
                 [ displayFlex
+                , alignItems center
                 ]
               ]
-            [ div [] [ text ("Upkeep: " ++ String.fromInt upkeep) ]
-            , div [] [ text ("Charges: " ++ String.fromInt charges) ]
+            [ div [ css
+                    [ marginRight (Css.em 0.65)
+                    ]
+                  ]
+                  [ text "Charges: " ]
+            , gearChargesView gearIndex charges
+            ]
+        , div []
+            [ span [] [ text "Upkeep: "]
+            , text (String.fromInt upkeep)
             ]
         , div []
             [ span [ css [ fontWeight bold ] ]
@@ -930,7 +936,73 @@ gearView { title
                   [ text "Upgrades: "]
             , text upgrades
             ]
-        ]    
+        ]
+
+
+gearChargesView : Index -> Array Charge -> Html Msg
+gearChargesView gearIndex charges =
+    div [ css
+          [ Css.property "display" "grid"
+          , Css.property "grid-template-columns" "repeat(10, 1.2em)"
+          , Css.property "grid-auto-rows" "1.2em"
+          , Css.property "grid-gap" "0.25em"
+          ]
+        ]
+    (Array.toList
+         (Array.indexedMap (chargeInputView gearIndex) charges))
+
+
+chargeInputView : Index -> Index -> Charge -> Html Msg
+chargeInputView gearIndex chargeIndex charge =
+    label
+        [ css
+            [ borderRadius (pct 50)
+            , cursor pointer
+            , case charge of
+                  Charge ->
+                      batch
+                      [ backgroundColor (hex "663399")
+                      , border3 (px 1) solid transparent
+                      ]
+                  NoCharge ->
+                      batch
+                      [ backgroundColor transparent
+                      , border3 (px 1) dashed (hex "333")
+                      ]
+            ]
+        ]
+        [ text ""
+        , input
+            [ type_ "checkbox"
+            , onCheck
+                (always
+                    (UpdateGearCharge
+                         { gearIndex = gearIndex
+                         , chargeIndex = chargeIndex
+                         , charge = toggleCharge charge
+                         })
+                )
+            , css
+                [ position absolute
+                , appearance_none
+                , opacity (int 0)
+                , Css.height (px 0)
+                , Css.width (px 0)
+                ]
+            ]
+            []
+        ]
+
+
+toggleCharge : Charge -> Charge
+toggleCharge charge =
+    case charge of
+        Charge ->
+            NoCharge
+
+        NoCharge ->
+            Charge
+
 
 notesView : String -> Html Msg
 notesView notes =

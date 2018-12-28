@@ -139,8 +139,25 @@ decodeGear =
              }
         )
         |> required "title" string
-        |> required "charges" int
+        |> required "charges" (array decodeCharge)
         |> required "upkeep" int
         |> required "effect" string
         |> required "qualities" string
         |> required "upgrades" string
+
+
+decodeCharge : Decoder Charge
+decodeCharge =
+    string
+        |> andThen
+           (\charge ->
+                case charge of
+                    "Charge" ->
+                        succeed Charge
+
+                    "NoCharge" ->
+                        succeed NoCharge
+
+                    err ->
+                        fail ( err ++ " is not a valid Charge")
+           )

@@ -23,11 +23,13 @@ module Game.GameType exposing (..)
 type GameType
     = Fate
     | WorldOfDungeons
+    | RedMarkets
 
 gameTypeOptions : List GameType
 gameTypeOptions =
     [ Fate
     , WorldOfDungeons
+    , RedMarkets
     ]
 
 showGameType : GameType -> String
@@ -35,3 +37,4 @@ showGameType gameType =
     case gameType of
         Fate -> "Fate"
         WorldOfDungeons -> "World of Dungeons"
+        RedMarkets -> "Red Markets"

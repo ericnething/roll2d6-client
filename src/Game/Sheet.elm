@@ -26,9 +26,8 @@ import Game.GameType exposing (GameType(..))
 import Game.Sheet.Types exposing (SheetMsg(..), SheetModel(..))
 
 import Fate
-import Fate.CharacterSheet.Template
-
 import WorldOfDungeons
+import RedMarkets
 
 updateSheet : SheetMsg
             -> SheetModel
@@ -51,6 +50,14 @@ updateSheet sheetMsg sheetModel =
                 , Cmd.map WorldOfDungeonsMsg cmd
                 )
 
+        (RedMarketsMsg msg, RedMarketsSheet model) ->
+            let
+                (updatedModel, cmd) = RedMarkets.update msg model
+            in
+                ( RedMarketsSheet updatedModel
+                , Cmd.map RedMarketsMsg cmd
+                )
+
         _ ->
             (sheetModel, Cmd.none)
 
@@ -65,6 +72,10 @@ compactView sheetModel =
             WorldOfDungeons.view model
                 |> Html.Styled.map WorldOfDungeonsMsg
 
+        RedMarketsSheet model ->
+            RedMarkets.compactView model
+                |> Html.Styled.map RedMarketsMsg
+
 
 view : SheetModel -> Html SheetMsg
 view sheetModel =
@@ -77,6 +88,11 @@ view sheetModel =
             WorldOfDungeons.view model
                 |> Html.Styled.map WorldOfDungeonsMsg
 
+        RedMarketsSheet model ->
+            RedMarkets.view model
+                |> Html.Styled.map RedMarketsMsg
+
+
 editView : SheetModel -> Html SheetMsg
 editView sheetModel =
     case sheetModel of
@@ -87,6 +103,11 @@ editView sheetModel =
         WorldOfDungeonsSheet model ->
             WorldOfDungeons.editView model
                 |> Html.Styled.map WorldOfDungeonsMsg
+
+        RedMarketsSheet model ->
+            RedMarkets.editView model
+                |> Html.Styled.map RedMarketsMsg
+
 
 blank : GameType -> List (String, SheetModel)
 blank gameType =
@@ -107,13 +128,22 @@ blank gameType =
               )
             ]
 
+        RedMarkets ->
+            [ ( "Character Sheet"
+              , RedMarketsSheet
+                  RedMarkets.blankCharacterSheet
+              )
+            ]
+
 
 initialModel : GameType -> Array SheetModel
 initialModel gameType =
     case gameType of
         Fate ->
             Array.fromList []
-                -- [ FateSheet Fate.blankGameAspectSheet ]
 
         WorldOfDungeons ->
+            Array.fromList []
+
+        RedMarkets ->
             Array.fromList []

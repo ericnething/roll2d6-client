@@ -41,6 +41,9 @@ import Fate.GameAspectSheet.Encode as Fate
 import WorldOfDungeons
 import WorldOfDungeons.CharacterSheet.Encode as WorldOfDungeons
 
+import RedMarkets
+import RedMarkets.CharacterSheet.Encode as RedMarkets
+
 --------------------------------------------------
 -- Chat Messages and Dice Rolls
 --------------------------------------------------
@@ -148,6 +151,11 @@ encodeSheet sheetModel =
             (WorldOfDungeons.CharacterSheet sheet) ->
                 WorldOfDungeons.encodeCharacterSheet sheet
 
+        Sheet.RedMarketsSheet
+            (RedMarkets.CharacterSheet sheet) ->
+                RedMarkets.encodeCharacterSheet sheet
+
+
 encodeGameType : Game.GameType -> Value
 encodeGameType gameType =
     case gameType of
@@ -156,6 +164,9 @@ encodeGameType gameType =
 
         Game.WorldOfDungeons ->
             string "world-of-dungeons"
+
+        Game.RedMarkets ->
+            string "red-markets"
 
 
 encodeNewGameSettings : Lobby.NewGameSettingsModel -> Value

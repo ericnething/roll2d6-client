@@ -18,19 +18,35 @@
 -- Public License along with this program. If not, see
 -- <https://www.gnu.org/licenses/>.
 
-module Game.Sheet.Types exposing (..)
+module RedMarkets.CharacterSheet
+    exposing
+    ( Model
+    , Msg
+    , editView
+    , view
+    , compactView
+    , update
+    )
 
-import Fate
-import WorldOfDungeons
-import RedMarkets
+import RedMarkets.CharacterSheet.Types as Types
+import RedMarkets.CharacterSheet.View as View
+import RedMarkets.CharacterSheet.Update as Update
 
-type SheetMsg
-    = FateMsg Fate.Msg
-    | WorldOfDungeonsMsg WorldOfDungeons.Msg
-    | RedMarketsMsg RedMarkets.Msg
+type alias Msg =
+    Types.Msg
 
-type SheetModel
-    = FateSheet Fate.Sheet
-    | WorldOfDungeonsSheet WorldOfDungeons.Sheet
-    | RedMarketsSheet RedMarkets.Sheet
+type alias Model =
+    Types.Model
+
+editView =
+    View.editView
+
+view =
+    View.view
+
+compactView =
+    View.compactView
+
+update =
+    Update.update
 

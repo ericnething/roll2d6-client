@@ -54,6 +54,9 @@ import Fate.GameAspectSheet.Decode as Fate
 import WorldOfDungeons
 import WorldOfDungeons.CharacterSheet.Decode as WorldOfDungeons
 
+import RedMarkets
+import RedMarkets.CharacterSheet.Decode as RedMarkets
+
 
 --------------------------------------------------
 -- Scroll events
@@ -334,6 +337,9 @@ sheetDecoder gameType =
         Game.WorldOfDungeons ->
             worldOfDungeonsSheetDecoder
 
+        Game.RedMarkets ->
+            redMarketsSheetDecoder
+
 fateSheetDecoder : Decoder (Sheet.SheetModel)
 fateSheetDecoder =
     oneOf
@@ -352,6 +358,13 @@ worldOfDungeonsSheetDecoder =
            (Sheet.WorldOfDungeonsSheet <<
                 WorldOfDungeons.CharacterSheet)
 
+redMarketsSheetDecoder : Decoder (Sheet.SheetModel)
+redMarketsSheetDecoder =
+    RedMarkets.decodeCharacterSheet
+        |> Decode.map
+           (Sheet.RedMarketsSheet <<
+                RedMarkets.CharacterSheet)
+
 gameTypeDecoder : Decoder Game.GameType
 gameTypeDecoder =
     let
@@ -362,6 +375,9 @@ gameTypeDecoder =
                         
                 "world-of-dungeons" ->
                     succeed Game.WorldOfDungeons
+
+                "red-markets" ->
+                    succeed Game.RedMarkets
             
                 _ ->
                     fail "Not a valid GameType"

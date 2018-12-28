@@ -491,34 +491,36 @@ skillView (Skill name rating) =
 
 dependentsView : Array Relationship -> Html Msg
 dependentsView dependents =
-    div [ css
-          [ marginTop (Css.em 1) ]
-        ]
-    [ sectionLabel "Dependents"
-    , div [] (Array.toList (Array.map relationshipView dependents))
-    ]
+    relationshipsView "Dependents" dependents
 
 
 referencesView : Array Relationship -> Html Msg
 referencesView references =
+    relationshipsView "References" references
+
+
+relationshipsView : String -> Array Relationship -> Html Msg
+relationshipsView title relationships =
     div [ css
           [ marginTop (Css.em 1) ]
         ]
-    [ sectionLabel "References"
-    , div [] (Array.toList (Array.map relationshipView references))
+    [ sectionLabel title
+    , div [ css
+            [ Css.property "display" "grid"
+            , Css.property "grid-template-columns" "auto 1fr"
+            , Css.property "grid-column-gap" "1em"
+            ]
+          ]
+          (List.concat <| Array.toList
+               (Array.map
+                    relationshipView
+                    relationships))
     ]
 
-
-relationshipView : Relationship -> Html Msg
+relationshipView : Relationship -> List (Html Msg)
 relationshipView (Relationship person status) =
-    div [ css
-          [Css.property "display" "grid"
-          , Css.property "grid-template-columns" "2fr 1fr"
-          , Css.property "grid-gap" "1em"
-          ]
-        ]
     [ div [] [ text person ]
-    , div [] [ text (showRelationStatus status) ]
+    , div [] [ text ("(" ++ showRelationStatus status ++ ")") ]
     ]
 
 

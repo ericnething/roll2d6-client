@@ -38,11 +38,11 @@ type alias CharacterSheet =
     , int            : Potential
     , cha            : Potential
     , wil            : Potential
-    , dependants     : Array Relationship
+    , dependents     : Array Relationship
     , references     : Array Relationship
-    , detachment     : Threat
-    , stress         : Threat
-    , trauma         : Threat
+    , detachment     : Array Threat
+    , stress         : Array Threat
+    , trauma         : Array Threat
     , rightLegWounds : Array Wound
     , leftLegWounds  : Array Wound
     , rightArmWounds : Array Wound
@@ -77,7 +77,7 @@ type RelationStatus
     | Severed
 
 type Threat
-    = Threat Int
+    = Threat Bool
 
 showRelationStatus : RelationStatus -> String
 showRelationStatus status =
@@ -203,18 +203,18 @@ type Msg
     | UpdateSkill PotentialType Index Skill
     | AddNewSkill PotentialType String
     | RemoveSkill PotentialType Index
-      -- Dependants
-    | UpdateDependant Index Relationship
-    | AddNewDependant Relationship
-    | RemoveDependant Index
+      -- Dependents
+    | UpdateDependent Index Relationship
+    | AddNewDependent Relationship
+    | RemoveDependent Index
       -- References
     | UpdateReference Index Relationship
     | AddNewReference Relationship
     | RemoveReference Index
       -- Threats
-    | UpdateDetachment Int
-    | UpdateStress Int
-    | UpdateTrauma Int
+    | UpdateDetachment Index Threat
+    | UpdateStress Index Threat
+    | UpdateTrauma Index Threat
       -- Wounds
     | UpdateWound WoundLocation Index Wound
       -- Gear

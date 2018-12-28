@@ -91,26 +91,26 @@ update msg model =
             , Cmd.none
             )
 
-        UpdateDependant index relationship ->
+        UpdateDependent index relationship ->
             ({ model
-                 | dependants
-                     = Array.set index relationship model.dependants
+                 | dependents
+                     = Array.set index relationship model.dependents
              }
             , Cmd.none
             )
 
-        AddNewDependant relationship ->
+        AddNewDependent relationship ->
             ({ model
-                 | dependants
-                     = Array.push relationship model.dependants
+                 | dependents
+                     = Array.push relationship model.dependents
              }
             , Cmd.none
             )
 
-        RemoveDependant index ->
+        RemoveDependent index ->
             ({ model
-                 | dependants
-                     = removeIndexFromArray index model.dependants
+                 | dependents
+                     = removeIndexFromArray index model.dependents
              }
             , Cmd.none
             )
@@ -139,23 +139,26 @@ update msg model =
             , Cmd.none
             )
 
-        UpdateDetachment rating ->
+        UpdateDetachment index threat ->
             ({ model
-                 | detachment = Threat rating
+                 | detachment
+                     = Array.set index threat model.detachment
              }
             , Cmd.none
             )
 
-        UpdateStress rating ->
+        UpdateStress index threat ->
             ({ model
-                 | stress = Threat rating
+                 | stress
+                     = Array.set index threat model.stress
              }
             , Cmd.none
             )
 
-        UpdateTrauma rating ->
+        UpdateTrauma index threat ->
             ({ model
-                 | trauma = Threat rating
+                 | trauma
+                     = Array.set index threat model.trauma
              }
             , Cmd.none
             )

@@ -41,11 +41,11 @@ encodeCharacterSheet model =
         , ( "int", encodePotential model.int )
         , ( "cha", encodePotential model.cha )
         , ( "wil", encodePotential model.wil )
-        , ( "dependants", array encodeRelation model.dependants )
+        , ( "dependents", array encodeRelation model.dependents )
         , ( "references", array encodeRelation model.references )
-        , ( "detachment", encodeThreat model.detachment )
-        , ( "stress", encodeThreat model.stress )
-        , ( "trauma", encodeThreat model.trauma )
+        , ( "detachment", array encodeThreat model.detachment )
+        , ( "stress", array encodeThreat model.stress )
+        , ( "trauma", array encodeThreat model.trauma )
         , ( "rightLegWounds", array encodeWound model.rightLegWounds )
         , ( "leftLegWounds", array encodeWound model.leftLegWounds )
         , ( "rightArmWounds", array encodeWound model.rightArmWounds )
@@ -95,8 +95,8 @@ encodeRelationStatus status =
 
 
 encodeThreat : Threat -> Value
-encodeThreat (Threat rating) =
-    int rating
+encodeThreat (Threat isMarked) =
+    bool isMarked        
 
 
 encodeWound : Wound -> Value

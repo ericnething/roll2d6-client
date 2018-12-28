@@ -56,7 +56,7 @@ editView model =
         , editSoftSpotView model.softSpot
         , editToughSpotView model.toughSpot
         , editPotentialsView model
-        , editDependantsView model.dependants
+        , editDependentsView model.dependents
         , editReferencesView model.references
         , editThreatsView model
         , editWoundsView model
@@ -184,13 +184,13 @@ editPotentialsView { str, spd, adp, int, cha, wil } =
         ]
 
 
-editDependantsView : Array Relationship -> Html Msg
-editDependantsView dependants =
+editDependentsView : Array Relationship -> Html Msg
+editDependentsView dependents =
     div
         [ css
             [ marginTop (Css.em 1) ]
         ]
-        [ sectionLabel "Dependants"
+        [ sectionLabel "Dependents"
         ]
 
 
@@ -205,9 +205,9 @@ editReferencesView references =
 
 
 editThreatsView : { r |
-                    detachment : Threat
-                  , stress : Threat
-                  , trauma : Threat
+                    detachment : Array Threat
+                  , stress : Array Threat
+                  , trauma : Array Threat
                   }
                 -> Html Msg
 editThreatsView { detachment, stress, trauma } =
@@ -357,7 +357,7 @@ view model =
               , toughSpotView model.toughSpot
               ]
         , potentialsView model
-        , dependantsView model.dependants
+        , dependentsView model.dependents
         , referencesView model.references
         , threatsView model
         , woundsView model
@@ -489,13 +489,13 @@ skillView (Skill name rating) =
     div [] [ text (name ++ " " ++ (String.fromInt rating)) ]
 
 
-dependantsView : Array Relationship -> Html Msg
-dependantsView dependants =
+dependentsView : Array Relationship -> Html Msg
+dependentsView dependents =
     div [ css
           [ marginTop (Css.em 1) ]
         ]
-    [ sectionLabel "Dependants"
-    , div [] (Array.toList (Array.map relationshipView dependants))
+    [ sectionLabel "Dependents"
+    , div [] (Array.toList (Array.map relationshipView dependents))
     ]
 
 
@@ -523,53 +523,124 @@ relationshipView (Relationship person status) =
 
 
 threatsView : { r |
-                detachment : Threat
-              , stress : Threat
-              , trauma : Threat
+                detachment : Array Threat
+              , stress : Array Threat
+              , trauma : Array Threat
               }
             -> Html Msg
 threatsView { detachment, stress, trauma } =
     let
         threats =
-            [ ("Detachment", detachment)
-            , ("Stress", stress)
-            , ("Trauma", trauma)
+            [ ("Detachment", detachment, UpdateDetachment)
+            , ("Stress", stress, UpdateStress)
+            , ("Trauma", trauma, UpdateTrauma)
+            ]
+
+        tags =
+            [ div [ css
+                    [ Css.property "grid-row" "1/4"
+                    , Css.property "grid-column" "7/8"
+                    , Css.property
+                        "transform"
+                        "translateY(-15%) translateX(-75%) rotate(90deg)"
+                    , Css.property "overflow" "visible"
+                    , Css.width (Css.em 1.3)
+                    , Css.property "word-wrap" "normal"
+                    ]
+                  ] [ text "Crack" ]
+            , div [ css
+                    [ Css.property "grid-row" "1/4"
+                    , Css.property "grid-column" "13/14"
+                    , Css.property
+                        "transform"
+                        "translateY(-31%) translateX(-75%) rotate(90deg)"
+                    , Css.property "overflow" "visible"
+                    , Css.width (Css.em 1.3)
+                    , Css.property "word-wrap" "normal"
+                    ]
+                  ]
+                  [ text "Crumble" ]
+            , div [ css
+                    [ Css.property "grid-row" "1/4"
+                    , Css.property "grid-column" "19/20"
+                    , Css.property
+                        "transform"
+                        "translateY(-15%) translateX(-75%) rotate(90deg)"
+                    , Css.property "overflow" "visible"
+                    , Css.width (Css.em 1.3)
+                    , Css.property "word-wrap" "normal"
+                    ]
+                  ]
+                  [ text "Break" ]
             ]
     in
         div [ css
               [ marginTop (Css.em 1) ]
             ]
         [ sectionLabel "Threats"
-        , div []
-            (List.map (\(name, t) -> threatView name t) threats)
+        , div [ css
+                [ Css.property "display" "grid"
+                , Css.property
+                    "grid-template-columns"
+                    "auto repeat(5, 1.1em) auto repeat(5, 1.1em) auto repeat(5, 1.1em) auto"
+                , Css.property "grid-template-rows" "repeat(3, 1.1em)"
+                , Css.property "grid-gap" "0.2em"
+                ]
+              ]
+              (tags ++
+               List.concatMap
+                   (\(name, t, toMsg) -> threatView name toMsg t)
+                   threats)
         ]
 
-threatView : String -> Threat -> Html Msg
-threatView title (Threat rating) =
-    let
-        tag =
-            if rating >= 0 && rating < 5
-            then
-                ""
-            else
-                if rating >= 5 && rating < 10
-                then
-                    "(Crack)"
-                else
-                    if rating >= 10 && rating < 15
-                    then
-                        "(Crumble)"
-                    else
-                        if rating == 15
-                        then
-                            "(Break)"
-                        else
-                            ""
-    in
-    div []
-        [ text
-              (title ++ ": " ++
-               (String.fromInt rating) ++ " " ++ tag)
+threatView : String
+           -> (Index -> Threat -> Msg)
+           -> Array Threat
+           -> List (Html Msg)
+threatView title toMsg threats =
+    [ div [] [ text title ] ] ++
+    (Array.toList
+         (Array.indexedMap
+              (threatInputView << toMsg)
+              threats))
+
+
+threatInputView : (Threat -> Msg) -> Threat -> Html Msg
+threatInputView toMsg (Threat isMarked) =
+    label
+        [ css
+            [ zIndex (int 10)
+            , borderRadius (pct 50)
+            , cursor pointer
+            , case isMarked of
+                  True ->
+                      batch
+                      [ backgroundColor (hex "333")
+                      , border3 (px 1) solid transparent
+                      ]
+                  False ->
+                      batch
+                      [ backgroundColor transparent
+                      , border3 (px 1) solid (hex "888")
+                      ]
+            ]
+        ]
+        [ text ""
+        , input
+            [ type_ "checkbox"
+            , onCheck
+                (always
+                    (toMsg (Threat (not isMarked)))
+                )
+            , css
+                [ position absolute
+                , appearance_none
+                , opacity (int 0)
+                , Css.height (px 0)
+                , Css.width (px 0)
+                ]
+            ]
+            []
         ]
 
 
@@ -671,8 +742,8 @@ woundLocationView location wounds =
     [ div [] [ text (showWoundLocation location) ]
     , div [ css
             [ Css.property "display" "grid"
-            , Css.property "grid-template-columns" "repeat(5, 1.5em)"
-            , Css.property "grid-auto-rows" "auto"
+            , Css.property "grid-template-columns" "repeat(5, 1.2em)"
+            , Css.property "grid-auto-rows" "1.2em"
             , Css.property "grid-gap" "0.2em"
             ]
           ]
@@ -829,27 +900,24 @@ woundView : WoundLocation -> Index -> Wound -> Html Msg
 woundView location index wound =
     label
         [ css
-            [ fontSize (Css.em 1)
-            , Css.width (Css.em 1.5)
-            , Css.height (Css.em 1.5)
-            , border3 (px 1) solid (hex "333")
-            , fontWeight (int 500)
-            , userSelect_none
-            , cursor pointer
+            [ cursor pointer
             , case wound of
                   NoWound ->
                       batch
                       [ backgroundColor transparent
+                      , border3 (px 1) solid (hex "888")
                       ]
                   Stun ->
                       batch
                       [ Css.property
                           "background"
                           "linear-gradient(135deg, #333 50%, transparent 50%)"
+                      , border3 (px 1) solid (hex "333")
                       ]
                   Kill ->
                       batch
                       [ backgroundColor (hex "333")
+                      , border3 (px 1) solid (hex "333")
                       ]
             ]
         ]
@@ -943,8 +1011,8 @@ gearChargesView : Index -> Array Charge -> Html Msg
 gearChargesView gearIndex charges =
     div [ css
           [ Css.property "display" "grid"
-          , Css.property "grid-template-columns" "repeat(10, 1.2em)"
-          , Css.property "grid-auto-rows" "1.2em"
+          , Css.property "grid-template-columns" "repeat(10, 1.1em)"
+          , Css.property "grid-auto-rows" "1.1em"
           , Css.property "grid-gap" "0.25em"
           ]
         ]

@@ -42,11 +42,11 @@ decodeCharacterSheet =
         |> required "int" decodePotential
         |> required "cha" decodePotential
         |> required "wil" decodePotential
-        |> required "dependants" (array decodeRelation)
+        |> required "dependents" (array decodeRelation)
         |> required "references" (array decodeRelation)
-        |> required "detachment" decodeThreat
-        |> required "stress" decodeThreat
-        |> required "trauma" decodeThreat
+        |> required "detachment" (array decodeThreat)
+        |> required "stress" (array decodeThreat)
+        |> required "trauma" (array decodeThreat)
         |> required "rightLegWounds" (array decodeWound)
         |> required "leftLegWounds" (array decodeWound)
         |> required "rightArmWounds" (array decodeWound)
@@ -103,7 +103,7 @@ decodeRelationStatus =
 
 decodeThreat : Decoder Threat
 decodeThreat =
-    int |> andThen (succeed << Threat)
+    bool |> andThen (succeed << Threat)
 
 
 decodeWound : Decoder Wound

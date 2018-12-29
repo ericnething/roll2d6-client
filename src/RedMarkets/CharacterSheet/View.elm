@@ -888,7 +888,9 @@ killStatusEffect location =
 
 bulletedListView : List (Html msg) -> Html msg
 bulletedListView items =
-    ul []
+    ul [ css
+         [ marginBottom (px 0) ]
+       ]
     (List.map
          (\item ->
               li [ css
@@ -947,9 +949,8 @@ woundView location index wound =
 
 gearListView : Array Gear -> Html Msg
 gearListView gear =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
+    div [ css
+          [ marginTop (Css.em 1) ]
         ]
     [ sectionLabel "Gear"
     , div [] (Array.toList (Array.indexedMap gearView gear))
@@ -958,55 +959,76 @@ gearListView gear =
 
 gearView : Index -> Gear -> Html Msg
 gearView gearIndex { title
-               , charges
-               , upkeep
-               , effect
-               , qualities
-               , upgrades
-               } =
-    div
-        [ css
+                   , charges
+                   , upkeep
+                   , effect
+                   , qualities
+                   , upgrades
+                   } =
+    div [ css
           [ marginBottom (Css.em 1)
+          , borderTop3 (px 1) solid (hex "ccc")
+          , paddingTop (Css.em 0.5)
           ]
         ]
-        [ div [ css
-                [ fontSize (Css.em 1.1)
-                , fontWeight bold
-                ]
-              ]
-              [ text title ]
-        , div [ css
-                [ displayFlex
-                , alignItems center
-                ]
-              ]
-            [ div [ css
-                    [ marginRight (Css.em 0.65)
+    [ div [ css
+            [ fontSize (Css.em 1.1)
+            , fontWeight bold
+            ]
+          ]
+          [ text title ]
+    , div [ css
+            [ Css.property "display" "grid"
+            , Css.property "grid-template-columns" "auto 1fr auto"
+            , Css.property "grid-template-rows" "auto"
+            , Css.property "grid-column-gap" "0.65em"
+            ]
+          ]
+          [ div [] [ text "Charges: " ]
+          , if Array.isEmpty charges
+            then
+                text "Static"
+            else
+                gearChargesView gearIndex charges
+          , div [] [ text ("Upkeep: " ++ String.fromInt upkeep) ]
+          ]
+    , div [] [ text effect ]
+    , gearQualitiesView qualities
+    , gearUpgradesView upgrades
+    ]
+
+
+gearQualitiesView : Array GearQuality -> Html Msg
+gearQualitiesView qualities =
+    let
+        qualityView { title, description } =
+            if String.isEmpty description
+            then
+                div [] [ strong [] [ text title ] ]
+            else
+                div []
+                    [ strong [] [ text (title ++ ": ") ]
+                    , text description
                     ]
-                  ]
-                  [ text "Charges: " ]
-            , gearChargesView gearIndex charges
-            ]
-        , div []
-            [ span [] [ text "Upkeep: "]
-            , text (String.fromInt upkeep)
-            ]
-        , div []
-            [ span [ css [ fontWeight bold ] ]
-                  [ text "Effect: "]
-            , text effect
-            ]
-        , div []
-            [ span [ css [ fontWeight bold ] ]
-                  [ text "Qualities: "]
-            , text qualities
-            ]
-        , div []
-            [ span [ css [ fontWeight bold ] ]
-                  [ text "Upgrades: "]
-            , text upgrades
-            ]
-        ]
+    in
+        div []
+            (Array.toList
+                 (Array.map qualityView qualities))
+
+
+
+gearUpgradesView : Array GearUpgrade -> Html Msg
+gearUpgradesView upgrades =
+    let
+        upgradeView { title, description, purchased } =
+            div []
+                [ strong [] [ text (title ++ ": ") ]
+                , text description
+                ]
+    in
+        div []
+            (Array.toList
+                 (Array.map upgradeView upgrades))
 
 
 gearChargesView : Index -> Array Charge -> Html Msg
@@ -1016,6 +1038,7 @@ gearChargesView gearIndex charges =
           , Css.property "grid-template-columns" "repeat(10, 1.1em)"
           , Css.property "grid-auto-rows" "1.1em"
           , Css.property "grid-gap" "0.25em"
+          , Css.property "align-content" "center"
           ]
         ]
     (Array.toList
@@ -1037,7 +1060,7 @@ chargeInputView gearIndex chargeIndex charge =
                   NoCharge ->
                       batch
                       [ backgroundColor transparent
-                      , border3 (px 1) dashed (hex "333")
+                      , border3 (px 1) solid (hex "888")
                       ]
             ]
         ]

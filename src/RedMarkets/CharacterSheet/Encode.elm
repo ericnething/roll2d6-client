@@ -120,8 +120,8 @@ encodeGear gear =
         , ( "charges", array encodeCharge gear.charges )
         , ( "upkeep", int gear.upkeep )
         , ( "effect", string gear.effect )
-        , ( "qualities", string gear.qualities )
-        , ( "upgrades", string gear.upgrades )
+        , ( "qualities", array encodeGearQuality gear.qualities )
+        , ( "upgrades", array encodeGearUpgrade gear.upgrades )
         ]
 
 
@@ -134,3 +134,19 @@ encodeCharge charge =
         NoCharge ->
             string "NoCharge"
 
+
+encodeGearQuality : GearQuality -> Value
+encodeGearQuality { title, description } =
+    object
+        [ ( "title", string title )
+        , ( "description", string description )
+        ]
+
+
+encodeGearUpgrade : GearUpgrade -> Value
+encodeGearUpgrade { title, description, purchased } =
+    object
+        [ ( "title", string title )
+        , ( "description", string description )
+        , ( "purchased", bool purchased )
+        ]

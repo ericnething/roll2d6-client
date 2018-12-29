@@ -142,8 +142,34 @@ decodeGear =
         |> required "charges" (array decodeCharge)
         |> required "upkeep" int
         |> required "effect" string
-        |> required "qualities" string
-        |> required "upgrades" string
+        |> required "qualities" (array decodeGearQuality)
+        |> required "upgrades" (array decodeGearUpgrade)
+
+
+decodeGearQuality : Decoder GearQuality
+decodeGearQuality =
+    Decode.succeed
+        (\title description ->
+             { title = title
+             , description = description
+             }
+        )
+        |> required "title" string
+        |> required "description" string
+
+
+decodeGearUpgrade : Decoder GearUpgrade
+decodeGearUpgrade =
+    Decode.succeed
+        (\title description purchased ->
+             { title = title
+             , description = description
+             , purchased = purchased
+             }
+        )
+        |> required "title" string
+        |> required "description" string
+        |> required "purchased" bool
 
 
 decodeCharge : Decoder Charge

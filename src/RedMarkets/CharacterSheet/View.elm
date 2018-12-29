@@ -57,7 +57,7 @@ editView model =
         , editDependentsView model.dependents
         , editReferencesView model.references
         , threatsView model
-        , woundsView model
+        , woundsView { isEditing = True } model
         , editGearListView model.gear
         , editNotesView model.notes
         ]
@@ -481,7 +481,7 @@ view model =
         , dependentsView model.dependents
         , referencesView model.references
         , threatsView model
-        , woundsView model
+        , woundsView { isEditing = False } model
         , gearListView model.gear
         , notesView model.notes
         ]
@@ -767,22 +767,23 @@ threatInputView toMsg (Threat isMarked) =
         ]
 
 
-woundsView : { r |
-               rightLegWounds : Array Wound
-             , leftLegWounds : Array Wound
-             , rightArmWounds : Array Wound
-             , leftArmWounds : Array Wound
-             , torsoWounds : Array Wound
-             , headWounds : Array Wound
-             }
+woundsView : { isEditing : Bool }
+           -> { r |
+                rightLegWounds : Array Wound
+              , leftLegWounds : Array Wound
+              , rightArmWounds : Array Wound
+              , leftArmWounds : Array Wound
+              , torsoWounds : Array Wound
+              , headWounds : Array Wound
+              }
            -> Html Msg
-woundsView { rightLegWounds
-           , leftLegWounds
-           , rightArmWounds
-           , leftArmWounds
-           , torsoWounds
-           , headWounds
-           } =
+woundsView editing { rightLegWounds
+                   , leftLegWounds
+                   , rightArmWounds
+                   , leftArmWounds
+                   , torsoWounds
+                   , headWounds
+                   } =
     let
         wounds =
             [ (Head, headWounds)
@@ -809,7 +810,7 @@ woundsView { rightLegWounds
                 ]
               ]
             (List.map
-                 (\(loc, w) -> woundLocationView loc w)
+                 (\(loc, w) -> woundLocationView editing loc w)
                  wounds)
         , div [ css
                 [ marginTop (Css.em 1) ]
@@ -820,8 +821,11 @@ woundsView { rightLegWounds
         ]
 
 
-woundLocationView : WoundLocation -> Array Wound -> Html Msg
-woundLocationView location wounds =
+woundLocationView : { isEditing : Bool }
+                  -> WoundLocation
+                  -> Array Wound
+                  -> Html Msg
+woundLocationView { isEditing } location wounds =
     let
         gridPosition =
             case location of
@@ -872,6 +876,20 @@ woundLocationView location wounds =
           ]
         (Array.toList
              (Array.indexedMap (woundView location) wounds))
+    , if isEditing
+      then
+          div []
+          [ defaultButton
+                [ css [ marginTop (Css.em 0.5) ]
+                , onClick (HealKillWounds location) ]
+                [ text "Heal Kill" ]
+          ,  defaultButton
+                [ css [ marginTop (Css.em 0.5) ]
+                , onClick (HealStunWounds location) ]
+                [ text "Heal Stun" ]
+          ]
+      else
+          text ""
     ]
 
 

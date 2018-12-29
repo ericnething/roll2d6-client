@@ -172,6 +172,16 @@ update msg model =
             , Cmd.none
             )
 
+        HealKillWounds location ->
+            ( healWounds model location Kill
+            , Cmd.none
+            )
+
+        HealStunWounds location ->
+            ( healWounds model location Stun
+            , Cmd.none
+            )
+
         UpdateGear index gear ->
             ({ model
                  | gear = Array.set index gear model.gear
@@ -386,3 +396,53 @@ updateWound model location index wound =
                 | headWounds
                     = Array.set index wound model.headWounds
             }
+
+
+healWounds : Model -> WoundLocation -> Wound -> Model
+healWounds model location type_ =
+    let
+        heal wounds =
+            case type_ of
+                Kill ->
+                    Array.map
+                        (\wound ->
+                             if wound == Kill
+                             then
+                                 Stun
+                             else
+                                 wound
+                        )
+                        wounds
+
+                Stun ->
+                    Array.map
+                        (\wound ->
+                             if wound == Stun
+                             then
+                                 NoWound
+                             else
+                                 wound
+                        )
+                        wounds
+
+                NoWound ->
+                    wounds
+    in
+        case location of
+            Head ->
+                { model | headWounds = heal model.headWounds }
+                
+            RightArm ->
+                { model | rightArmWounds = heal model.rightArmWounds }
+
+            Torso ->
+                { model | torsoWounds = heal model.torsoWounds }
+
+            LeftArm ->
+                { model | leftArmWounds = heal model.leftArmWounds }
+
+            RightLeg ->
+                { model | rightLegWounds = heal model.rightLegWounds }
+
+            LeftLeg ->
+                { model | leftLegWounds = heal model.leftLegWounds }

@@ -221,6 +221,8 @@ type Msg
     | UpdateTrauma Index Threat
       -- Wounds
     | UpdateWound WoundLocation Index Wound
+    | HealKillWounds WoundLocation
+    | HealStunWounds WoundLocation
       -- Gear
     | UpdateGear Index Gear
     | AddNewGear

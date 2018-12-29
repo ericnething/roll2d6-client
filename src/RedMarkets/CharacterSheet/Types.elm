@@ -230,12 +230,15 @@ type Msg
     | UpdateWound WoundLocation Index Wound
       -- Gear
     | UpdateGear Index Gear
-    | AddNewGear Gear
+    | AddNewGear
     | RemoveGear Index
     | UpdateGearCharge
       { gearIndex : Index
       , chargeIndex : Index
       , charge : Charge
       }
+    | UpdateGearQuality Index Index GearQuality
+    | AddNewGearQuality Index
+    | RemoveGearQuality Index Index
       -- Notes
     | UpdateNotes String

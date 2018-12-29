@@ -52,14 +52,12 @@ editView model =
         [ editNameView model.name
         , editDescriptionView model.description
         , editCrewView model.crew
-        , editWeakSpotView model.weakSpot
-        , editSoftSpotView model.softSpot
-        , editToughSpotView model.toughSpot
+        , editSpotsView model
         , editPotentialsView model
         , editDependentsView model.dependents
         , editReferencesView model.references
-        , editThreatsView model
-        , editWoundsView model
+        , threatsView model
+        , woundsView model
         , editGearListView model.gear
         , editNotesView model.notes
         ]
@@ -115,55 +113,42 @@ editCrewView crew =
         ]
 
 
-editWeakSpotView : String -> Html Msg
-editWeakSpotView weakSpot =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
+editSpotsView : { r |
+                  weakSpot : String
+                , softSpot : String
+                , toughSpot : String
+                }
+              -> Html Msg
+editSpotsView { weakSpot, softSpot, toughSpot } =
+    div [ css
+          [ marginTop (Css.em 1) ]
         ]
-        [ sectionLabel "Weak Spot"
-        , input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , onInput UpdateWeakSpot
-            , value weakSpot
-            ]
-            []
-        ]
-
-
-editSoftSpotView : String -> Html Msg
-editSoftSpotView softSpot =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
-        ]
-        [ sectionLabel "Soft Spot"
-        , input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , onInput UpdateSoftSpot
-            , value softSpot
-            ]
-            []
-        ]
-
-
-editToughSpotView : String -> Html Msg
-editToughSpotView toughSpot =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
-        ]
-        [ sectionLabel "Tough Spot"
-        , input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , onInput UpdateToughSpot
-            , value toughSpot
-            ]
-            []
-        ]
+    [ sectionLabel "Spots"
+    , inputLabel "Weak Spot"
+    , input
+          [ type_ "text"
+          , css [ inputStyles ]
+          , onInput UpdateWeakSpot
+          , value weakSpot
+          ]
+          []
+    , inputLabel "Soft Spot"
+    , input
+          [ type_ "text"
+          , css [ inputStyles ]
+          , onInput UpdateSoftSpot
+          , value softSpot
+          ]
+          []
+    , inputLabel "Tough Spot"
+    , input
+          [ type_ "text"
+          , css [ inputStyles ]
+          , onInput UpdateToughSpot
+          , value toughSpot
+          ]
+          []
+    ]
 
 
 editPotentialsView : { r |
@@ -204,45 +189,6 @@ editReferencesView references =
         ]
 
 
-editThreatsView : { r |
-                    detachment : Array Threat
-                  , stress : Array Threat
-                  , trauma : Array Threat
-                  }
-                -> Html Msg
-editThreatsView { detachment, stress, trauma } =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
-        ]
-        [ sectionLabel "Threats"
-        ]
-
-
-editWoundsView : { r |
-                   rightLegWounds : Array Wound
-                 , leftLegWounds : Array Wound
-                 , rightArmWounds : Array Wound
-                 , leftArmWounds : Array Wound
-                 , torsoWounds : Array Wound
-                 , headWounds : Array Wound
-                 }
-               -> Html Msg
-editWoundsView { rightLegWounds
-               , leftLegWounds
-               , rightArmWounds
-               , leftArmWounds
-               , torsoWounds
-               , headWounds
-               } =
-    div
-        [ css
-            [ marginTop (Css.em 1) ]
-        ]
-        [ sectionLabel "Wounds"
-        ]
-
-
 editGearListView : Array Gear -> Html Msg
 editGearListView gear =
     div
@@ -250,25 +196,187 @@ editGearListView gear =
             [ marginTop (Css.em 1) ]
         ]
         [ sectionLabel "Gear"
-        , div [] (Array.toList (Array.map editGearView gear))
+        , div [] (Array.toList (Array.indexedMap editGearView gear))
+        , div [ css
+                [ marginTop (Css.em 1)
+                , borderTop3 (px 1) solid (hex "ccc")
+                , paddingTop (Css.em 1)
+                ]
+              ]
+              [ defaultButton
+                    [ onClick (AddNewGear) ]
+                    [ text "Add New Gear" ]
+              ]
         ]
 
 
-editGearView : Gear -> Html Msg
-editGearView { title
-             , charges
-             , upkeep
-             , effect
-             , qualities
-             , upgrades
-             } =
+editGearView : Index -> Gear -> Html Msg
+editGearView gearIndex ({ title
+                   , charges
+                   , upkeep
+                   , effect
+                   , qualities
+                   , upgrades
+                   } as gear) =
+    let
+        gearNameInput =
+            input
+            [ type_ "text"
+            , css [ inputStyles ]
+            , onInput
+                  (\newTitle ->
+                       UpdateGear
+                       gearIndex
+                       { gear | title = newTitle }
+                  )
+            , value title
+            ] []
+
+        gearEffectInput =
+            textarea
+            [ rows 3
+            , css [ inputStyles ]
+            , onInput
+                  (\newEffect ->
+                       UpdateGear
+                       gearIndex
+                       { gear | effect = newEffect }
+                  )
+            , value effect
+            ] []
+
+        gearChargesInput =
+            integerInput
+            { toMsg =
+                  (\n ->
+                       let
+                           diff = n - Array.length charges
+                       in
+                       if diff > 0
+                       then
+                           UpdateGear
+                           gearIndex
+                           { gear
+                               | charges
+                                   = Array.append
+                                     charges
+                                     (Array.repeat diff NoCharge)
+                           }
+                       else
+                           UpdateGear
+                           gearIndex
+                           { gear
+                               | charges
+                                   = Array.slice 0 n charges
+                           }
+                  )
+            , mMinBound = Just 0
+            , mMaxBound = Just 10
+            , currentValue = Array.length charges
+            }
+    in
     div
         [ css
-            [ marginTop (Css.em 1) ]
+            [ marginBottom (Css.em 1)
+            , borderTop3 (px 1) solid (hex "ccc")
+            ]
         ]
-        [ div [] [ text title ]
+        [ inputLabel "Name"
+        , gearNameInput
+        , div [ css
+                [ Css.property "display" "grid"
+                , Css.property "grid-template-columns" "1fr 1fr"
+                , Css.property "grid-column-gap" "1em"
+                ]
+              ]
+            [ div [ css [ textAlign center ] ]
+              [ inputLabel "Maximum Charges"
+              , gearChargesInput
+              ]
+            , div [ css [ textAlign center ] ]
+                [ inputLabel "Upkeep"
+                , integerInput
+                      { toMsg =
+                            (\newUpkeep ->
+                                 UpdateGear
+                                 gearIndex
+                                 { gear
+                                     | upkeep = newUpkeep
+                                 }
+                            )
+                      , mMinBound = Just 0
+                      , mMaxBound = Nothing
+                      , currentValue = upkeep
+                      }
+                ]
+            ]
+        , inputLabel "Effect"
+        , gearEffectInput
+        , inputLabel "Qualities"
+        , div []
+            (Array.toList
+                 (Array.indexedMap
+                      (editGearQualityView gearIndex)
+                      qualities))
+        , defaultButton
+            [ css [ marginTop (Css.em 0.65) ]
+            , onClick (AddNewGearQuality gearIndex) ]
+            [ text "Add New Quality" ]
+        , div [ css
+                [ marginTop (Css.em 1) ]
+              ]
+            [ dangerButton
+                  [ onClick (RemoveGear gearIndex) ]
+                  [ text "Delete Gear" ]
+            ]
         ]
 
+
+editGearQualityView : Index -> Index -> GearQuality -> Html Msg
+editGearQualityView gearIndex qualityIndex ({ title
+                                            , description
+                                            } as quality) =
+    div [ css
+          [ marginTop (Css.em 0.8) ]
+        ]
+    [ input
+          [ type_ "text"
+          , css [ inputStyles ]
+          , onInput
+                (\newTitle ->
+                     UpdateGearQuality
+                     gearIndex
+                     qualityIndex
+                     { quality | title = newTitle }
+                )
+          , value title
+          ] []
+    , textarea
+          [ rows 3
+          , css [ inputStyles ]
+          , onInput
+                (\newDescription ->
+                     UpdateGearQuality
+                     gearIndex
+                     qualityIndex
+                     { quality | description = newDescription }
+                )
+          , value description
+          ] []
+    , defaultButton
+        [ onClick (RemoveGearQuality gearIndex qualityIndex )]
+        [ text "Remove" ]
+    ]
+
+
+inputLabel : String -> Html Msg
+inputLabel title =
+    div [ css
+            [ marginTop (Css.em 0.5)
+            , Css.property "font-variant" "small-caps"
+            ]
+          ]
+        [ text title ]
 
 editNotesView : String -> Html Msg
 editNotesView notes =
@@ -311,6 +419,20 @@ defaultButton =
         , cursor pointer
         , hover
             [ backgroundColor (hex "eee") ]
+        ]
+
+
+dangerButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor (hex "ff0000")
+        , border3 (px 1) solid (hex "ccc")
+        , borderRadius (px 4)
+        , cursor pointer
+        , color (hex "fff")
+        , hover
+            [ backgroundColor (hex "ee0000") ]
         ]
 
 

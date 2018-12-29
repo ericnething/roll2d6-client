@@ -179,12 +179,22 @@ update msg model =
             , Cmd.none
             )
 
-        AddNewGear gear ->
-            ({ model
-                 | gear = Array.push gear model.gear
-             }
-            , Cmd.none
-            )
+        AddNewGear ->
+            let
+                emptyGear =
+                    { title = ""
+                    , charges = Array.repeat 10 Charge
+                    , upkeep = 1
+                    , effect = ""
+                    , qualities = Array.empty
+                    , upgrades = Array.empty
+                    }
+            in
+                ({ model
+                     | gear = Array.push emptyGear model.gear
+                 }
+                , Cmd.none
+                )
 
         RemoveGear index ->
             ({ model
@@ -211,6 +221,81 @@ update msg model =
                                              chargeIndex
                                              charge
                                              item.charges
+                                     })
+                                    model.gear
+                            }
+            in
+                ( newModel, Cmd.none )
+
+        UpdateGearQuality gearIndex qualityIndex quality ->
+            let
+                newModel =
+                    case Array.get gearIndex model.gear of
+                        Nothing ->
+                            model
+
+                        Just item ->
+                            { model
+                                | gear =
+                                    Array.set
+                                    gearIndex
+                                    ({ item
+                                         | qualities =
+                                             Array.set
+                                             qualityIndex
+                                             quality
+                                             item.qualities
+                                     })
+                                    model.gear
+                            }
+            in
+                ( newModel, Cmd.none )
+
+        AddNewGearQuality gearIndex ->
+            let
+                emptyQuality =
+                    { title = ""
+                    , description = ""
+                    }
+
+                newModel =
+                    case Array.get gearIndex model.gear of
+                        Nothing ->
+                            model
+
+                        Just item ->
+                            { model
+                                | gear =
+                                    Array.set
+                                    gearIndex
+                                    ({ item
+                                         | qualities =
+                                             Array.push
+                                             emptyQuality
+                                             item.qualities
+                                     })
+                                    model.gear
+                            }
+            in
+                ( newModel, Cmd.none )
+
+        RemoveGearQuality gearIndex qualityIndex ->
+            let
+                newModel =
+                    case Array.get gearIndex model.gear of
+                        Nothing ->
+                            model
+
+                        Just item ->
+                            { model
+                                | gear =
+                                    Array.set
+                                    gearIndex
+                                    ({ item
+                                         | qualities =
+                                             removeIndexFromArray
+                                             qualityIndex
+                                             item.qualities
                                      })
                                     model.gear
                             }

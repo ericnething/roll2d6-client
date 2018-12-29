@@ -216,7 +216,6 @@ editGearView gearIndex ({ title
                    , upkeep
                    , effect
                    , qualities
-                   , upgrades
                    } as gear) =
     let
         gearNameInput =
@@ -1085,7 +1084,6 @@ gearView gearIndex { title
                    , upkeep
                    , effect
                    , qualities
-                   , upgrades
                    } =
     div [ css
           [ marginBottom (Css.em 1)
@@ -1116,7 +1114,6 @@ gearView gearIndex { title
           ]
     , div [] [ text effect ]
     , gearQualitiesView qualities
-    , gearUpgradesView upgrades
     ]
 
 
@@ -1136,21 +1133,6 @@ gearQualitiesView qualities =
         div []
             (Array.toList
                  (Array.map qualityView qualities))
-
-
-
-gearUpgradesView : Array GearUpgrade -> Html Msg
-gearUpgradesView upgrades =
-    let
-        upgradeView { title, description, purchased } =
-            div []
-                [ strong [] [ text (title ++ ": ") ]
-                , text description
-                ]
-    in
-        div []
-            (Array.toList
-                 (Array.map upgradeView upgrades))
 
 
 gearChargesView : Index -> Array Charge -> Html Msg

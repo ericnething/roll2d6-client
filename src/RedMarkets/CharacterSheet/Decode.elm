@@ -129,13 +129,12 @@ decodeWound =
 decodeGear : Decoder Gear
 decodeGear =
     Decode.succeed
-        (\title charges upkeep effect qualities upgrades ->
+        (\title charges upkeep effect qualities ->
              { title = title
              , charges = charges
              , upkeep = upkeep
              , effect = effect
              , qualities = qualities
-             , upgrades = upgrades
              }
         )
         |> required "title" string
@@ -143,7 +142,6 @@ decodeGear =
         |> required "upkeep" int
         |> required "effect" string
         |> required "qualities" (array decodeGearQuality)
-        |> required "upgrades" (array decodeGearUpgrade)
 
 
 decodeGearQuality : Decoder GearQuality
@@ -156,20 +154,6 @@ decodeGearQuality =
         )
         |> required "title" string
         |> required "description" string
-
-
-decodeGearUpgrade : Decoder GearUpgrade
-decodeGearUpgrade =
-    Decode.succeed
-        (\title description purchased ->
-             { title = title
-             , description = description
-             , purchased = purchased
-             }
-        )
-        |> required "title" string
-        |> required "description" string
-        |> required "purchased" bool
 
 
 decodeCharge : Decoder Charge

@@ -179,7 +179,6 @@ type alias Gear =
     , upkeep : Int
     , effect : String
     , qualities : Array GearQuality
-    , upgrades : Array GearUpgrade
     }
 
 type Charge
@@ -189,12 +188,6 @@ type Charge
 type alias GearQuality =
     { title : String
     , description : String
-    }
-
-type alias GearUpgrade =
-    { title : String
-    , description : String
-    , purchased : Bool
     }
 
 type alias Index =

@@ -121,7 +121,6 @@ encodeGear gear =
         , ( "upkeep", int gear.upkeep )
         , ( "effect", string gear.effect )
         , ( "qualities", array encodeGearQuality gear.qualities )
-        , ( "upgrades", array encodeGearUpgrade gear.upgrades )
         ]
 
 
@@ -142,11 +141,3 @@ encodeGearQuality { title, description } =
         , ( "description", string description )
         ]
 
-
-encodeGearUpgrade : GearUpgrade -> Value
-encodeGearUpgrade { title, description, purchased } =
-    object
-        [ ( "title", string title )
-        , ( "description", string description )
-        , ( "purchased", bool purchased )
-        ]

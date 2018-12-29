@@ -187,7 +187,6 @@ update msg model =
                     , upkeep = 1
                     , effect = ""
                     , qualities = Array.empty
-                    , upgrades = Array.empty
                     }
             in
                 ({ model

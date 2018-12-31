@@ -80,6 +80,7 @@ type Msg
     | ToggleFullSheetEdit
     | RestoreScrollX (Result Dom.Error ())
     | UpdateSheetsOrdering (Array SheetId)
+    | SheetsOrderingUpdated
     | DragStart SheetId Json.Decode.Value
     | DragEnd
     | DragEnter SheetId
@@ -87,3 +88,4 @@ type Msg
     | Drop SheetId
     | OpenSheetPermissions SheetId
     | UpdateSheetPermissions SheetId SheetPermission
+    | SheetPermissionsUpdated

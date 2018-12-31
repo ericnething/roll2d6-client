@@ -231,8 +231,15 @@ update msg model =
             ({ model
                  | sheetsOrdering = ordering
              }
-            , Cmd.none
+            , Task.perform
+                identity
+                (Task.succeed SheetsOrderingUpdated)
             )
+
+        SheetsOrderingUpdated ->
+            -- This message is only to let Main.elm know to write the
+            -- changes to pouchDB
+            (model, Cmd.none)
 
         OpenSheetPermissions _ ->
             -- This is handled in Game.elm to open the overlay
@@ -246,8 +253,15 @@ update msg model =
                          sheetPermission
                          model.sheetPermissions
              }
-            , Cmd.none
+            , Task.perform
+                identity
+                (Task.succeed SheetPermissionsUpdated)
             )
+
+        SheetPermissionsUpdated ->
+            -- This message is only to let Main.elm know to write the
+            -- changes to pouchDB
+            (model, Cmd.none)
 
 
 moveSheet : { ordering : Array SheetId

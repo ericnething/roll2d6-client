@@ -201,10 +201,17 @@ update navkey msg model =
                              )
                              model.sheetPermissions
                      }
-                    , Cmd.none
+                    , Task.perform
+                        identity
+                        (Task.succeed PlayerRemovedSuccess)
                     )
                 Err _ ->
                     ( model, Cmd.none )
+
+        PlayerRemovedSuccess ->
+            -- This message is only to let Main.elm know to write the
+            -- changes to pouchDB
+            (model, Cmd.none)
 
         ServerEventReceived (PlayerListUpdated ePlayers) ->
             case ePlayers of

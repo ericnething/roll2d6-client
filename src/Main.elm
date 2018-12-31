@@ -435,23 +435,20 @@ maybeWriteToPouchDB msg newGame =
                 , gameType = newGame.gameType
                 }
 
-        Game.SheetsMsg (Sheets.AddSheet _ _) ->
-            debouncedWriteGameToPouchDB "game" newGame
+        -- Writing to pouchDB for adding and removing sheets is
+        -- handled in Sheets.elm directly using ports
 
-        Game.SheetsMsg (Sheets.SheetRemoved _) ->
-            debouncedWriteGameToPouchDB "game" newGame
+        Game.SheetsMsg Sheets.SheetsOrderingUpdated ->
+            writeGameToPouchDB newGame
 
-        Game.SheetsMsg (Sheets.UpdateSheetsOrdering _) ->
-            debouncedWriteGameToPouchDB "game" newGame
+        Game.SheetsMsg Sheets.SheetPermissionsUpdated ->
+            writeGameToPouchDB newGame
 
-        Game.SheetsMsg (Sheets.UpdateSheetPermissions _ _) ->
-            debouncedWriteGameToPouchDB "game" newGame
-
-        Game.PlayerRemoved _ _ _ ->
-            debouncedWriteGameToPouchDB "game" newGame
+        Game.PlayerRemovedSuccess ->
+            writeGameToPouchDB newGame
 
         Game.UpdateGameTitle _ ->
-            debouncedWriteGameToPouchDB "game" newGame
+            debouncedWriteGameToPouchDB newGame
 
         _ ->
             Cmd.none
@@ -481,16 +478,16 @@ debouncedWriteSheetToPouchDB sheetId { ref, msheet, gameType } =
                 )
 
 
-debouncedWriteGameToPouchDB : String -> Game.Model -> Cmd Msg
-debouncedWriteGameToPouchDB docId { ref
-                                    , title
-                                    , gameType
-                                    , sheetsOrdering
-                                    , sheetPermissions
-                                    } =
+debouncedWriteGameToPouchDB : Game.Model -> Cmd Msg
+debouncedWriteGameToPouchDB { ref
+                            , title
+                            , gameType
+                            , sheetsOrdering
+                            , sheetPermissions
+                            } =
     Task.perform identity
         (Task.succeed
-            (WriteGameToPouchDB ref docId
+            (WriteGameToPouchDB ref "game"
                  { title = title
                  , gameType = gameType
                  , sheetsOrdering = sheetsOrdering
@@ -498,6 +495,24 @@ debouncedWriteGameToPouchDB docId { ref
                  }
                 |> provideInput
                 |> DebounceMsg
+            )
+        )
+
+writeGameToPouchDB : Game.Model -> Cmd Msg
+writeGameToPouchDB { ref
+                   , title
+                   , gameType
+                   , sheetsOrdering
+                   , sheetPermissions
+                   } =
+    Task.perform identity
+        (Task.succeed
+            (WriteGameToPouchDB ref "game"
+                 { title = title
+                 , gameType = gameType
+                 , sheetsOrdering = sheetsOrdering
+                 , sheetPermissions = sheetPermissions
+                 }
             )
         )
 

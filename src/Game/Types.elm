@@ -214,6 +214,7 @@ type Msg
     | InviteCreated (WebData String)
     | RemovePlayer Int
     | PlayerRemoved GameId PersonId (Result Http.Error String)
+    | PlayerRemovedSuccess
     | ServerEventReceived ServerEvent
     | Ping
     | Pong

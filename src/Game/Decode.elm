@@ -32,6 +32,8 @@ module Game.Decode exposing
     , chatMessageListDecoder
     , decodeChatMessageList
     , scrollDecoder
+    , decodeSheetUpdate
+    , decodeChanges
     )
 
 import Array exposing (Array)
@@ -292,11 +294,24 @@ gameDecoder : Decoder
               -> List Game.Person
               -> Game.Model)
 gameDecoder =
-    map4 Game.emptyGameModel
-        (field "ref" value)
-        (field "id" string)
-        (field "game" gameDataDecoder)
-        (field "eventSource" value)
+    at [ "game", "gameType" ] gameTypeDecoder
+        |> andThen
+           (\gameType ->
+                map5 (\ref id game sheets eventSource ->
+                          Game.emptyGameModel
+                              { ref = ref
+                              , gameId = id
+                              , gameData = game
+                              , sheets = sheets
+                              , eventSource = eventSource
+                              }
+                     )
+                (field "ref" value)
+                (field "id" string)
+                (field "game" gameDataDecoder)
+                (field "sheets" (dict (sheetDecoder gameType)))
+                (field "eventSource" value)
+           )
 
 
 decodeGameData : Value -> Result Error (Game.GameData)
@@ -306,16 +321,29 @@ decodeGameData value =
 
 gameDataDecoder : Decoder (Game.GameData)
 gameDataDecoder =
-    field "gameType" gameTypeDecoder
-        |> andThen
-           (\gameType ->
-                map5 Game.GameData
-                (field "title" string)
-                (succeed gameType)
-                (field "sheets" (dict (sheetDecoder gameType)))
-                (field "sheetsOrdering" (array string))
-                (field "sheetPermissions" (dict sheetPermissionDecoder))
-           )
+    map4 Game.GameData
+        (field "title" string)
+        (field "gameType" gameTypeDecoder)
+        (field "sheetsOrdering" (array string))
+        (field "sheetPermissions" (dict sheetPermissionDecoder))
+
+
+decodeSheetUpdate : Game.GameType
+                  -> Value
+                  -> Result Error { id : Sheets.SheetId
+                                  , sheet : Sheet.SheetModel
+                                  }
+decodeSheetUpdate gameType value =
+    decodeValue (sheetUpdateDecoder gameType) value
+
+sheetUpdateDecoder : Game.GameType
+                   -> Decoder { id : Sheets.SheetId
+                              , sheet : Sheet.SheetModel
+                              }
+sheetUpdateDecoder gameType =
+    map2 (\id sheet -> { id = id, sheet = sheet })
+        (field "id" string)
+        (field "sheet" (sheetDecoder gameType))
 
 
 sheetPermissionDecoder : Decoder Sheets.SheetPermission
@@ -329,16 +357,17 @@ sheetPermissionDecoder =
 
 
 sheetDecoder : Game.GameType -> Decoder (Sheet.SheetModel)
-sheetDecoder gameType =
+sheetDecoder gameType=
     case gameType of
         Game.Fate ->
             fateSheetDecoder
-
+                
         Game.WorldOfDungeons ->
             worldOfDungeonsSheetDecoder
 
         Game.RedMarkets ->
             redMarketsSheetDecoder
+
 
 fateSheetDecoder : Decoder (Sheet.SheetModel)
 fateSheetDecoder =
@@ -383,3 +412,16 @@ gameTypeDecoder =
                     fail "Not a valid GameType"
     in
         string |> andThen toGameType
+
+
+decodeChanges : Game.GameType
+              -> Value
+              -> Result Error Game.GameUpdate
+decodeChanges gameType value =
+    decodeValue (changesDecoder gameType) value
+        
+changesDecoder : Game.GameType -> Decoder Game.GameUpdate
+changesDecoder gameType =
+    map2 Game.GameUpdate
+        (field "game" (maybe gameDataDecoder))
+        (field "sheets" (dict (sheetDecoder gameType)))

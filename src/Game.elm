@@ -50,6 +50,8 @@ import Game.Decode
     , decodePlayerPresence
     , decodeChatMessageList
     , scrollDecoder
+    , decodeSheetUpdate
+    , decodeChanges
     )
 import Task
 import Util exposing (removeIndexFromArray)
@@ -68,8 +70,7 @@ import Http
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Ports.getResponse UpdateCurrentGame
-        , Ports.changesReceived (always ChangesReceived)
+        [ Ports.changesReceived ChangesReceived
         , Ports.sse_playerListUpdated
             (ServerEventReceived
                  << PlayerListUpdated
@@ -132,18 +133,29 @@ update navkey msg model =
         CloseOverlay ->
             ( { model | overlay = OverlayNone }, Cmd.none )
 
-        UpdateCurrentGame value ->
-            case decodeGameData value of
-                Ok gameData ->
-                    ( mergeGameData model gameData
-                    , Cmd.none
-                    )
+        ChangesReceived changes ->
+            case decodeChanges model.gameType changes of
+                Ok { maybeGame, sheets } ->
+                    let
+                        newModel =
+                            case maybeGame of
+                                Nothing ->
+                                    model
+                                Just game ->
+                                    mergeGameData model game
+                    in
+                        ({ newModel
+                             | sheets
+                                 = Dict.union sheets model.sheets
+                         }
+                        , Cmd.none
+                        )
+                    -- ( model, Ports.get (model.ref, docId) )
 
                 Err err ->
+                    let _ = Debug.log "Changes Received Error" err
+                    in
                     ( model, Cmd.none )
-
-        ChangesReceived ->
-            ( model, Ports.get model.ref )
 
         ExitToLobby ->
             ( model

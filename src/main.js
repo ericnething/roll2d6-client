@@ -20,7 +20,7 @@
 
 'use strict';
 
-var app = Elm.Main.init({
+const app = Elm.Main.init({
   flags: [ document.documentElement.clientWidth,
            document.documentElement.clientHeight
          ]
@@ -31,9 +31,9 @@ var app = Elm.Main.init({
 //----------------------------------------------
 
 // New database connection
-app.ports.loadGame.subscribe(function (args) {
-  const emptyGame = args[0];
-  const id = args[1];
+app.ports.loadGame.subscribe(function (id) {
+
+  const uuid_re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   const domain = window.location.origin + "/api/couchdb/";
   const remoteUrl = domain + id;
@@ -87,18 +87,37 @@ app.ports.loadGame.subscribe(function (args) {
       // It exists.
     }).catch(function (err) {
       console.log("Error: ", err);
-      if (err.status && err.status === 404) {
-        // It doesn't exist yet, so create it.
-        local.put(
-          Object.assign(emptyGame, { _id: "game" })
-        );
-      }
     }).finally(function () {
       // Set up syncing
       sync();
       // Send the game document back to Elm
-      local.get("game").then(function (doc) {
-        console.log("Game Loaded", { id: id, ref: local, game: doc });
+      local.allDocs({
+        include_docs: true
+      }).then(function (result) {
+        console.log(result);
+
+        const game = (function() {
+          let data = {
+            game: null,
+            sheets: {}
+          }
+          result.rows.forEach(function(row) {
+            if (uuid_re.test(row.id)) {
+              data.sheets[row.id] = row.doc;
+            } else if (row.id === "game") {
+              data.game = row.doc;
+            }
+          })
+          return data;
+        })();
+
+        console.log(
+          "Game Loaded",
+          { id: id,
+            ref: local,
+            game: game.game,
+            sheets: game.sheets
+          });
         
         // setup event source
         const eventSource = setupEventSource(id);
@@ -107,7 +126,8 @@ app.ports.loadGame.subscribe(function (args) {
         app.ports.gameLoaded.send({
           id: id,
           ref: local,
-          game: doc,
+          game: game.game,
+          sheets: game.sheets,
           eventSource: eventSource
         });
 
@@ -148,7 +168,22 @@ app.ports.loadGame.subscribe(function (args) {
     }).on('change', function (change) {
       // yo, something changed!
       console.log("Changes Received", change);
-      app.ports.changesReceived.send();
+      const updatedDocs = (function() {
+          let data = {
+            game: null,
+            sheets: {}
+          }
+          change.docs.forEach(function(doc) {
+            if (uuid_re.test(doc._id)) {
+              data.sheets[doc._id] = doc;
+            } else if (doc._id === "game") {
+              data.game = doc;
+            }
+          })
+          return data;
+      })();
+      console.log("Updated Docs", updatedDocs);
+      app.ports.changesReceived.send(updatedDocs);
 
     }).on('paused', function (info) {
       // replication was paused, usually because of a lost connection
@@ -190,10 +225,11 @@ app.ports.loadGame.subscribe(function (args) {
 // Write to database
 app.ports.put.subscribe(function (args) {
   const db = args[0];
-  const newDoc = args[1];
-  db.get("game").then(function (doc) {
+  const docId = args[1];
+  const newDoc = args[2];
+  db.get(docId).then(function (doc) {
     return db.put(
-      Object.assign(newDoc, { _rev: doc._rev })
+      Object.assign(newDoc, { _id: docId, _rev: doc._rev })
     );
   }).then(function (response) {
     // handle response
@@ -202,36 +238,26 @@ app.ports.put.subscribe(function (args) {
     console.log("Error: ", err);
     if (err.status && err.status === 404) {
         // The document doesn't exist yet, so let's create it.
-      db.put(newDoc);
+      db.put(
+        Object.assign(newDoc, { _id: docId })
+      );
     }
   });
 });
 
-// Read from database
-app.ports.get.subscribe(function (db) {
-  db.get("game").then(function (doc) {
-    console.log(doc);
-    app.ports.getResponse.send(doc);
+// Delete document from database
+app.ports.remove.subscribe(function (args) {
+  const db = args[0];
+  const docId = args[1];
+  db.get(docId).then(function (doc) {
+    return db.remove(doc);
+  }).then(function (response) {
+    // handle response
+    console.log(response)
   }).catch(function (err) {
-    console.log(err);
+    console.log("Error: ", err);
   });
 });
-
-// Read all documents from database
-// app.ports.allDocs.subscribe(function (db) {
-//   db.allDocs({ include_docs: true }).then(function (docs) {
-//     console.log("Docs: ", docs)
-//     return docs.rows.map(
-//       object => {
-//         const { _id, title } = object.doc;
-//         return { _id, title };
-//       }
-//     )
-//   }).then(function (gameList) {
-//     console.log("GameMetadataList: ", gameList)
-//     app.ports.getGameListResponse.send(gameList);
-//   });
-// });
 
 app.ports.closeEventStream.subscribe(function (eventSource) {
   console.log("Close EventStream");

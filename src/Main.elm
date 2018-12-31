@@ -26,6 +26,7 @@ import Browser.Navigation as Navigation
 import Browser.Events
 import Url exposing (Url)
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Debouncer.Messages as Debouncer
     exposing
         ( Debouncer
@@ -38,6 +39,7 @@ import Game
 import Game.Types as Game exposing (GameId)
 import Game.GameType as Game
 import Game.Sheets.Types as Sheets
+import Game.Sheet.Types as Sheet
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (lazy)
@@ -53,7 +55,12 @@ import Game.Decode
         , decodeGameData
         , decodeGameList
         )
-import Game.Encode exposing (encodeGame, encodeGameData)
+import Game.Encode
+    exposing
+    ( encodeGame
+    , encodeGameData
+    , encodeSheet
+    )
 import Task
 import Util exposing (removeIndexFromArray)
 import Route exposing (Route)
@@ -153,8 +160,23 @@ update msg model =
         DebounceMsg submsg ->
             Debouncer.update update updateDebouncer submsg model
 
-        WriteToPouchDB ref game ->
-            ( model, Ports.put ( ref, encodeGameData game ) )
+        WriteGameToPouchDB ref docId game ->
+            ( model
+            , Ports.put
+                ( ref
+                , docId
+                , encodeGameData game
+                )
+            )
+
+        WriteSheetToPouchDB ref sheetId gameType sheet ->
+            ( model
+            , Ports.put
+                ( ref
+                , sheetId
+                , encodeSheet sheet
+                )
+            )
 
         GameLoaded value ->
             case decodeGame value of
@@ -386,9 +408,7 @@ changeRouteTo route model =
         Just (Route.Game gameId) ->
             ( { model | screen = LoadingScreen emptyLoadingProgress }
             , Cmd.batch
-                [ Ports.loadGame
-                      ( encodeGameData (Game.emptyGameData Game.Fate)
-                      , gameId )
+                [ Ports.loadGame gameId
                 , API.getMyPlayerInfo gameId
                 , API.getPlayers gameId
                 ]
@@ -407,44 +427,72 @@ changeRouteTo route model =
 maybeWriteToPouchDB : Game.Msg -> Game.Model -> Cmd Msg
 maybeWriteToPouchDB msg newGame =
     case msg of
-        Game.SheetsMsg (Sheets.SheetMsg _ _) ->
-            debouncedWriteToPouchDB newGame
+        Game.SheetsMsg (Sheets.SheetMsg sheetId _) ->
+            debouncedWriteSheetToPouchDB
+                sheetId
+                { ref = newGame.ref
+                , msheet = Dict.get sheetId newGame.sheets
+                , gameType = newGame.gameType
+                }
 
         Game.SheetsMsg (Sheets.AddSheet _ _) ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         Game.SheetsMsg (Sheets.SheetRemoved _) ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         Game.SheetsMsg (Sheets.UpdateSheetsOrdering _) ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         Game.SheetsMsg (Sheets.UpdateSheetPermissions _ _) ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         Game.PlayerRemoved _ _ _ ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         Game.UpdateGameTitle _ ->
-            debouncedWriteToPouchDB newGame
+            debouncedWriteGameToPouchDB "game" newGame
 
         _ ->
             Cmd.none
 
-debouncedWriteToPouchDB : Game.Model -> Cmd Msg
-debouncedWriteToPouchDB { ref
-                        , title
-                        , gameType
-                        , sheets
-                        , sheetsOrdering
-                        , sheetPermissions
-                        } =
+debouncedWriteSheetToPouchDB : Sheets.SheetId
+                             -> { ref : PouchDBRef
+                                , msheet : Maybe Sheet.SheetModel
+                                , gameType : Game.GameType
+                                }
+                             -> Cmd Msg
+debouncedWriteSheetToPouchDB sheetId { ref, msheet, gameType } =
+    case msheet of
+        Nothing ->
+            Cmd.none
+
+        Just sheet ->
+            Task.perform identity
+                (Task.succeed
+                     (WriteSheetToPouchDB
+                          ref
+                          sheetId
+                          gameType
+                          sheet
+                     |> provideInput
+                     |> DebounceMsg
+                     )
+                )
+
+
+debouncedWriteGameToPouchDB : String -> Game.Model -> Cmd Msg
+debouncedWriteGameToPouchDB docId { ref
+                                    , title
+                                    , gameType
+                                    , sheetsOrdering
+                                    , sheetPermissions
+                                    } =
     Task.perform identity
         (Task.succeed
-            (WriteToPouchDB ref
+            (WriteGameToPouchDB ref docId
                  { title = title
                  , gameType = gameType
-                 , sheets = sheets
                  , sheetsOrdering = sheetsOrdering
                  , sheetPermissions = sheetPermissions
                  }
@@ -452,7 +500,6 @@ debouncedWriteToPouchDB { ref
                 |> DebounceMsg
             )
         )
-
 
 loadGameScreenIfDone : LoadingProgress -> Cmd Msg
 loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =

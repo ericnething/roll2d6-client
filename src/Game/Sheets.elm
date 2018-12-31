@@ -40,6 +40,7 @@ import Game.Sheet.Types exposing (SheetModel, SheetMsg)
 import Game.Sheets.Types exposing (..)
 import Game.GameType exposing (GameType)
 import Game.Person exposing (..)
+import Game.Encode exposing (encodeSheet)
 import Task
 import Util exposing (removeIndexFromArray, findArrayIndexOf, swapArray)
 import Game.Decode exposing (scrollDecoder)
@@ -49,6 +50,7 @@ import API exposing (generateNewSheetId)
 import Ports
 import DragDrop
 import RemoteData as RemoteData exposing (WebData)
+import Ports
 
 update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
@@ -103,9 +105,16 @@ update msg model =
                       (SomePlayers [])
                       model.sheetPermissions
               }
-            , Task.perform
-                identity
-                (Task.succeed (OpenFullSheet id True))
+            , Cmd.batch
+                [ Ports.put
+                      ( model.ref
+                      , id
+                      , encodeSheet sheet
+                      )
+                , Task.perform
+                    identity
+                    (Task.succeed (OpenFullSheet id True))
+                ]
             )
 
         RemoveSheet id ->
@@ -123,9 +132,12 @@ update msg model =
                           , sheetPermissions =
                               Dict.remove id model.sheetPermissions
                       }
-                    , Task.perform
-                        identity
-                        (Task.succeed CloseFullSheet)
+                    , Cmd.batch
+                        [ Ports.remove (model.ref, id)
+                        , Task.perform
+                            identity
+                            (Task.succeed CloseFullSheet)
+                        ]
                     )
 
                 Err _ ->

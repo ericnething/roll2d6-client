@@ -73,20 +73,23 @@ type alias Model =
     }
 
 
-emptyGameModel : PouchDBRef
-               -> GameId
-               -> GameData
-               -> EventSourceRef
+emptyGameModel : { ref : PouchDBRef
+                 , gameId : GameId
+                 , gameData : GameData
+                 , sheets : Dict SheetId SheetModel
+                 , eventSource : EventSourceRef
+                 }
                -> Person
                -> List Person
                -> Model
-emptyGameModel ref id gameData eventSource myPlayerInfo players =
+emptyGameModel { ref, gameId, gameData, sheets, eventSource }
+               myPlayerInfo players =
     { ref = ref
     , eventSource = eventSource
     , gameType = gameData.gameType
-    , id = id
+    , id = gameId
     , title = gameData.title
-    , sheets = gameData.sheets
+    , sheets = sheets
     , fullSheet = Nothing
     , overlay = OverlayNone
     , players = players
@@ -103,7 +106,6 @@ emptyGameModel ref id gameData eventSource myPlayerInfo players =
 type alias GameData =
     { title : String
     , gameType : GameType
-    , sheets : Dict SheetId SheetModel
     , sheetsOrdering : Array SheetId
     , sheetPermissions : Dict SheetId SheetPermission
     }
@@ -117,7 +119,6 @@ mergeGameData : Model -> GameData -> Model
 mergeGameData model gameData =
     { model
         | title = gameData.title
-        , sheets = gameData.sheets
         , sheetsOrdering = gameData.sheetsOrdering
         , sheetPermissions = gameData.sheetPermissions
     }
@@ -127,7 +128,6 @@ emptyGameData : GameType -> GameData
 emptyGameData gameType =
     { title = "New Game"
     , gameType = gameType
-    , sheets = Dict.empty
     , sheetsOrdering = Array.fromList []
     , sheetPermissions = Dict.empty
     }
@@ -195,6 +195,11 @@ type DiceRollRequest =
 
 -- Update
 
+type alias GameUpdate =
+    { maybeGame : Maybe GameData
+    , sheets : Dict SheetId SheetModel
+    }
+
 type Msg
     = NoOp
     | SheetsMsg Sheets.Msg
@@ -203,8 +208,7 @@ type Msg
     | GameTitleUpdated
     | OpenOverlay Overlay
     | CloseOverlay
-    | UpdateCurrentGame Value
-    | ChangesReceived
+    | ChangesReceived Value
     | ExitToLobby
     | CreateInvite
     | InviteCreated (WebData String)

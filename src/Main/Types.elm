@@ -27,6 +27,8 @@ import Debouncer.Messages as Debouncer exposing (Debouncer)
 import Game.Types as Game exposing (GameId)
 import Game.GameType as Game
 import Game.Person as Game
+import Game.Sheets.Types as Sheets
+import Game.Sheet.Types as Sheet
 import Json.Decode
 import Lobby.Types as Lobby
 import Login.Types as Login
@@ -72,7 +74,14 @@ type Msg
     | GameMsg Game.Msg
     | LobbyMsg Lobby.Msg
     | LoginMsg Login.ConsumerMsg
-    | WriteToPouchDB PouchDBRef Game.GameData
+    | WriteGameToPouchDB PouchDBRef String Game.GameData
+
+    | WriteSheetToPouchDB
+          PouchDBRef
+          Sheets.SheetId
+          Game.GameType
+          Sheet.SheetModel
+
     | DebounceMsg (Debouncer.Msg Msg)
     | GameLoaded Json.Decode.Value
     | GameLoadFailed

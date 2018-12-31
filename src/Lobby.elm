@@ -49,7 +49,6 @@ initialGameModel : String -> Game.GameType -> Game.GameData
 initialGameModel title gameType =
     { title = title
     , gameType = gameType
-    , sheets = Dict.empty --Sheet.initialModel gameType
     , sheetsOrdering = Array.fromList []
     , sheetPermissions = Dict.empty
     }

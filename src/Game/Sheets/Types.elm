@@ -29,6 +29,7 @@ import Browser.Dom as Dom
 import Http
 import Json.Decode
 import RemoteData exposing (WebData)
+import Ports exposing (PouchDBRef)
 
 type alias Index = Int
 
@@ -40,7 +41,8 @@ type alias GameId = String
 
 type alias Model r =
     { r |
-      sheets : Dict SheetId SheetModel
+      ref : PouchDBRef
+    , sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
     , sheetsViewportX : Float
     , gameType : GameType

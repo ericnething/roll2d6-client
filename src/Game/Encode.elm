@@ -21,11 +21,13 @@
 module Game.Encode
     exposing
     ( encodeGame
+    , encodeSheet
     , encodeGameData
     , encodeChatMessage
     )
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Game.Types as Game
 import Game.GameType as Game
 import Game.Sheet.Types as Sheet
@@ -122,7 +124,6 @@ encodeGame game =
         [ ( "_id", string "game" )
         , ( "title", string game.title )
         , ( "gameType", encodeGameType game.gameType )
-        , ( "sheets", dict identity encodeSheet game.sheets )
         , ( "sheetsOrdering", array string game.sheetsOrdering )
         , ( "sheetPermissions" , dict identity encodeSheetPermission game.sheetPermissions)
         ]
@@ -134,10 +135,15 @@ encodeGameData game =
         [ ( "_id", string "game" )
         , ( "title", string game.title )
         , ( "gameType", encodeGameType game.gameType )
-        , ( "sheets", dict identity encodeSheet game.sheets )
         , ( "sheetsOrdering", array string game.sheetsOrdering )
         , ( "sheetPermissions" , dict identity encodeSheetPermission game.sheetPermissions)
         ]
+
+
+encodeSheets : Dict Sheets.SheetId Sheet.SheetModel -> Value
+encodeSheets sheets =
+    dict identity encodeSheet sheets
+
 
 encodeSheet : Sheet.SheetModel -> Value
 encodeSheet sheetModel =

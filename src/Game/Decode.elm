@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module Game.Decode exposing
     ( decodeGame
@@ -200,7 +200,7 @@ decodePlayerPresence value =
 playerPresenceDecoder : Decoder Game.PlayerPresence
 playerPresenceDecoder =
     map2 Game.PlayerPresence
-        (field "id" int)
+        (field "id" string)
         (field "presence" (string |> andThen presenceDecoder))
 
 --------------------------------------------------
@@ -217,11 +217,10 @@ playerListDecoder =
 
 playerDecoder : Decoder Game.Person
 playerDecoder =
-    map4 Game.Person
-        (field "id" int)
+    map3 Game.Person
+        (field "id" string)
         (field "access" (string |> andThen accessLevelDecoder))
         (field "username" string)
-        (field "presence" (string |> andThen presenceDecoder))
 
 accessLevelDecoder : String -> Decoder Game.AccessLevel
 accessLevelDecoder access =
@@ -297,20 +296,18 @@ gameDecoder =
     at [ "game", "gameType" ] gameTypeDecoder
         |> andThen
            (\gameType ->
-                map5 (\ref id game sheets eventSource ->
+                map4 (\ref id game sheets ->
                           Game.emptyGameModel
                               { ref = ref
                               , gameId = id
                               , gameData = game
                               , sheets = sheets
-                              , eventSource = eventSource
                               }
                      )
                 (field "ref" value)
                 (field "id" string)
                 (field "game" gameDataDecoder)
                 (field "sheets" (dict (sheetDecoder gameType)))
-                (field "eventSource" value)
            )
 
 
@@ -349,7 +346,7 @@ sheetUpdateDecoder gameType =
 sheetPermissionDecoder : Decoder Sheets.SheetPermission
 sheetPermissionDecoder =
     oneOf
-        [ (field "somePlayers" (list int))
+        [ (field "somePlayers" (list string))
               |> Decode.map Sheets.SomePlayers
         , (field "allPlayers" bool)
               |> Decode.map (always Sheets.AllPlayers)
@@ -357,7 +354,7 @@ sheetPermissionDecoder =
 
 
 sheetDecoder : Game.GameType -> Decoder (Sheet.SheetModel)
-sheetDecoder gameType=
+sheetDecoder gameType =
     case gameType of
         Game.Fate ->
             fateSheetDecoder

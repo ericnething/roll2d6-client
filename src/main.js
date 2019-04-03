@@ -1,22 +1,24 @@
-// Roll2d6 Virtual Tabletop Project
+/*
 
-// Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+Roll2d6 Virtual Tabletop Project
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU Affero
-// General Public License as published by the Free Software
-// Foundation, either version 3 of the License, or (at your
-// option) any later version.
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the
-// implied warranty of MERCHANTABILITY or FITNESS FOR A
-// PARTICULAR PURPOSE.  See the GNU Affero General Public
-// License for more details.
+This program is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-// You should have received a copy of the GNU Affero General
-// Public License along with this program. If not, see
-// <https://www.gnu.org/licenses/>.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+
+*/
 
 'use strict';
 
@@ -35,9 +37,10 @@ app.ports.loadGame.subscribe(function (id) {
 
   const uuid_re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+  const gameId = "game_" + id;
   const domain = window.location.origin + "/api/couchdb/";
-  const remoteUrl = domain + id;
-  const local = new PouchDB(id);
+  const remoteUrl = domain + gameId;
+  const local = new PouchDB(gameId);
   const remote = new PouchDB(remoteUrl, {
     skip_setup: true,
     fetch: function (url, opts) {
@@ -52,31 +55,12 @@ app.ports.loadGame.subscribe(function (id) {
           app.ports.gameLoadFailed.send(0);
           remote.close();
         } else {
+          console.log(resp);
           return resp
         }
       })
     }
   });
-
-  function setupEventSource(gameId) {
-    const eventSource = new EventSource("/api/subscribe/" + gameId);
-    eventSource.onerror = function (ev) {
-      console.log("SSE Error", ev);
-    };
-    eventSource.addEventListener("player-list", function (ev) {
-      console.log("Player list", ev.data);
-      app.ports.sse_playerListUpdated.send(JSON.parse(ev.data));
-    });
-    eventSource.addEventListener("player-presence", function (ev) {
-      console.log("Player presence", ev.data);
-      app.ports.sse_playerPresenceUpdated.send(JSON.parse(ev.data));
-    });
-    eventSource.addEventListener("chat-message", function (ev) {
-      console.log("Chat message", ev.data);
-      app.ports.sse_chatMessageReceived.send(JSON.parse(ev.data));
-    });
-    return eventSource;
-  }
 
   // Perform a one-time one-way replication from remote to local
   local.replicate.from(remote).on("complete", function () {
@@ -102,10 +86,13 @@ app.ports.loadGame.subscribe(function (id) {
             sheets: {}
           }
           result.rows.forEach(function(row) {
-            if (uuid_re.test(row.id)) {
-              data.sheets[row.id] = row.doc;
-            } else if (row.id === "game") {
+            if (row.id === "game")
+            {
               data.game = row.doc;
+            }
+            else
+            {
+              data.sheets[row.id] = row.doc;
             }
           })
           return data;
@@ -118,20 +105,13 @@ app.ports.loadGame.subscribe(function (id) {
             game: game.game,
             sheets: game.sheets
           });
-        
-        // setup event source
-        const eventSource = setupEventSource(id);
-        console.log("Event Source: ", eventSource);
 
         app.ports.gameLoaded.send({
           id: id,
           ref: local,
           game: game.game,
-          sheets: game.sheets,
-          eventSource: eventSource
+          sheets: game.sheets
         });
-
-        addBeforeUnloadListener(eventSource, id);
         
       }).catch(function (err) {
         console.log("GetGame Error", err);
@@ -140,21 +120,6 @@ app.ports.loadGame.subscribe(function (id) {
   }).on("error", function (err) {
     console.log("Replication Error: ", err);
   });
-  
-  function addBeforeUnloadListener (eventSource, gameId) {
-    window.addEventListener("unload", function (event) {
-      // Cancel the event as stated by the standard.
-      event.preventDefault();
-      // Chrome requires returnValue to be set.
-      event.returnValue = '';
-
-      const url = window.location.origin
-              + "/api/games/" + gameId
-              + "/presence/offline"
-      navigator.sendBeacon(url);
-      eventSource.close()
-    });
-  }
 
   // Sync local and remote databases
   function sync () {
@@ -169,18 +134,21 @@ app.ports.loadGame.subscribe(function (id) {
       // yo, something changed!
       console.log("Changes Received", change);
       const updatedDocs = (function() {
-          let data = {
-            game: null,
-            sheets: {}
+        let data = {
+          game: null,
+          sheets: {}
+        }
+        change.docs.forEach(function(doc) {
+          if (doc._id === "game")
+          {
+            data.game = doc;
           }
-          change.docs.forEach(function(doc) {
-            if (uuid_re.test(doc._id)) {
-              data.sheets[doc._id] = doc;
-            } else if (doc._id === "game") {
-              data.game = doc;
-            }
-          })
-          return data;
+          else
+          {
+            data.sheets[doc._id] = doc;
+          }
+        })
+        return data;
       })();
       console.log("Updated Docs", updatedDocs);
       app.ports.changesReceived.send(updatedDocs);
@@ -257,11 +225,6 @@ app.ports.remove.subscribe(function (args) {
   }).catch(function (err) {
     console.log("Error: ", err);
   });
-});
-
-app.ports.closeEventStream.subscribe(function (eventSource) {
-  console.log("Close EventStream");
-  eventSource.close();
 });
 
 

@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module Game.Sheets exposing
     ( view
@@ -114,40 +114,44 @@ update msg model =
                 , Task.perform
                     identity
                     (Task.succeed (OpenFullSheet id True))
+                , Task.perform
+                    identity
+                    (Task.succeed SheetsOrderingUpdated)
+                , Task.perform
+                    identity
+                    (Task.succeed SheetPermissionsUpdated)
                 ]
             )
 
         RemoveSheet id ->
-            (model, API.deleteSheetId model.id id)
-
-        SheetRemoved result ->
-            case result of
-                Ok id ->
-                    ( { model
-                          | sheets = Dict.remove id model.sheets
-                          , sheetsOrdering =
-                              Array.filter
-                              (\id_ -> id_ /= id)
-                              model.sheetsOrdering
-                          , sheetPermissions =
-                              Dict.remove id model.sheetPermissions
-                      }
-                    , Cmd.batch
-                        [ Ports.remove (model.ref, id)
-                        , Task.perform
-                            identity
-                            (Task.succeed CloseFullSheet)
-                        ]
-                    )
-
-                Err _ ->
-                    (model, Cmd.none)
-
+            ( { model
+                  | sheets = Dict.remove id model.sheets
+                  , sheetsOrdering =
+                      Array.filter
+                      (\id_ -> id_ /= id)
+                      model.sheetsOrdering
+                  , sheetPermissions =
+                      Dict.remove id model.sheetPermissions
+              }
+            , Cmd.batch
+                [ Ports.remove (model.ref, id)
+                , Task.perform
+                    identity
+                    (Task.succeed CloseFullSheet)
+                , Task.perform
+                    identity
+                    (Task.succeed SheetsOrderingUpdated)
+                , Task.perform
+                    identity
+                    (Task.succeed SheetPermissionsUpdated)
+                ]
+            )
+            
         OnScroll position ->
             ({ model | sheetsViewportX = toFloat position }
             , Cmd.none
             )
-
+                
         OpenFullSheet id editing ->
             ({ model | fullSheet = Just (FullSheet id editing) }
             , Cmd.none

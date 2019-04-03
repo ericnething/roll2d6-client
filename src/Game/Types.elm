@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module Game.Types exposing (..)
 
@@ -51,11 +51,8 @@ type Overlay
     | ManageSheetPermissions SheetId
     | OverlayNone
 
-type alias EventSourceRef = Value
-
 type alias Model =
     { ref : PouchDBRef
-    , eventSource : EventSourceRef
     , gameType : GameType
     , id : GameId
     , title : String
@@ -77,15 +74,13 @@ emptyGameModel : { ref : PouchDBRef
                  , gameId : GameId
                  , gameData : GameData
                  , sheets : Dict SheetId SheetModel
-                 , eventSource : EventSourceRef
                  }
                -> Person
                -> List Person
                -> Model
-emptyGameModel { ref, gameId, gameData, sheets, eventSource }
+emptyGameModel { ref, gameId, gameData, sheets }
                myPlayerInfo players =
     { ref = ref
-    , eventSource = eventSource
     , gameType = gameData.gameType
     , id = gameId
     , title = gameData.title
@@ -212,12 +207,10 @@ type Msg
     | ExitToLobby
     | CreateInvite
     | InviteCreated (WebData String)
-    | RemovePlayer Int
+    | RemovePlayer PersonId
     | PlayerRemoved GameId PersonId (Result Http.Error String)
     | PlayerRemovedSuccess
     | ServerEventReceived ServerEvent
-    | Ping
-    | Pong
     | UpdateChatInput String
     | ResetChatInput
     | SendChatMessage NewChatMessage

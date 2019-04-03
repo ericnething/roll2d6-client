@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module Game
     exposing
@@ -83,7 +83,6 @@ subscriptions _ =
             (ServerEventReceived
                  << ChatMessagesReceived
                  << decodeChatMessageList)
-        , Time.every 45000 (always Ping)
         ]
 
 
@@ -128,7 +127,7 @@ update navkey msg model =
             (model, Cmd.none)
 
         OpenOverlay overlay_ ->
-            ( { model | overlay = overlay_ }, Cmd.none )
+            Debug.log "Model" ( { model | overlay = overlay_ }, Cmd.none )
 
         CloseOverlay ->
             ( { model | overlay = OverlayNone }, Cmd.none )
@@ -161,7 +160,6 @@ update navkey msg model =
             ( model
             , Cmd.batch
                 [ API.setPresenceOffline model.id
-                , Ports.closeEventStream model.ref
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
@@ -225,12 +223,13 @@ update navkey msg model =
         ServerEventReceived (PlayerPresenceUpdated ePresence) ->
             case ePresence of
                 Ok presenceList ->
-                    ({ model
-                         | players
-                             = updatePlayerPresenceList
-                               presenceList
-                               model.players
-                     }
+                    -- ({ model
+                    --      | players
+                    --          = updatePlayerPresenceList
+                    --            presenceList
+                    --            model.players
+                    --  }
+                    ( model
                     , Cmd.none
                     )
                 Err err ->
@@ -247,12 +246,6 @@ update navkey msg model =
                     )
                 Err err ->
                     (model, Cmd.none)
-
-        Ping ->
-            (model, API.ping model.id)
-
-        Pong ->
-            (model, Cmd.none)
 
         NoOp ->
             (model, Cmd.none)
@@ -326,25 +319,25 @@ update navkey msg model =
             )
 
 
-updatePlayerPresenceList : List PlayerPresence
-                         -> List Person
-                         -> List Person
-updatePlayerPresenceList presenceList players =
-    List.map
-        (\player ->
-             let
-                 maybePresence =
-                     List.filter
-                     (\{ id } -> player.id == id)
-                     presenceList
-             in
-                 case maybePresence of
-                     [] ->
-                         player
-                     { presence } :: _ ->
-                         { player | presence = presence }
-        )
-        players
+-- updatePlayerPresenceList : List PlayerPresence
+--                          -> List Person
+--                          -> List Person
+-- updatePlayerPresenceList presenceList players =
+--     List.map
+--         (\player ->
+--              let
+--                  maybePresence =
+--                      List.filter
+--                      (\{ id } -> player.id == id)
+--                      presenceList
+--              in
+--                  case maybePresence of
+--                      [] ->
+--                          player
+--                      { presence } :: _ ->
+--                          { player | presence = presence }
+--         )
+--         players
 
 
 -- View
@@ -511,24 +504,24 @@ onlinePlayers players =
                 ]
                 [ text name ]
 
-        colors =
-            Array.fromList
-                [ "2ECC40"
-                , "FF851B"
-                , "85144b"
-                , "0074D9"
-                , "001f3f"
-                ]
+        -- colors =
+        --     Array.fromList
+        --         [ "2ECC40"
+        --         , "FF851B"
+        --         , "85144b"
+        --         , "0074D9"
+        --         , "001f3f"
+        --         ]
 
-        chooseColor id =
-            let
-                index = modBy id (Array.length colors)
-            in
-                case Array.get index colors of
-                    Nothing ->
-                        "0074D9"
-                    Just color ->
-                        color
+        -- chooseColor id =
+        --     let
+        --         index = modBy id (Array.length colors)
+        --     in
+        --         case Array.get index colors of
+        --             Nothing ->
+        --                 "0074D9"
+        --             Just color ->
+        --                 color
     in
     span
         [ css
@@ -538,13 +531,13 @@ onlinePlayers players =
             ]
         ]
         (players
-             |> List.filter
-                (\{ presence } -> presence == Online )
+             -- |> List.filter
+             --    (\{ presence } -> presence == Online )
              |> List.map
                 (\{ username, id } ->
                      avatar
                      (String.left 1 username)
-                     (chooseColor id))
+                     "0074D9")
         )
 
 -- popOverView : { id : Int
@@ -783,19 +776,19 @@ playerListItemView player =
         ]
         [ div [ css
                 [ flex2 (int 1) (int 1)
-                , case player.presence of
-                      Online ->
-                          Css.batch []
-                      Offline ->
-                          opacity (num 0.6)
+                -- , case player.presence of
+                --       Online ->
+                --           Css.batch []
+                --       Offline ->
+                --           opacity (num 0.6)
                 ]
               ]
               [ text player.username
-              , case player.presence of
-                    Online ->
-                        presenceIndicator "19b419" "online"
-                    Offline ->
-                        presenceIndicator "d71b1b" "offline"
+              -- , case player.presence of
+              --       Online ->
+              --           presenceIndicator "19b419" "online"
+              --       Offline ->
+              --           presenceIndicator "d71b1b" "offline"
               ]
         , defaultButton
               [ onClick (RemovePlayer player.id)

@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module Login.Types exposing (init, Auth, ConsumerMsg(..), Model, Msg(..), Registration, Tab(..), encodeAuth, encodeRegistration, initialModel)
 
@@ -57,7 +57,7 @@ type ConsumerMsg
 
 type Msg
     = Login
-    | LoginResponse (Result Http.Error Int)
+    | LoginResponse (Result Http.Error String)
     | Register
     | RegisterResponse (Result Http.Error Int)
     | UpdateEmail String
@@ -67,7 +67,7 @@ type Msg
 
 
 type alias Auth =
-    { email : String
+    { username : String
     , password : String
     }
 
@@ -82,7 +82,7 @@ type alias Registration =
 encodeAuth : Auth -> Value
 encodeAuth auth =
     object
-        [ ( "email", string auth.email )
+        [ ( "username", string auth.username )
         , ( "password", string auth.password )
         ]
 

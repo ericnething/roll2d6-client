@@ -1,22 +1,22 @@
--- Roll2d6 Virtual Tabletop Project
---
--- Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
---
--- This program is free software: you can redistribute it
--- and/or modify it under the terms of the GNU Affero
--- General Public License as published by the Free Software
--- Foundation, either version 3 of the License, or (at your
--- option) any later version.
---
--- This program is distributed in the hope that it will be
--- useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A
--- PARTICULAR PURPOSE.  See the GNU Affero General Public
--- License for more details.
---
--- You should have received a copy of the GNU Affero General
--- Public License along with this program. If not, see
--- <https://www.gnu.org/licenses/>.
+{-
+Roll2d6 Virtual Tabletop Project
+
+Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+-}
 
 module API
     exposing
@@ -29,14 +29,12 @@ module API
     , joinGame
     , getPlayers
     , removePlayer
-    , ping
     , setPresenceOnline
     , setPresenceOffline
     , sendChatMessage
     , getChatLog
     , getMyPlayerInfo
     , generateNewSheetId
-    , deleteSheetId
     , updateGameTitle
     )
 
@@ -49,6 +47,7 @@ import Login.Types as Login
 import Game.Types as Game
 import Game.Sheets.Types as Sheets
 import Game.Sheet.Types as Sheet
+import Game.Person as Person
 import Invite
 import Game.Decode
     exposing
@@ -116,7 +115,7 @@ login auth =
                 , headers = []
                 , url = domain ++ "/login"
                 , body = Http.jsonBody (Login.encodeAuth auth)
-                , expect = Http.expectJson Json.Decode.int
+                , expect = Http.expectString
                 , timeout = Nothing
                 , withCredentials = False
                 }
@@ -208,7 +207,7 @@ getPlayers gameId =
     in
         Http.send Main.PlayerListLoaded request
 
-removePlayer : Game.GameId -> Int -> Cmd Game.Msg
+removePlayer : Game.GameId -> Person.PersonId -> Cmd Game.Msg
 removePlayer gameId playerId =
     let
         request =
@@ -216,7 +215,7 @@ removePlayer gameId playerId =
                 { method = "DELETE"
                 , headers = []
                 , url = domain ++ "/games/" ++ gameId
-                        ++ "/players/" ++ String.fromInt playerId
+                        ++ "/players/" ++ playerId
                 , body = Http.emptyBody
                 , expect = Http.expectString
                 , timeout = Nothing
@@ -225,22 +224,6 @@ removePlayer gameId playerId =
     in
         Http.send (Game.PlayerRemoved gameId playerId) request
 
-
-ping : Game.GameId -> Cmd Game.Msg
-ping gameId =
-    let
-        request =
-            Http.request
-                { method = "POST"
-                , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/ping"
-                , body = Http.emptyBody
-                , expect = Http.expectString
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (always Game.Pong) request
 
 setPresenceOffline : Game.GameId -> Cmd Game.Msg
 setPresenceOffline gameId =
@@ -340,9 +323,9 @@ generateNewSheetId gameId sheet =
     let
         request =
             Http.request
-                { method = "POST"
+                { method = "GET"
                 , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/new-sheet-id"
+                , url = domain ++ "/sheet-id"
                 , body = Http.emptyBody
                 , expect = Http.expectJson Json.Decode.string
                 , timeout = Nothing
@@ -350,24 +333,6 @@ generateNewSheetId gameId sheet =
                 }
     in
         Http.send (Sheets.NewSheetId sheet) request
-
-
-deleteSheetId : Game.GameId -> Sheets.SheetId -> Cmd Sheets.Msg
-deleteSheetId gameId sheetId =
-    let
-        request =
-            Http.request
-                { method = "DELETE"
-                , headers = []
-                , url = domain ++ "/games/" ++ gameId
-                        ++ "/sheet-id/" ++ sheetId
-                , body = Http.emptyBody
-                , expect = Http.expectJson Json.Decode.string
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send Sheets.SheetRemoved request
 
 
 updateGameTitle : Game.GameId -> String -> Cmd Game.Msg

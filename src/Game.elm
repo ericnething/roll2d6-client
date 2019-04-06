@@ -20,8 +20,7 @@ License along with this program. If not, see
 
 module Game
     exposing
-    ( subscriptions
-    , update
+    ( update
     , view
     )
 
@@ -63,14 +62,6 @@ import Icons
 import List.Extra as List
 import Browser.Dom as Dom
 import Http
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Ports.changesReceived ChangesReceived
-        , Sub.map ChatMsg (Chat.subscriptions model.chat)
-        ]
 
 
 update : Navigation.Key

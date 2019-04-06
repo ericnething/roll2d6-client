@@ -70,7 +70,6 @@ import Route exposing (Route)
 import Http
 import API
 import Invite
--- import Game.Person
 
 
 main : Program (Int, Int) Model Msg
@@ -98,15 +97,26 @@ subscriptions model =
         [ Ports.gameLoaded GameLoaded
         , Ports.gameLoadFailed (always GameLoadFailed)
         , Ports.authFailed (always AuthFailed)
-        -- , Sub.map ChatMsg
-        --     (Ports.xmpp_received
-        --          (Chat.StanzaReceived << Chat.decodeStanza))
-        , case model.screen of
-            GameScreen game ->
-                Sub.map GameMsg (Game.subscriptions game)
 
-            _ ->
-                Sub.none
+        -- We must subscribe to XMPP Stanzas here to guarantee that
+        -- they will arrive when needed, otherwise a race condition
+        -- occurs where this subscription may get overriden. This is
+        -- caused by a bug in the compiler.
+        , Sub.map (GameMsg << Game.ChatMsg)
+            (Ports.xmpp_received
+                 (Chat.StanzaReceived << Chat.decodeStanza))
+
+        -- We will do the same for all other subscriptions to avoid
+        -- any issues in the future. Registering all subscriptions on
+        -- initial page load will only be a problem if we need the
+        -- model for a specific part of the application to initialize
+        -- a subscription.
+        , Sub.map (GameMsg << Game.ChatMsg)
+            (Ports.chatClientConnected Chat.ClientConnected)
+
+        , Sub.map GameMsg
+            (Ports.changesReceived Game.ChangesReceived)
+
         , Browser.Events.onResize WindowResized
         ]
 
@@ -119,10 +129,6 @@ initialModel viewportSize key =
             |> toDebouncer
     , navkey = key
     , viewportSize = viewportSize
-    -- , chat = Chat.newModel "test" { id = ""
-    --                               , accessLevel = Game.Person.Owner
-    --                               , username = ""
-    --                               }
     }
 
 
@@ -387,13 +393,6 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
-
-        -- ChatMsg submsg ->
-        --     let
-        --         (submodel, cmd) = Chat.update submsg model.chat
-        --     in
-        --         ({ model | chat = submodel }
-        --         , Cmd.map ChatMsg cmd)
 
         WindowResized width height ->
             ({ model | viewportSize = (width, height) }, Cmd.none)

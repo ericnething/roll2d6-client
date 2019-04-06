@@ -21,7 +21,6 @@ License along with this program. If not, see
 module Chat exposing
     ( view
     , update
-    , subscriptions
     , closeConnection
     , connectClient
     )
@@ -45,12 +44,6 @@ import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
 import Chat.Encode exposing (encodeMessage, encodeConnectionInfo)
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ Ports.xmpp_received (StanzaReceived << decodeStanza)
-        , Ports.chatClientConnected ClientConnected
-        ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =

@@ -23,7 +23,6 @@ module Game.Encode
     ( encodeGame
     , encodeSheet
     , encodeGameData
-    , encodeChatMessage
     )
 
 import Array exposing (Array)
@@ -45,74 +44,6 @@ import WorldOfDungeons.CharacterSheet.Encode as WorldOfDungeons
 
 import RedMarkets
 import RedMarkets.CharacterSheet.Encode as RedMarkets
-
---------------------------------------------------
--- Chat Messages and Dice Rolls
---------------------------------------------------
-
-encodeChatMessage : Game.NewChatMessage -> Value
-encodeChatMessage message =
-    case message of
-        Game.NewChatMessage body ->
-            object
-                [ ( "ctor", string "ChatMessage" )
-                , ( "body", string body )
-                ]
-        Game.NewDiceRollMessage roll ->
-            object
-                [ ( "ctor", string "DiceRollMessage" )
-                , ( "result", encodeDiceRoll roll )
-                ]
-
-encodeDiceRoll : Game.DiceRoll -> Value
-encodeDiceRoll (Game.DiceRoll roll) =
-    object
-        [ ( "type", encodeDiceType roll.type_ )
-        , ( "request", string roll.request )
-        , ( "results", list encodeDiceResult roll.results )
-        , ( "modifier", Maybe.withDefault null (Maybe.map int roll.modifier) )
-        , ( "total", int roll.total )
-        ]
-
-encodeDiceType : Game.DiceType -> Value
-encodeDiceType type_ =
-    case type_ of
-        Game.DFate -> string "fate"
-        Game.D20 -> string "d20"
-        Game.D6 -> string "d6"
-        Game.DOther n -> string ("d" ++ String.fromInt n)
-
-encodeDiceResult : Game.DiceResult -> Value
-encodeDiceResult result =
-    case result of
-        Game.DFateResult face ->
-            object
-            [ ( "ctor", string "DFateResult" )
-            , ( "face", encodeDFateFace face )
-            ]
-        Game.D20Result n ->
-            object
-            [ ( "ctor", string "D20Result" )
-            , ( "face", int n )
-            ]
-        Game.D6Result n ->
-            object
-            [ ( "ctor", string "D6Result" )
-            , ( "face", int n )
-            ]
-        Game.DOtherResult sides n ->
-            object
-            [ ( "ctor", string "DOtherResult" )
-            , ( "sides", int sides )
-            , ( "face", int n )
-            ]
-
-encodeDFateFace : Game.DFateFace -> Value
-encodeDFateFace face =
-    case face of
-        Game.DFatePlus -> string "+"
-        Game.DFateBlank -> string "b"
-        Game.DFateMinus -> string "-"
 
 --------------------------------------------------
 -- Game Data

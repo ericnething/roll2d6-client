@@ -20,7 +20,7 @@ License along with this program. If not, see
 
 module Chat.DiceRoller exposing (roll)
 
-import Game.Types
+import Chat.Types
     exposing
     ( DiceRollRequest(..)
     , DiceRoll(..)

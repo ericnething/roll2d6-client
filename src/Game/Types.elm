@@ -23,7 +23,7 @@ module Game.Types exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode exposing (Value)
-import Ports exposing (PouchDBRef)
+import Ports exposing (PouchDBRef, XMPPClientRef)
 import RemoteData exposing (WebData)
 import Http
 import Time
@@ -41,6 +41,8 @@ import Game.Sheets.Types as Sheets
     )
 import Game.GameType exposing (GameType(..))
 import Game.Person exposing (..)
+
+import Chat.Types as Chat
 
 type alias Index = Int
 
@@ -60,13 +62,12 @@ type alias Model =
     , fullSheet : Maybe FullSheet
     , overlay : Overlay
     , players : List Person
-    , chatInput : String
-    , chatMessages : List ChatMessage
     , sheetsViewportX : Float
     , myPlayerInfo : Person
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
     , sheetPermissions : Dict SheetId SheetPermission
+    , chat : Chat.Model
     }
 
 
@@ -88,13 +89,12 @@ emptyGameModel { ref, gameId, gameData, sheets }
     , fullSheet = Nothing
     , overlay = OverlayNone
     , players = players
-    , chatInput = ""
-    , chatMessages = []
     , sheetsViewportX = 0
     , myPlayerInfo = myPlayerInfo
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
     , sheetPermissions = gameData.sheetPermissions
+    , chat = Chat.newModel gameId myPlayerInfo
     }
 
 
@@ -127,66 +127,6 @@ emptyGameData gameType =
     , sheetPermissions = Dict.empty
     }
 
-type ServerEvent
-    = PlayerListUpdated
-        (Result Json.Decode.Error (List Person))
-    | PlayerPresenceUpdated
-        (Result Json.Decode.Error (List PlayerPresence))
-    | ChatMessagesReceived
-        (Result Json.Decode.Error (List ChatMessage))
-
-
-type NewChatMessage
-    = NewChatMessage String
-    | NewDiceRollMessage DiceRoll
-
-
-type ChatMessage
-    = ChatMessage
-      { timestamp : Time.Posix
-      , playerId : Int
-      , playerName : String
-      , body : String
-      }
-    | DiceRollMessage
-      { timestamp : Time.Posix
-      , playerId : Int
-      , playerName : String
-      , result : DiceRoll
-      }
-
-type DiceType
-    = DFate
-    | D20
-    | D6
-    | DOther Int
-
-type DiceResult
-    = DFateResult DFateFace
-    | D20Result Int
-    | D6Result Int
-    | DOtherResult Int Int
-
-type DFateFace
-    = DFatePlus
-    | DFateBlank
-    | DFateMinus
-
-type DiceRoll =
-    DiceRoll
-    { type_ : DiceType
-    , request : String
-    , results : List DiceResult
-    , modifier : Maybe Int
-    , total : Int
-    }
-
-type DiceRollRequest =
-    DiceRollRequest
-    { size : Int
-    , type_ : DiceType
-    , modifier : Maybe Int
-    }
 
 -- Update
 
@@ -210,11 +150,4 @@ type Msg
     | RemovePlayer PersonId
     | PlayerRemoved GameId PersonId (Result Http.Error String)
     | PlayerRemovedSuccess
-    | ServerEventReceived ServerEvent
-    | UpdateChatInput String
-    | ResetChatInput
-    | SendChatMessage NewChatMessage
-    | KeyPressChatInput
-    | DiceRollResult DiceRoll
-    | ChatLogReceived (Result Http.Error (List ChatMessage))
-
+    | ChatMsg Chat.Msg

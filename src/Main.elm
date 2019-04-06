@@ -61,12 +61,16 @@ import Game.Encode
     , encodeGameData
     , encodeSheet
     )
+import Chat
+import Chat.Types as Chat
+import Chat.Decode as Chat
 import Task
 import Util exposing (removeIndexFromArray)
 import Route exposing (Route)
 import Http
 import API
 import Invite
+-- import Game.Person
 
 
 main : Program (Int, Int) Model Msg
@@ -94,6 +98,9 @@ subscriptions model =
         [ Ports.gameLoaded GameLoaded
         , Ports.gameLoadFailed (always GameLoadFailed)
         , Ports.authFailed (always AuthFailed)
+        -- , Sub.map ChatMsg
+        --     (Ports.xmpp_received
+        --          (Chat.StanzaReceived << Chat.decodeStanza))
         , case model.screen of
             GameScreen game ->
                 Sub.map GameMsg (Game.subscriptions game)
@@ -112,6 +119,10 @@ initialModel viewportSize key =
             |> toDebouncer
     , navkey = key
     , viewportSize = viewportSize
+    -- , chat = Chat.newModel "test" { id = ""
+    --                               , accessLevel = Game.Person.Owner
+    --                               , username = ""
+    --                               }
     }
 
 
@@ -278,12 +289,11 @@ update msg model =
                 ({ model
                      | screen = GameScreen game
                  }
-                , Cmd.batch
-                    [ API.setPresenceOnline game.id
-                          |> Cmd.map GameMsg
-                    , API.getChatLog game.id
-                          |> Cmd.map GameMsg
-                    ]
+                , Chat.connectClient { jid = myPlayerInfo.id
+                                     , password = "foobar"
+                                     , room = game.id
+                                     , username = myPlayerInfo.username
+                                     }
                 )
 
         AuthFailed ->
@@ -377,6 +387,13 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        -- ChatMsg submsg ->
+        --     let
+        --         (submodel, cmd) = Chat.update submsg model.chat
+        --     in
+        --         ({ model | chat = submodel }
+        --         , Cmd.map ChatMsg cmd)
 
         WindowResized width height ->
             ({ model | viewportSize = (width, height) }, Cmd.none)

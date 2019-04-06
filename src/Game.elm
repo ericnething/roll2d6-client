@@ -27,6 +27,8 @@ module Game
 
 import Array exposing (Array)
 import Dict
+import Chat
+import Chat.Types as Chat
 import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
@@ -47,8 +49,6 @@ import Game.Decode
     exposing
     ( decodeGameData
     , decodePlayerList
-    , decodePlayerPresence
-    , decodeChatMessageList
     , scrollDecoder
     , decodeSheetUpdate
     , decodeChanges
@@ -61,28 +61,15 @@ import RemoteData exposing (WebData)
 import API
 import Icons
 import List.Extra as List
-import Chat.Parser as Chat
-import Chat.DiceRoller as DiceRoller
 import Browser.Dom as Dom
 import Http
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
         [ Ports.changesReceived ChangesReceived
-        , Ports.sse_playerListUpdated
-            (ServerEventReceived
-                 << PlayerListUpdated
-                 << decodePlayerList)
-        , Ports.sse_playerPresenceUpdated
-            (ServerEventReceived
-                 << PlayerPresenceUpdated
-                 << decodePlayerPresence)
-        , Ports.sse_chatMessageReceived
-            (ServerEventReceived
-                 << ChatMessagesReceived
-                 << decodeChatMessageList)
+        , Sub.map ChatMsg (Chat.subscriptions model.chat)
         ]
 
 
@@ -159,7 +146,7 @@ update navkey msg model =
         ExitToLobby ->
             ( model
             , Cmd.batch
-                [ API.setPresenceOffline model.id
+                [ Chat.closeConnection model.chat
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
@@ -211,113 +198,31 @@ update navkey msg model =
             -- changes to pouchDB
             (model, Cmd.none)
 
-        ServerEventReceived (PlayerListUpdated ePlayers) ->
-            case ePlayers of
-                Ok players ->
-                    ({ model | players = players }
-                    , Cmd.none
-                    )
-                Err err ->
-                    (model, Cmd.none)
 
-        ServerEventReceived (PlayerPresenceUpdated ePresence) ->
-            case ePresence of
-                Ok presenceList ->
-                    -- ({ model
-                    --      | players
-                    --          = updatePlayerPresenceList
-                    --            presenceList
-                    --            model.players
-                    --  }
-                    ( model
-                    , Cmd.none
-                    )
-                Err err ->
-                    (model, Cmd.none)
+        -- ChatMsg (Chat.ClientConnected ref) ->
+        --     ({ model
+        --          | chat = Just (Chat.newModel
+        --                             ref
+        --                             model.id
+        --                             model.myPlayerInfo)
+        --      }
+        --     , Cmd.none
+        --     )
+                
+        ChatMsg submsg ->
+            let
+                (submodel, cmd) = Chat.update submsg model.chat
+            in
+                -- case mUpdated of
+                --     Nothing ->
+                --         (model, Cmd.none)
 
-        ServerEventReceived (ChatMessagesReceived eMessages) ->
-            case eMessages of
-                Ok messages ->
-                    ({ model
-                         | chatMessages
-                             = messages ++ model.chatMessages
-                     }
-                    , jumpToBottom "chat-message-list"
-                    )
-                Err err ->
-                    (model, Cmd.none)
+                --     Just (submodel, cmd) ->
+                        ({ model | chat = submodel }
+                        , Cmd.map ChatMsg cmd)
 
         NoOp ->
             (model, Cmd.none)
-
-        UpdateChatInput message ->
-            ({ model | chatInput = message }
-            , Cmd.none
-            )
-
-        ResetChatInput ->
-            ({ model | chatInput = "" }
-            , Cmd.none
-            )
-
-        SendChatMessage chatMessage ->
-            ( model
-            , Cmd.batch
-                [ Task.perform
-                      identity
-                      (Task.succeed ResetChatInput)
-                , API.sendChatMessage model.id chatMessage
-                ]
-            )
-
-        ChatLogReceived result ->
-            case result of
-                Ok messages ->
-                    ({ model | chatMessages = messages }
-                    , jumpToBottom "chat-message-list" )
-
-                Err err ->
-                    -- let _ = Debug.log "Chat" err
-                    -- in
-                        (model, Cmd.none)
-
-        KeyPressChatInput ->
-            let
-                rawMessage = String.trim model.chatInput
-            in
-                if String.length rawMessage < 1
-                then
-                    (model, Cmd.none)
-                else
-                    case Chat.isDiceRollRequest rawMessage of
-                        Just roll_ ->
-                            case Chat.parseDiceRollRequest roll_ of
-                                Ok rollRequest ->
-                                    ( model
-                                    , DiceRoller.roll rollRequest
-                                    )
-                                Err err ->
-                                    -- let
-                                    --     _ = Debug.log "Error" err
-                                    -- in
-                                        (model, Cmd.none)
-                            
-                        Nothing ->
-                            (model
-                            , Task.perform
-                                SendChatMessage
-                                (Task.succeed
-                                     (NewChatMessage rawMessage))
-                            )
-
-        DiceRollResult rollResult ->
-            ( model
-            , Task.perform
-                SendChatMessage
-                (Task.succeed
-                     (NewDiceRollMessage rollResult))
-            )
-
 
 -- updatePlayerPresenceList : List PlayerPresence
 --                          -> List Person
@@ -833,204 +738,8 @@ sidebar model =
 
         ]
     [ Icons.diceDefs
-    , chatView model
+    , Html.Styled.map ChatMsg (Chat.view model.chat)
     ]
-
-chatView : Model -> Html Msg
-chatView model =
-    div [ css
-          [ Css.property "display" "grid"
-          , Css.property "grid-template-rows" "1fr auto"
-          , Css.height (vh 100)
-          , padding2 (px 0) (Css.em 0.8)
-          , displayFlex
-          , flexDirection column
-          , justifyContent spaceBetween
-          , fontSize (Css.em 0.95)
-          ]
-        ]
-    [ lazy chatMessageListView model.chatMessages
-    , lazy chatInputView model.chatInput
-    ]
-
-chatInputView : String -> Html Msg
-chatInputView message =
-    div [ css
-            [ padding2 (Css.em 0.8) (px 0)
-            ]
-          ]
-        [ textarea
-              [ css
-                [ resize none
-                , Css.width (pct 100)
-                , border (px 0)
-                , borderRadius (Css.em 0.35)
-                , padding (Css.em 0.35)
-                ]
-              , rows 4
-              , placeholder "Send a message or roll dice"
-              , onInput UpdateChatInput
-              , onEnter KeyPressChatInput
-              , value message
-              ]
-              []
-        ]
-
-chatMessageListView : List ChatMessage -> Html Msg
-chatMessageListView messages =
-    let
-        body =
-            case messages of
-                [] ->
-                    [ chatMessageView <|
-                      ChatMessage
-                          { timestamp = Time.millisToPosix 0
-                          , playerId = 0
-                          , playerName = "Help"
-                          , body = "You can chat with the other players here and roll your dice."
-                          }
-                    ]
-                _ ->
-                    List.map
-                        (lazy chatMessageView)
-                        (List.reverse messages)
-    in
-        div [ css
-              [ overflowY auto
-              , overflowX Css.hidden
-              , padding2 (Css.em 0.8) (px 0)
-              ]
-            , id "chat-message-list"
-            ]
-        body
-
-styledChatMessage =
-    styled div
-        [ backgroundColor (hex "eee")
-        , padding (Css.em 0.5)
-        , borderRadius (Css.em 0.35)
-        , marginBottom (Css.em 0.8)
-        ]
-
-chatMessageView : ChatMessage -> Html Msg
-chatMessageView message =
-    case message of
-        ChatMessage { playerName, body } ->
-            styledChatMessage
-            []
-            [ div [] [ text playerName ]
-            , div [] [ text body ]
-            ]
-        DiceRollMessage { playerName, result } ->
-            let
-                (DiceRoll { request }) = result
-            in
-                styledChatMessage
-                []
-                [ div [] [ text (playerName ++ " rolled " ++ request) ]
-                , showDiceRoll result
-                ]
-
-
-showDiceRoll : DiceRoll -> Html msg
-showDiceRoll (DiceRoll roll) =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          , lineHeight (num 1)
-          , fontSize (Css.em 1.4)
-          , flexWrap Css.wrap
-          ]
-        ]
-    [ span [ css
-             [ displayFlex
-             , margin2 (px 0) (Css.em 0.25)
-             ]
-           ]
-          (case roll.type_ of
-               DFate ->
-                   roll.results
-                       |> List.map showDiceResult
-                       |> List.concat
-               _ ->
-                   roll.results
-                       |> List.map showDiceResult
-                       |> List.intercalate [ text ", " ]
-          )
-    , case roll.modifier of
-          Nothing ->
-              text ""
-          Just modifier ->
-              let
-                  output =
-                      if modifier < 0
-                      then
-                          "(-" ++ String.fromInt (abs modifier) ++ ")"
-                      else
-                          "(+" ++ String.fromInt modifier ++ ")"
-              in
-                  span [ css
-                         [ margin2 (px 0) (Css.em 0.25)
-                         ]
-                       ]
-                      [ text output ]
-    , if List.length roll.results < 2
-        && roll.modifier == Nothing
-        && roll.type_ /= DFate
-      then
-          text ""
-      else
-          span [ css
-                 [ margin2 (px 0) (Css.em 0.25)
-                 ]
-               ]
-              [ text ("= " ++ String.fromInt roll.total) ]
-    ]
-
-showDiceResult : DiceResult -> List (Html msg)
-showDiceResult result =
-    case result of
-        DFateResult face ->
-            [ showDFateFace face ]
-
-        D20Result face ->
-            [text (String.fromInt face)]
-
-        D6Result face ->
-            [text (String.fromInt face)]
-
-        DOtherResult _ face ->
-            [text (String.fromInt face)]
-            
-
-showDFateFace : DFateFace -> Html msg
-showDFateFace face =
-    span [ css
-           [ marginRight (Css.em 0.15) ]
-         ]
-    [ case face of
-          DFatePlus ->
-              Icons.dFatePlus
-          DFateBlank ->
-              Icons.dFateBlank
-          DFateMinus ->
-              Icons.dFateMinus
-    ]
-
-onEnter : msg -> Attribute msg
-onEnter onEnterAction =
-   on "keyup" <|
-       Json.Decode.andThen
-           (\keyCode ->
-               case keyCode of
-                   13 ->
-                       Json.Decode.succeed onEnterAction
-
-                   _ ->
-                       Json.Decode.fail (String.fromInt keyCode)
-           )
-           keyCode
-
 
 jumpToBottom : String -> Cmd Msg
 jumpToBottom id =

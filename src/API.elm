@@ -29,10 +29,6 @@ module API
     , joinGame
     , getPlayers
     , removePlayer
-    , setPresenceOnline
-    , setPresenceOffline
-    , sendChatMessage
-    , getChatLog
     , getMyPlayerInfo
     , generateNewSheetId
     , updateGameTitle
@@ -57,12 +53,10 @@ import Game.Decode
         , gameListDecoder
         , playerListDecoder
         , playerDecoder
-        , chatMessageListDecoder
         )
 import Game.Encode
     exposing
-    ( encodeChatMessage
-    , encodeGameData
+    ( encodeGameData
     )
 import RemoteData exposing (RemoteData(..), WebData)
 
@@ -223,81 +217,6 @@ removePlayer gameId playerId =
                 }
     in
         Http.send (Game.PlayerRemoved gameId playerId) request
-
-
-setPresenceOffline : Game.GameId -> Cmd Game.Msg
-setPresenceOffline gameId =
-    let
-        request =
-            Http.request
-                { method = "POST"
-                , headers = []
-                , url = domain ++
-                        "/games/" ++ gameId ++
-                        "/presence/" ++ "offline"
-                , body = Http.emptyBody
-                , expect = Http.expectString
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (always Game.NoOp) request
-
-setPresenceOnline : Game.GameId -> Cmd Game.Msg
-setPresenceOnline gameId =
-    let
-        request =
-            Http.request
-                { method = "POST"
-                , headers = []
-                , url = domain ++
-                        "/games/" ++ gameId ++
-                        "/presence/" ++ "online"
-                , body = Http.emptyBody
-                , expect = Http.expectString
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (always Game.NoOp) request
-
-
-sendChatMessage : Game.GameId
-                -> Game.NewChatMessage
-                -> Cmd Game.Msg
-sendChatMessage gameId chatMessage =
-    let
-        request =
-            Http.request
-                { method = "POST"
-                , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/chat"
-                , body =
-                    Http.jsonBody
-                        (encodeChatMessage chatMessage)
-                , expect = Http.expectString
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (always Game.NoOp) request
-
-
-getChatLog : Game.GameId -> Cmd Game.Msg
-getChatLog gameId =
-    let
-        request =
-            Http.request
-                { method = "GET"
-                , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/chat"
-                , body = Http.emptyBody
-                , expect = Http.expectJson chatMessageListDecoder
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send Game.ChatLogReceived request
 
 
 getMyPlayerInfo : Game.GameId -> Cmd Main.Msg

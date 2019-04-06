@@ -20,7 +20,7 @@ License along with this program. If not, see
 
 */
 
-'use strict';
+"use strict";
 
 const app = Elm.Main.init({
   flags: [ document.documentElement.clientWidth,
@@ -55,7 +55,7 @@ app.ports.loadGame.subscribe(function (id) {
           app.ports.gameLoadFailed.send(0);
           remote.close();
         } else {
-          console.log(resp);
+          // console.log(resp);
           return resp
         }
       })
@@ -130,7 +130,7 @@ app.ports.loadGame.subscribe(function (id) {
     }).on("complete", function () {
       console.log("Sync Successful");
 
-    }).on('change', function (change) {
+    }).on("change", function (change) {
       // yo, something changed!
       console.log("Changes Received", change);
       const updatedDocs = (function() {
@@ -153,11 +153,11 @@ app.ports.loadGame.subscribe(function (id) {
       console.log("Updated Docs", updatedDocs);
       app.ports.changesReceived.send(updatedDocs);
 
-    }).on('paused', function (info) {
+    }).on("paused", function (info) {
       // replication was paused, usually because of a lost connection
       console.log("Paused", info);
       
-    }).on('active', function (info) {
+    }).on("active", function (info) {
       // replication was resumed
       console.log("Resumed", info);
 
@@ -171,15 +171,15 @@ app.ports.loadGame.subscribe(function (id) {
     }).on("complete", function () {
       console.log("Sync Successful");
 
-    }).on('change', function (change) {
+    }).on("change", function (change) {
       // yo, something changed!
       console.log("Changes sent", change);
 
-    }).on('paused', function (info) {
+    }).on("paused", function (info) {
       // replication was paused, usually because of a lost connection
       console.log("Paused", info);
       
-    }).on('active', function (info) {
+    }).on("active", function (info) {
       // replication was resumed
       console.log("Resumed", info);
 
@@ -233,5 +233,88 @@ app.ports.remove.subscribe(function (args) {
 //----------------------------------------------
 
 app.ports.dragstart.subscribe(function (event) {
-  event.dataTransfer.setData('text', '');
+  event.dataTransfer.setData("text", "");
 });
+
+
+//----------------------------------------------
+//  XMPP
+//----------------------------------------------
+
+app.ports.xmpp_send.subscribe(function (data) {
+  const client = data[0];
+  const message = data[1];
+  message.type = "groupchat";
+  message.to = "test@muc.localhost";
+  client.sendMessage(message);
+});
+
+app.ports.closeChatClient.subscribe(function (client) {
+  client.disconnect();
+});
+
+app.ports.connectChatClient.subscribe(function (data) {
+  const client = XMPP.createClient({
+    jid: data.jid,
+    password: data.password,
+    wsURL: "ws://localhost:5280/ws-xmpp",
+    // boshURL: "http://localhost:5280/bind-http",
+    transports: ["websocket"],
+    useStreamManagement: true,
+    resource: "web"
+  });
+  app.ports.chatClientConnected.send(client);
+  client.enableKeepAlive({ interval: 45, timeout: 120 });
+
+  // client.on("disconnected", function() {
+  //   console.log("disconnection at " + new Date);
+  //   client.connect();
+  // });
+
+  client.on("message", function(chat) {
+    console.log("chat received: ", chat);
+    chat.stanzaType = "message";
+    chat.timestamp = chat.delay && Date.now(chat.delay.stamp) || Date.now();
+    app.ports.xmpp_received.send(chat);
+  });
+
+  client.on("presence", function(presence) {
+    console.log("presence received: ", presence);
+    presence.stanzaType = "presence";
+    app.ports.xmpp_received.send(presence);
+  });
+
+  client.on("raw:incoming", function (name, data) {
+    console.log(name, data);
+  });
+
+  client.on("raw:outgoing", function (name, data) {
+    console.log(name, data);
+  });
+
+  client.on("session:started", function() {
+    client.enableCarbons(function(err) {
+      if (err) {
+        console.log("Server does not support carbons");
+      }
+    });
+
+    client.getRoster(function(err, resp) {
+      client.updateCaps();
+      client.sendPresence({
+        caps: client.disco.caps
+      });
+    });
+    client.joinRoom("test@muc.localhost" /*data.room*/, data.username, {
+      status: "It's going to be a great day",
+      joinMuc: {
+        history: {
+          maxstanzas: 20
+        }
+      }
+    });
+  });
+
+  client.connect();
+});
+

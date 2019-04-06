@@ -24,7 +24,7 @@ module Chat.Parser
     , isDiceRollRequest
     )
 
-import Game.Types exposing (DiceRollRequest(..), DiceType(..))
+import Chat.Types exposing (DiceRollRequest(..), DiceType(..))
 import Parser
     exposing
     ( Parser

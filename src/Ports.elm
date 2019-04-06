@@ -33,12 +33,18 @@ port put : ( PouchDBRef, String, Value ) -> Cmd msg
 port remove : ( PouchDBRef, String ) -> Cmd msg
 port getGameListResponse : (Value -> msg) -> Sub msg
 
-port sse_playerListUpdated : (Value -> msg) -> Sub msg
-port sse_playerPresenceUpdated : (Value -> msg) -> Sub msg
-port sse_chatMessageReceived : (Value -> msg) -> Sub msg
+-- port sse_playerListUpdated : (Value -> msg) -> Sub msg
 
-type alias PouchDBRef =
-    Value
-
+type alias PouchDBRef = Value
 
 port dragstart : Value -> Cmd msg
+
+
+type alias XMPPClientRef = Value
+
+port xmpp_send : (XMPPClientRef, Value) -> Cmd msg
+port xmpp_received : (Value -> msg) -> Sub msg
+port xmpp_raw_received : (Value -> msg) -> Sub msg
+port closeChatClient : XMPPClientRef -> Cmd msg
+port connectChatClient : XMPPClientRef -> Cmd msg
+port chatClientConnected : (Value -> msg) -> Sub msg

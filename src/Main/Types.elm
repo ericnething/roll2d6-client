@@ -36,12 +36,14 @@ import Ports exposing (PouchDBRef)
 import Route exposing (Route)
 import Http
 import Invite
+import Chat.Types as Chat
 
 type alias Model =
     { screen : Screen
     , debouncer : Debouncer Msg
     , navkey : Navigation.Key
     , viewportSize : (Int, Int)
+    , chat : Chat.Model
     }
 
 
@@ -72,6 +74,7 @@ type Msg
     | UrlChanged Url
     | RouteChanged (Maybe Route)
     | GameMsg Game.Msg
+    | ChatMsg Chat.Msg
     | LobbyMsg Lobby.Msg
     | LoginMsg Login.ConsumerMsg
     | WriteGameToPouchDB PouchDBRef String Game.GameData

@@ -249,9 +249,9 @@ app.ports.xmpp_send.subscribe(function (data) {
   client.sendMessage(message);
 });
 
-app.ports.closeChatClient.subscribe(function (client) {
-  client.disconnect();
-});
+// app.ports.closeChatClient.subscribe(function (client) {
+//   client.disconnect();
+// });
 
 app.ports.connectChatClient.subscribe(function (data) {
   const client = XMPP.createClient({
@@ -266,20 +266,20 @@ app.ports.connectChatClient.subscribe(function (data) {
   app.ports.chatClientConnected.send(client);
   client.enableKeepAlive({ interval: 45, timeout: 120 });
 
-  // client.on("disconnected", function() {
-  //   console.log("disconnection at " + new Date);
-  //   client.connect();
-  // });
+  client.on("disconnected", function() {
+    console.log("disconnection at " + new Date);
+    client.connect();
+  });
 
   client.on("message", function(chat) {
-    console.log("chat received: ", chat);
+    // console.log("chat received: ", chat);
     chat.stanzaType = "message";
     chat.timestamp = chat.delay && Date.now(chat.delay.stamp) || Date.now();
     app.ports.xmpp_received.send(chat);
   });
 
   client.on("presence", function(presence) {
-    console.log("presence received: ", presence);
+    // console.log("presence received: ", presence);
     presence.stanzaType = "presence";
     app.ports.xmpp_received.send(presence);
   });
@@ -305,16 +305,26 @@ app.ports.connectChatClient.subscribe(function (data) {
         caps: client.disco.caps
       });
     });
-    client.joinRoom("test@muc.localhost" /*data.room*/, data.username, {
-      status: "It's going to be a great day",
-      joinMuc: {
-        history: {
-          maxstanzas: 20
-        }
-      }
-    });
   });
 
   client.connect();
 });
 
+app.ports.joinRoom.subscribe(function (args) {
+  const client = args[0];
+  const data = args[1];
+  client.joinRoom("test@muc.localhost" /*data.room*/, data.username, {
+    status: "It's going to be a great day",
+    joinMuc: {
+      history: {
+        maxstanzas: 20
+      }
+    }
+  });
+});
+
+app.ports.leaveRoom.subscribe(function (args) {
+  const client = args[0];
+  const data = args[1];
+  client.leaveRoom("test@muc.localhost" /*data.room*/, data.username);
+});

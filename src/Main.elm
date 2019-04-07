@@ -70,6 +70,7 @@ import Route exposing (Route)
 import Http
 import API
 import Invite
+import Game.Person
 
 
 main : Program (Int, Int) Model Msg
@@ -102,7 +103,7 @@ subscriptions model =
         -- they will arrive when needed, otherwise a race condition
         -- occurs where this subscription may get overriden. This is
         -- caused by a bug in the compiler.
-        , Sub.map (GameMsg << Game.ChatMsg)
+        , Sub.map ChatMsg
             (Ports.xmpp_received
                  (Chat.StanzaReceived << Chat.decodeStanza))
 
@@ -111,7 +112,7 @@ subscriptions model =
         -- initial page load will only be a problem if we need the
         -- model for a specific part of the application to initialize
         -- a subscription.
-        , Sub.map (GameMsg << Game.ChatMsg)
+        , Sub.map ChatMsg
             (Ports.chatClientConnected Chat.ClientConnected)
 
         , Sub.map GameMsg
@@ -129,14 +130,27 @@ initialModel viewportSize key =
             |> toDebouncer
     , navkey = key
     , viewportSize = viewportSize
+    , chat = Chat.newModel "test" { id = "welkin@localhost"
+                                  , accessLevel = Game.Person.Owner
+                                  , username = "welkin"
+                                  }
     }
 
 
-init : (Int, Int) -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init : (Int, Int) -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init viewportSize url key =
-    changeRouteTo
-    (Route.fromUrl url)
-    (initialModel viewportSize key)
+    let (model, cmd) = changeRouteTo
+                       (Route.fromUrl url)
+                       (initialModel viewportSize key)
+    in
+        (model
+        , Cmd.batch
+            [ Chat.connectClient { jid = "welkin@localhost"
+                                 , password = "foobar"
+                                 }
+            , cmd
+            ]
+        )
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -295,11 +309,11 @@ update msg model =
                 ({ model
                      | screen = GameScreen game
                  }
-                , Chat.connectClient { jid = myPlayerInfo.id
-                                     , password = "foobar"
-                                     , room = game.id
-                                     , username = myPlayerInfo.username
-                                     }
+                , Chat.joinRoom
+                    model.chat.ref
+                    { room = game.id
+                    , username = myPlayerInfo.username
+                    }
                 )
 
         AuthFailed ->
@@ -308,6 +322,9 @@ update msg model =
                 model.navkey
                 (Route.toUrlString Route.Auth)
             )
+
+        GameMsg (Game.ChatMsg chatmsg) ->
+            (model, Task.perform identity (Task.succeed (ChatMsg chatmsg)))
 
         GameMsg localmsg ->
             case model.screen of
@@ -393,6 +410,13 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        ChatMsg submsg ->
+            let
+                (submodel, cmd) = Chat.update submsg model.chat
+            in
+                ({ model | chat = submodel }
+                , Cmd.map ChatMsg cmd)
 
         WindowResized width height ->
             ({ model | viewportSize = (width, height) }, Cmd.none)
@@ -564,7 +588,7 @@ view model =
             div [] [ text "Loading game..." ]
 
         GameScreen game ->
-            Game.view model.viewportSize game
+            Game.view model.viewportSize model.chat game
                 |> Html.Styled.map GameMsg
 
         InviteScreen invite ->

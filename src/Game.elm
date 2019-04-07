@@ -137,7 +137,7 @@ update navkey msg model =
         ExitToLobby ->
             ( model
             , Cmd.batch
-                [ Chat.closeConnection model.chat
+                [ Task.perform ChatMsg (Task.succeed Chat.LeaveCurrentRoom)
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
@@ -189,28 +189,9 @@ update navkey msg model =
             -- changes to pouchDB
             (model, Cmd.none)
 
-
-        -- ChatMsg (Chat.ClientConnected ref) ->
-        --     ({ model
-        --          | chat = Just (Chat.newModel
-        --                             ref
-        --                             model.id
-        --                             model.myPlayerInfo)
-        --      }
-        --     , Cmd.none
-        --     )
-                
-        ChatMsg submsg ->
-            let
-                (submodel, cmd) = Chat.update submsg model.chat
-            in
-                -- case mUpdated of
-                --     Nothing ->
-                --         (model, Cmd.none)
-
-                --     Just (submodel, cmd) ->
-                        ({ model | chat = submodel }
-                        , Cmd.map ChatMsg cmd)
+        ChatMsg _ ->
+            -- This is handled in Main.elm
+            (model, Cmd.none)
 
         NoOp ->
             (model, Cmd.none)
@@ -239,8 +220,8 @@ update navkey msg model =
 -- View
 
 
-view : (Int, Int) -> Model -> Html Msg
-view viewportSize model =
+view : (Int, Int) -> Chat.Model -> Model -> Html Msg
+view viewportSize chatModel model =
     div
         [ css
             [ Css.property "display" "grid"
@@ -253,7 +234,7 @@ view viewportSize model =
         [ lazy topToolbar model
         , Sheets.view viewportSize model
             |> Html.Styled.map SheetsMsg
-        , lazy sidebar model
+        , lazy sidebar chatModel
         , lazy overlayView model
         ]
 
@@ -717,7 +698,7 @@ presenceIndicator color status =
 -- Side Menu
 --------------------------------------------------
 
-sidebar : Model -> Html Msg
+sidebar : Chat.Model -> Html Msg
 sidebar model =
     div [ css
           [ backgroundColor (hex "ddd")
@@ -729,7 +710,7 @@ sidebar model =
 
         ]
     [ Icons.diceDefs
-    , Html.Styled.map ChatMsg (Chat.view model.chat)
+    , Html.Styled.map ChatMsg (Chat.view model)
     ]
 
 jumpToBottom : String -> Cmd Msg

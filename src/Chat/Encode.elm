@@ -22,6 +22,7 @@ module Chat.Encode
     exposing
     ( encodeMessage
     , encodeConnectionInfo
+    , encodeRoomConn
     )
 
 import Array exposing (Array)
@@ -31,13 +32,18 @@ import Maybe
 import Chat.Types exposing (..)
 
 
+encodeRoomConn : RoomConn -> Value
+encodeRoomConn { room, username } = 
+    object
+    [ ("room", string room)
+    , ("username", string username)
+    ]
+
 encodeConnectionInfo : ConnectionInfo -> Value
-encodeConnectionInfo { jid, password, room, username } =
+encodeConnectionInfo { jid, password } =
     object
         [ ("jid", string jid)
         , ("password", string password)
-        , ("room", string (room ++ "@muc.localhost"))
-        , ("username", string username)
         ]
 
 --------------------------------------------------

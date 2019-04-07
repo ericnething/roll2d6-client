@@ -31,29 +31,36 @@ import Game.Person exposing (Person)
 
 type alias Model =
     { ref : XMPPClientRef
+    , connected : Bool
     , room : JID
     , input : String
     , messages : List Message
     , roster : Dict String JID
+    , me : JID
     }
 
 newModel : String -> Person -> Model
 newModel roomName me =
     { ref = Json.Encode.null
+    , connected = False
     , room = { full = roomName ++ "@muc.localhost"
              , bare = roomName ++ "@muc.localhost"
              , resource = ""
              }
     , input = ""
     , messages = []
-    , roster = Dict.fromList [(me.id, personToJID me)]
+    , roster = Dict.empty --Dict.fromList [(me.id, personToJID me)]
+    , me = personToJID me
+    }
+
+type alias RoomConn =
+    { room : String
+    , username : String   
     }
 
 type alias ConnectionInfo =
     { jid : String
     , password : String
-    , room : String
-    , username : String
     }
 
 personToJID : Person -> JID
@@ -144,3 +151,4 @@ type Msg
     -- | DiceRollResult DiceRoll
     | NoOp
     | ClientConnected XMPPClientRef
+    | LeaveCurrentRoom

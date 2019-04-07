@@ -23,6 +23,7 @@ module Chat exposing
     , update
     , closeConnection
     , connectClient
+    , joinRoom
     )
 
 
@@ -37,19 +38,24 @@ import Css exposing (..)
 import Task
 import Browser.Dom as Dom
 import Time
-import Ports
+import Ports exposing (XMPPClientRef)
 import Json.Decode
 
 import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
-import Chat.Encode exposing (encodeMessage, encodeConnectionInfo)
+import Chat.Encode
+    exposing
+    ( encodeMessage
+    , encodeConnectionInfo
+    , encodeRoomConn
+    )
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         ClientConnected ref ->
-            ({ model | ref = ref }
+            ({ model | ref = ref, connected = True }
             , Cmd.none
             )
 
@@ -124,14 +130,18 @@ update msg model =
         NoOp ->
             (model, Cmd.none)
 
-        -- ClientConnected _ ->
-        --     -- This is handled inside of Game.elm
-        --     (model, Cmd.none)
-
-        -- SessionStarted ->
-        --     ( model
-        --     , Ports.joinMUC model.room model.
-        --     )
+        LeaveCurrentRoom ->
+            ({ model
+                 | messages = []
+                 , input = ""
+                 , roster = Dict.empty
+             }
+            , leaveRoom
+                model.ref
+                { room = model.room.bare
+                , username = model.me.resource
+                }
+            )
 
         -- DiceRollResult rollResult ->
         --     ( model
@@ -365,3 +375,11 @@ closeConnection model =
 connectClient : ConnectionInfo -> Cmd msg
 connectClient config =
     Ports.connectChatClient (encodeConnectionInfo config)
+
+joinRoom : XMPPClientRef -> RoomConn -> Cmd msg
+joinRoom ref roomConn =
+    Ports.joinRoom (ref, encodeRoomConn roomConn)
+
+leaveRoom : XMPPClientRef -> RoomConn -> Cmd msg
+leaveRoom ref roomConn =
+    Ports.leaveRoom (ref, encodeRoomConn roomConn)

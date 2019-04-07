@@ -67,7 +67,6 @@ type alias Model =
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
     , sheetPermissions : Dict SheetId SheetPermission
-    , chat : Chat.Model
     }
 
 
@@ -94,7 +93,6 @@ emptyGameModel { ref, gameId, gameData, sheets }
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
     , sheetPermissions = gameData.sheetPermissions
-    , chat = Chat.newModel gameId myPlayerInfo
     }
 
 

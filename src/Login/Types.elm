@@ -18,7 +18,7 @@ License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 -}
 
-module Login.Types exposing (init, Auth, ConsumerMsg(..), Model, Msg(..), Registration, Tab(..), encodeAuth, encodeRegistration, initialModel)
+module Login.Types exposing (..)
 
 import Http
 import Json.Decode
@@ -33,7 +33,7 @@ type alias Model =
     }
 
 
-init : (Model, Cmd ConsumerMsg)
+init : (Model, Cmd Msg)
 init =
     (initialModel, Cmd.none)
 
@@ -49,10 +49,6 @@ initialModel =
 type Tab
     = LoginTab
     | RegisterTab
-
-
-type ConsumerMsg
-    = LocalMsg Msg
 
 
 type Msg

@@ -100,7 +100,7 @@ newGame gameData =
             |> Cmd.map Lobby.NewGameResponse
 
 
-login : Login.Auth -> Cmd Login.ConsumerMsg
+login : Login.Auth -> Cmd Login.Msg
 login auth =
     let
         request =
@@ -115,10 +115,9 @@ login auth =
                 }
     in
         Http.send Login.LoginResponse request
-            |> Cmd.map Login.LocalMsg
 
 
-register : Login.Registration -> Cmd Login.ConsumerMsg
+register : Login.Registration -> Cmd Login.Msg
 register reg =
     let
         request =
@@ -133,7 +132,6 @@ register reg =
                 }
     in
         Http.send Login.RegisterResponse request
-            |> Cmd.map Login.LocalMsg
 
 
 logout : Cmd Lobby.Msg

@@ -22,7 +22,11 @@ module Util exposing (..)
 
 import Array exposing (Array)
 import List.Extra exposing (dropWhile, takeWhile)
+import Task
 
+
+toCmd : msg -> Cmd msg
+toCmd = Task.perform identity << Task.succeed
 
 catMaybes : List (Maybe a) -> List a
 catMaybes =

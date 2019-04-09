@@ -35,17 +35,25 @@ import Login.Types exposing (..)
 import Task
 import Browser.Navigation as Navigation
 import Route
+import Ports
 
 
-update : Navigation.Key -> Msg -> Model -> ( Model, Cmd ConsumerMsg )
+update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
 update navkey msg model =
     case msg of
         Login ->
             ( model
-            , API.login
-                { username = model.username
-                , password = model.password
-                }
+            , Cmd.batch
+                [ API.login
+                      { username = model.username
+                      , password = model.password
+                      }
+                , Ports.saveCredentials
+                    ((model.username ++ "@localhost")
+                    , model.username
+                    , model.password
+                    )
+                ]
             )
 
         LoginResponse result ->
@@ -86,28 +94,26 @@ update navkey msg model =
             ( { model | tab = tab }, Cmd.none )
 
 
-view : Model -> Html ConsumerMsg
+view : Model -> Html Msg
 view model =
-    Html.Styled.map LocalMsg <|
-        div
-            [ css
-                [ color (hex "eee")
-                , backgroundColor (hex "36393f")
-                , Css.minHeight (vh 100)
-                , displayFlex
-                , justifyContent spaceAround
-                , paddingTop (vh 12)
-                ]
-            ]
-            [ formView model
-            ]
-
-
+    div [ css
+          [ color (hex "eee")
+          , backgroundColor (hex "36393f")
+          , Css.minHeight (vh 100)
+          , displayFlex
+          , justifyContent spaceAround
+          , paddingTop (vh 12)
+          ]
+        ]
+    [ formView model
+    ]
+    
+    
 tabView : String -> Tab -> Bool -> Html Msg
 tabView title tab isActive =
     button
-        [ css
-            [ padding2 (Css.em 1) (Css.em 0.8)
+    [ css
+      [ padding2 (Css.em 1) (Css.em 0.8)
             , color (hex "333")
             , border (px 0)
             , borderTopWidth (Css.em 0.2)

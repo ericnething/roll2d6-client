@@ -23,6 +23,13 @@ module Game.Types exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode exposing (Value)
+import Debouncer.Messages as Debouncer
+    exposing
+    ( Debouncer
+    , debounce
+    , toDebouncer
+    , fromSeconds
+    )
 import Ports exposing (PouchDBRef, XMPPClientRef)
 import RemoteData exposing (WebData)
 import Http
@@ -55,6 +62,7 @@ type Overlay
 
 type alias Model =
     { ref : PouchDBRef
+    , debouncer : Debouncer Msg
     , gameType : GameType
     , id : GameId
     , title : String
@@ -81,6 +89,9 @@ emptyGameModel : { ref : PouchDBRef
 emptyGameModel { ref, gameId, gameData, sheets }
                myPlayerInfo players =
     { ref = ref
+    , debouncer =
+        debounce (fromSeconds 1)
+            |> toDebouncer
     , gameType = gameData.gameType
     , id = gameId
     , title = gameData.title
@@ -135,6 +146,15 @@ type alias GameUpdate =
 
 type Msg
     = NoOp
+    | DebounceMsg (Debouncer.Msg Msg)
+    | WriteGameToPouchDB PouchDBRef String GameData
+
+    | WriteSheetToPouchDB
+          PouchDBRef
+          SheetId
+          GameType
+          SheetModel
+
     | SheetsMsg Sheets.Msg
     | UpdateGameTitle String
     | UpdateGameTitleInDB

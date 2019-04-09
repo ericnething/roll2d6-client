@@ -18,7 +18,7 @@ License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 -}
 
-module Main.Types exposing (..)
+module App.Types exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
@@ -30,7 +30,6 @@ import Game.Sheets.Types as Sheets
 import Game.Sheet.Types as Sheet
 import Json.Decode
 import Lobby.Types as Lobby
-import Login.Types as Login
 import Ports exposing (PouchDBRef)
 import Route exposing (Route)
 import Http
@@ -49,8 +48,6 @@ type alias Flags =
 
 type alias Model =
     { screen : Screen
-    , navkey : Navigation.Key
-    , viewportSize : (Int, Int)
     , chat : Chat.Model
     -- , xmppClientRef : XMPPClientRef
     -- , friends : Dict BareJID Person
@@ -104,21 +101,16 @@ emptyLoadingProgress =
     }    
 
 type Screen
-    = LoginScreen Login.Model
-    | LobbyScreen Lobby.Model
+    = LobbyScreen Lobby.Model
     | LoadingScreen LoadingProgress
     | GameScreen Game.Model
     | InviteScreen Invite.Model
 
 
 type Msg
-    = NavigateToUrl UrlRequest
-    | UrlChanged Url
-    | RouteChanged (Maybe Route)
-    | GameMsg Game.Msg
+    = GameMsg Game.Msg
     | ChatMsg Chat.Msg
     | LobbyMsg Lobby.Msg
-    | LoginMsg Login.Msg
     | GameLoaded Json.Decode.Value
     | GameLoadFailed
     | MyPlayerInfoLoaded (Result Http.Error Game.Person)
@@ -132,4 +124,3 @@ type Msg
       }
     | AuthFailed
     | InviteMsg Invite.Msg
-    | WindowResized Int Int

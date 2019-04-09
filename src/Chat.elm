@@ -24,6 +24,7 @@ module Chat exposing
     , closeConnection
     , connectClient
     , joinRoom
+    , subscriptions
     )
 
 
@@ -50,6 +51,12 @@ import Chat.Encode
     , encodeRoomConn
     )
 
+subscriptions : Sub Msg
+subscriptions =
+    Sub.batch
+        [ Ports.xmpp_received (StanzaReceived << decodeStanza)
+        , Ports.chatClientConnected ClientConnected
+        ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =

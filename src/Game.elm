@@ -22,10 +22,18 @@ module Game
     exposing
     ( update
     , view
+    , subscriptions
+    , maybeWriteToPouchDB
     )
 
 import Array exposing (Array)
 import Dict
+import Debouncer.Messages as Debouncer
+    exposing
+        ( Debouncer
+        , provideInput
+        , toDebouncer
+        )
 import Chat
 import Chat.Types as Chat
 import Game.Sheet as Sheet
@@ -33,8 +41,15 @@ import Css exposing (..)
 import Game.Types exposing (..)
 import Game.GameType exposing (..)
 import Game.Person exposing (..)
-import Game.Sheets.Types as Sheets
+import Game.Sheets.Types as Sheets exposing (SheetId)
 import Game.Sheets as Sheets
+import Game.Sheet.Types exposing (SheetMsg, SheetModel)
+import Game.Encode
+    exposing
+    ( encodeGame
+    , encodeGameData
+    , encodeSheet
+    )
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Lazy exposing (..)
@@ -53,7 +68,7 @@ import Game.Decode
     , decodeChanges
     )
 import Task
-import Util exposing (removeIndexFromArray)
+import Util exposing (toCmd)
 import Browser.Navigation as Navigation
 import Route
 import RemoteData exposing (WebData)
@@ -62,7 +77,12 @@ import Icons
 import List.Extra as List
 import Browser.Dom as Dom
 import Http
+import Ports
 
+
+subscriptions : Sub Msg
+subscriptions =
+    Ports.changesReceived ChangesReceived
 
 update : Navigation.Key
        -> Msg
@@ -72,32 +92,24 @@ update navkey msg model =
     case msg of
         SheetsMsg (Sheets.OpenSheetPermissions sheetId) ->
             ( model
-            , Task.perform
-                identity
-                (Task.succeed
-                     (OpenOverlay
-                          (ManageSheetPermissions sheetId)))
+            , toCmd (OpenOverlay (ManageSheetPermissions sheetId))
             )
 
         SheetsMsg submsg ->
             let
-                ( newModel, cmd ) =
-                    Sheets.update submsg model
+                (newModel, cmd) = Sheets.update submsg model
             in
                 ( newModel
-                , Cmd.map SheetsMsg cmd
-                )
+                , Cmd.map SheetsMsg cmd)
 
         UpdateGameTitle title ->
-            ( { model | title = title }
-            , Cmd.none
-            )
+            ( { model | title = title }, Cmd.none)
 
         UpdateGameTitleInDB ->
             ( model
             , Cmd.batch
                 [ API.updateGameTitle model.id model.title
-                , Task.perform identity (Task.succeed CloseOverlay)
+                , toCmd CloseOverlay
                 ]
             )
 
@@ -105,10 +117,10 @@ update navkey msg model =
             (model, Cmd.none)
 
         OpenOverlay overlay_ ->
-            Debug.log "Model" ( { model | overlay = overlay_ }, Cmd.none )
+            ({ model | overlay = overlay_ }, Cmd.none)
 
         CloseOverlay ->
-            ( { model | overlay = OverlayNone }, Cmd.none )
+            ({ model | overlay = OverlayNone }, Cmd.none)
 
         ChangesReceived changes ->
             case decodeChanges model.gameType changes of
@@ -127,17 +139,15 @@ update navkey msg model =
                          }
                         , Cmd.none
                         )
-                    -- ( model, Ports.get (model.ref, docId) )
 
                 Err err ->
-                    let _ = Debug.log "Changes Received Error" err
-                    in
-                    ( model, Cmd.none )
+                    let _ = Debug.log "Changes Received Error" err in
+                    (model, Cmd.none)
 
         ExitToLobby ->
             ( model
             , Cmd.batch
-                [ Task.perform ChatMsg (Task.succeed Chat.LeaveCurrentRoom)
+                [ toCmd (ChatMsg Chat.LeaveCurrentRoom)
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
@@ -150,14 +160,11 @@ update navkey msg model =
             )
 
         InviteCreated result ->
-            ({ model
-                 | overlay = InstantInvite result
-             }
-            , Cmd.none
-            )
+            ({ model | overlay = InstantInvite result }
+            , Cmd.none)
 
         RemovePlayer playerId ->
-            ( model, API.removePlayer model.id playerId )
+            (model, API.removePlayer model.id playerId)
 
         PlayerRemoved gameId playerId result ->
             case result of
@@ -177,9 +184,7 @@ update navkey msg model =
                              )
                              model.sheetPermissions
                      }
-                    , Task.perform
-                        identity
-                        (Task.succeed PlayerRemovedSuccess)
+                    , toCmd PlayerRemovedSuccess
                     )
                 Err _ ->
                     ( model, Cmd.none )
@@ -193,32 +198,39 @@ update navkey msg model =
             -- This is handled in Main.elm
             (model, Cmd.none)
 
+        DebounceMsg submsg ->
+            Debouncer.update (update navkey) updateDebouncer submsg model
+
+        WriteGameToPouchDB ref docId game ->
+            ( model
+            , Ports.put
+                ( ref
+                , docId
+                , encodeGameData game
+                )
+            )
+
+        WriteSheetToPouchDB ref sheetId gameType sheet ->
+            ( model
+            , Ports.put
+                ( ref
+                , sheetId
+                , encodeSheet sheet
+                )
+            )
+
         NoOp ->
             (model, Cmd.none)
 
--- updatePlayerPresenceList : List PlayerPresence
---                          -> List Person
---                          -> List Person
--- updatePlayerPresenceList presenceList players =
---     List.map
---         (\player ->
---              let
---                  maybePresence =
---                      List.filter
---                      (\{ id } -> player.id == id)
---                      presenceList
---              in
---                  case maybePresence of
---                      [] ->
---                          player
---                      { presence } :: _ ->
---                          { player | presence = presence }
---         )
---         players
 
-
--- View
-
+updateDebouncer : Debouncer.UpdateConfig Msg Model
+updateDebouncer =
+    { mapMsg = DebounceMsg
+    , getDebouncer = .debouncer
+    , setDebouncer =
+        \debouncer model ->
+            { model | debouncer = debouncer }
+    }
 
 view : (Int, Int) -> Chat.Model -> Model -> Html Msg
 view viewportSize chatModel model =
@@ -728,3 +740,90 @@ jumpToBottom id =
        )
     |> Task.attempt (\_ -> NoOp)
 
+
+
+
+maybeWriteToPouchDB : Msg -> Model -> Cmd Msg
+maybeWriteToPouchDB msg newGame =
+    case msg of
+        SheetsMsg (Sheets.SheetMsg sheetId _) ->
+            debouncedWriteSheetToPouchDB
+                sheetId
+                { ref = newGame.ref
+                , msheet = Dict.get sheetId newGame.sheets
+                , gameType = newGame.gameType
+                }
+
+        -- Writing to pouchDB for adding and removing sheets is
+        -- handled in Sheets.elm directly using ports
+
+        SheetsMsg Sheets.SheetsOrderingUpdated ->
+            writeGameToPouchDB newGame
+
+        SheetsMsg Sheets.SheetPermissionsUpdated ->
+            writeGameToPouchDB newGame
+
+        PlayerRemovedSuccess ->
+            writeGameToPouchDB newGame
+
+        UpdateGameTitle _ ->
+            debouncedWriteGameToPouchDB newGame
+
+        _ ->
+            Cmd.none
+
+debouncedWriteSheetToPouchDB : SheetId
+                             -> { ref : PouchDBRef
+                                , msheet : Maybe SheetModel
+                                , gameType : GameType
+                                }
+                             -> Cmd Msg
+debouncedWriteSheetToPouchDB sheetId { ref, msheet, gameType } =
+    case msheet of
+        Nothing ->
+            Cmd.none
+
+        Just sheet ->
+            toCmd (WriteSheetToPouchDB
+                       ref
+                       sheetId
+                       gameType
+                       sheet
+                  |> provideInput
+                  |> DebounceMsg
+                  )
+
+
+debouncedWriteGameToPouchDB : Model -> Cmd Msg
+debouncedWriteGameToPouchDB { ref
+                            , title
+                            , gameType
+                            , sheetsOrdering
+                            , sheetPermissions
+                            } =
+    toCmd
+    (WriteGameToPouchDB ref "game"
+         { title = title
+         , gameType = gameType
+         , sheetsOrdering = sheetsOrdering
+         , sheetPermissions = sheetPermissions
+         }
+    |> provideInput
+    |> DebounceMsg
+    )
+
+writeGameToPouchDB : Model -> Cmd Msg
+writeGameToPouchDB { ref
+                   , title
+                   , gameType
+                   , sheetsOrdering
+                   , sheetPermissions
+                   } =
+    toCmd
+    (WriteGameToPouchDB ref "game"
+         { title = title
+         , gameType = gameType
+         , sheetsOrdering = sheetsOrdering
+         , sheetPermissions = sheetPermissions
+         }
+    )

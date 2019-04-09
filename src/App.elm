@@ -18,7 +18,12 @@ License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 -}
 
-module Main exposing (main)
+module App
+    exposing
+    ( view
+    , update
+    , subscriptions
+    )
 
 import Main.Types exposing (..)
 import Browser exposing (UrlRequest(..))
@@ -38,8 +43,6 @@ import Html.Styled.Lazy exposing (lazy)
 import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
-import Login
-import Login.Types as Login
 import Ports exposing (PouchDBRef)
 import Game.Decode
     exposing
@@ -56,25 +59,6 @@ import API
 import Invite
 import Game.Person
 import Util exposing (toCmd)
-
-
-main : Program Flags Model Msg
-main =
-    Browser.application
-        { init = init
-        , view = view >> toUnstyled >>
-                 \html -> { title = "Fate RPG"
-                          , body = [ html ]
-                          }
-        , update = update
-        , subscriptions = subscriptions
-        , onUrlRequest = NavigateToUrl
-        , onUrlChange = UrlChanged
-        }
-
-
-
--- Subscriptions
 
 
 subscriptions : Model -> Sub Msg
@@ -96,71 +80,36 @@ subscriptions model =
         -- model for a specific part of the application to initialize
         -- a subscription.
         , Sub.map GameMsg Game.subscriptions
-
-        , Browser.Events.onResize WindowResized
         ]
 
 
-initialModel : Flags -> Navigation.Key -> Model
-initialModel { windowSize, credentials } key =
-    { screen = LoginScreen Login.initialModel
-    , navkey = key
-    , viewportSize = (windowSize.width, windowSize.height)
+initialModel : Model
+initialModel key =
+    { screen = LobbyScreen Lobby.initialModel
     , chat =
         Chat.newModel
             "test"
-            { id = Maybe.withDefault "" credentials.jid
+            { id = "welkin@localhost"
             , accessLevel = Game.Person.Owner
-            , username = Maybe.withDefault "" credentials.username
+            , username = "welkin"
             }
     }
 
 
-init : Flags -> Url -> Navigation.Key -> (Model, Cmd Msg)
-init flags url key =
-    case (flags.credentials.jid, flags.credentials.password) of
-        (Just jid, Just password) ->
-            let (model, cmd) =
-                    changeRouteTo
-                    (Route.fromUrl url)
-                    (initialModel flags key)
-            in
-                ( model
-                , Cmd.batch
-                    [ Chat.connectClient
-                          { jid = jid
-                          , password = password
-                          }
-                    , cmd
-                    ]
-                )
-        _ ->
-            changeRouteTo
-            (Just Route.Auth)
-            (initialModel flags key)
+init : (Model, Cmd Msg)
+init =
+    ( model
+    , Cmd.batch
+        [ Chat.connectClient
+              { jid = "welkin@localhost"
+              , password = "foobar"
+              }
+        ]
+    )
 
-
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
-    let _ = Debug.log "DEBUG: " msg in
+update : Navigation.Key -> Msg -> Model -> (Model, Cmd Msg)
+update navkey msg model =
     case msg of
-        NavigateToUrl urlRequest ->
-            case urlRequest of
-                Internal url ->
-                    ( model
-                    , Navigation.replaceUrl model.navkey (Url.toString url))
-                    
-                External url ->
-                    ( model
-                    , Navigation.load url)
-
-        UrlChanged url ->
-            changeRouteTo (Route.fromUrl url) model
-
-        RouteChanged route ->
-            changeRouteTo route model
-
-
         GameLoaded value ->
             case decodeGame value of
                 Ok toGameModel ->
@@ -184,13 +133,12 @@ update msg model =
 
                 Err err ->
                     let _ = Debug.log "Game Load Failed" err in
-                    ( model
-                    , toCmd GameLoadFailed)
+                    (model, toCmd GameLoadFailed)
 
         GameLoadFailed ->
             ( model
             , Navigation.replaceUrl
-                model.navkey
+                navkey
                 (Route.toUrlString Route.Lobby)
             )
 
@@ -218,7 +166,7 @@ update msg model =
                 Err err ->
                     ( model
                     , Navigation.replaceUrl
-                        model.navkey
+                        navkey
                             (Route.toUrlString Route.Lobby)
                     )
 
@@ -246,7 +194,7 @@ update msg model =
                 Err err ->
                     ( model
                     , Navigation.replaceUrl
-                        model.navkey
+                        navkey
                             (Route.toUrlString Route.Lobby)
                     )
 
@@ -267,7 +215,7 @@ update msg model =
         AuthFailed ->
             ( model
             , Navigation.replaceUrl
-                model.navkey
+                navkey
                 (Route.toUrlString Route.Auth)
             )
 
@@ -279,9 +227,6 @@ update msg model =
 
         LobbyMsg localmsg ->
             updateLobbyScreen localmsg model
-
-        LoginMsg localmsg ->
-            updateLoginScreen localmsg model
 
         InviteMsg localmsg ->
             updateInviteScreen localmsg model
@@ -302,7 +247,7 @@ updateGameScreen localmsg model =
     case model.screen of
         GameScreen game ->
             let
-                (newGame, cmd) = Game.update model.navkey localmsg game
+                (newGame, cmd) = Game.update navkey localmsg game
             in
                 ({ model | screen = GameScreen newGame }
                 , Cmd.batch
@@ -321,24 +266,10 @@ updateLobbyScreen localmsg model =
     case model.screen of
         LobbyScreen lobby ->
             let
-                (newLobby, cmd) = Lobby.update model.navkey localmsg lobby
+                (newLobby, cmd) = Lobby.update navkey localmsg lobby
             in
                 ({ model | screen = LobbyScreen newLobby }
                 , Cmd.map LobbyMsg cmd)
-
-        _ ->
-            (model, Cmd.none)
-
-
-updateLoginScreen : Login.Msg -> Model -> (Model, Cmd Msg)
-updateLoginScreen localmsg model =
-    case model.screen of
-        LoginScreen login ->
-            let
-                (newLogin, cmd) = Login.update model.navkey localmsg login
-            in
-                ({ model | screen = LoginScreen newLogin }
-                , Cmd.map LoginMsg cmd)
 
         _ ->
             (model, Cmd.none)
@@ -349,50 +280,13 @@ updateInviteScreen localmsg model =
     case model.screen of
         InviteScreen invite ->
             let
-                (newInvite, cmd) = Invite.update model.navkey localmsg invite
+                (newInvite, cmd) = Invite.update navkey localmsg invite
             in
                 ({ model | screen = InviteScreen newInvite }
                 , Cmd.map InviteMsg cmd)
 
         _ ->
             (model, Cmd.none)
-                        
-                        
-changeRouteTo : Maybe Route -> Model -> (Model, Cmd Msg)
-changeRouteTo route model =
-    case route of
-        Just Route.Auth ->
-            let
-                (login, cmd) = Login.init
-            in
-                ({ model | screen = LoginScreen login }
-                , Cmd.map LoginMsg cmd)
-                
-        Just Route.Lobby ->
-            let
-                (lobby, cmd) = Lobby.init
-            in
-                ({ model | screen = LobbyScreen lobby }
-                , Cmd.map LobbyMsg cmd)
-                
-        Just (Route.Game gameId) ->
-            ( { model | screen = LoadingScreen emptyLoadingProgress }
-            , Cmd.batch
-                [ Ports.loadGame gameId
-                , API.getMyPlayerInfo gameId
-                , API.getPlayers gameId
-                ]
-            )
-
-        Just (Route.Invite inviteId) ->
-            ( { model | screen = InviteScreen Invite.initialModel }
-            , API.joinGame inviteId
-                  |> Cmd.map InviteMsg
-            )
-            
-        Nothing ->
-            (model, Cmd.none)
-
 
 
 loadGameScreenIfDone : LoadingProgress -> Cmd Msg
@@ -412,10 +306,6 @@ loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =
 view : Model -> Html Msg
 view model =
     case model.screen of
-        LoginScreen submodel ->
-            Login.view submodel
-                |> Html.Styled.map LoginMsg
-
         LobbyScreen submodel ->
             Lobby.view submodel
                 |> Html.Styled.map LobbyMsg

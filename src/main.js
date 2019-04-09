@@ -23,10 +23,28 @@ License along with this program. If not, see
 "use strict";
 
 const app = Elm.Main.init({
-  flags: [ document.documentElement.clientWidth,
-           document.documentElement.clientHeight
-         ]
+  flags: {
+    windowSize: {
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight
+    },
+    credentials: {
+      jid: sessionStorage.getItem("jid"),
+      username: sessionStorage.getItem("username"),
+      password: sessionStorage.getItem("password")
+    }
+  }
 });
+
+app.ports.saveCredentials.subscribe(function (data) {
+  const jid = data[0];
+  const username = data[1];
+  const password = data[2];
+  sessionStorage.setItem("jid", jid);
+  sessionStorage.setItem("username", username);
+  sessionStorage.setItem("password", password);
+});
+
 
 //----------------------------------------------
 //  Couch DB

@@ -50,3 +50,5 @@ port connectChatClient : XMPPClientRef -> Cmd msg
 port chatClientConnected : (Value -> msg) -> Sub msg
 port joinRoom : (XMPPClientRef, Value) -> Cmd msg
 port leaveRoom : (XMPPClientRef, Value) -> Cmd msg
+
+port saveCredentials : (String, String, String) -> Cmd msg

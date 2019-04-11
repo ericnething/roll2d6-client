@@ -21,7 +21,6 @@ License along with this program. If not, see
 module Chat.Encode
     exposing
     ( encodeMessage
-    , encodeConnectionInfo
     , encodeRoomConn
     )
 
@@ -33,18 +32,11 @@ import Chat.Types exposing (..)
 
 
 encodeRoomConn : RoomConn -> Value
-encodeRoomConn { room, username } = 
+encodeRoomConn { room, displayName } = 
     object
     [ ("room", string room)
-    , ("username", string username)
+    , ("displayName", string displayName)
     ]
-
-encodeConnectionInfo : ConnectionInfo -> Value
-encodeConnectionInfo { jid, password } =
-    object
-        [ ("jid", string jid)
-        , ("password", string password)
-        ]
 
 --------------------------------------------------
 -- Chat Messages and Dice Rolls
@@ -57,8 +49,8 @@ encodeMessage { to, body } =
         , ("body", string body)
         ]
 
-encodeJID : JID -> Value
-encodeJID { bare } =
+encodeJID : BareJID -> Value
+encodeJID bare =
     string bare
 
 -- encodeDiceRoll : DiceRoll -> Value

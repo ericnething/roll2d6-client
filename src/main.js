@@ -24,25 +24,11 @@ License along with this program. If not, see
 
 const app = Elm.Main.init({
   flags: {
-    windowSize: {
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight
-    },
-    credentials: {
-      jid: sessionStorage.getItem("jid"),
-      username: sessionStorage.getItem("username"),
-      password: sessionStorage.getItem("password")
-    }
+    windowSize: [
+      document.documentElement.clientWidth,
+      document.documentElement.clientHeight
+    ]
   }
-});
-
-app.ports.saveCredentials.subscribe(function (data) {
-  const jid = data[0];
-  const username = data[1];
-  const password = data[2];
-  sessionStorage.setItem("jid", jid);
-  sessionStorage.setItem("username", username);
-  sessionStorage.setItem("password", password);
 });
 
 
@@ -273,16 +259,22 @@ app.ports.xmpp_send.subscribe(function (data) {
 
 app.ports.connectChatClient.subscribe(function (data) {
   const client = XMPP.createClient({
-    jid: data.jid,
-    password: data.password,
+    jid: "welkin@localhost" , //data.jid,
+    password: "foobar", //data.password,
     wsURL: "ws://localhost:5280/ws-xmpp",
     // boshURL: "http://localhost:5280/bind-http",
     transports: ["websocket"],
     useStreamManagement: true,
     resource: "web"
   });
-  app.ports.chatClientConnected.send(client);
+  app.ports.newChatClient.send(client);
+
   client.enableKeepAlive({ interval: 45, timeout: 120 });
+
+  client.on("connected", function() {
+    console.log("connected at " + new Date);
+    app.ports.chatClientConnected.send(null);
+  });
 
   client.on("disconnected", function() {
     console.log("disconnection at " + new Date);

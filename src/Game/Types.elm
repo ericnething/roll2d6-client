@@ -47,7 +47,7 @@ import Game.Sheets.Types as Sheets
     , SheetPermission
     )
 import Game.GameType exposing (GameType(..))
-import Game.Person exposing (..)
+import Game.Player exposing (..)
 
 import Chat.Types as Chat
 
@@ -63,15 +63,21 @@ type Overlay
 type alias Model =
     { ref : PouchDBRef
     , debouncer : Debouncer Msg
+    , overlay : Overlay
+
+    -- Game Info
     , gameType : GameType
     , id : GameId
     , title : String
+
+    -- Players
+    , players : List Player
+    , myPlayer : Player
+
+    -- Sheets
     , sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
-    , overlay : Overlay
-    , players : List Person
     , sheetsViewportX : Float
-    , myPlayerInfo : Person
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
     , sheetPermissions : Dict SheetId SheetPermission
@@ -83,24 +89,27 @@ emptyGameModel : { ref : PouchDBRef
                  , gameData : GameData
                  , sheets : Dict SheetId SheetModel
                  }
-               -> Person
-               -> List Person
+               -> Player
+               -> List Player
                -> Model
-emptyGameModel { ref, gameId, gameData, sheets }
-               myPlayerInfo players =
+emptyGameModel { ref, gameId, gameData, sheets } myPlayer players =
     { ref = ref
-    , debouncer =
-        debounce (fromSeconds 1)
-            |> toDebouncer
+    , debouncer = debounce (fromSeconds 1) |> toDebouncer
+    , overlay = OverlayNone
+
+    -- Game Info
     , gameType = gameData.gameType
     , id = gameId
     , title = gameData.title
+
+    -- Players
+    , players = players
+    , myPlayer = myPlayer
+
+    -- Sheets
     , sheets = sheets
     , fullSheet = Nothing
-    , overlay = OverlayNone
-    , players = players
     , sheetsViewportX = 0
-    , myPlayerInfo = myPlayerInfo
     , sheetsOrdering = gameData.sheetsOrdering
     , movingSheet = Sheets.NotMoving
     , sheetPermissions = gameData.sheetPermissions
@@ -114,6 +123,12 @@ type alias GameData =
     , sheetPermissions : Dict SheetId SheetPermission
     }
 
+type alias GameSummary =
+    { id : GameId
+    , title : String
+    , gameType : GameType
+    , players : List Player
+    }
 
 type alias GameId =
     String
@@ -128,9 +143,9 @@ mergeGameData model gameData =
     }
 
 
-emptyGameData : GameType -> GameData
-emptyGameData gameType =
-    { title = "New Game"
+emptyGameData : String -> GameType -> GameData
+emptyGameData title gameType =
+    { title = title
     , gameType = gameType
     , sheetsOrdering = Array.fromList []
     , sheetPermissions = Dict.empty
@@ -165,7 +180,7 @@ type Msg
     | ExitToLobby
     | CreateInvite
     | InviteCreated (WebData String)
-    | RemovePlayer PersonId
-    | PlayerRemoved GameId PersonId (Result Http.Error String)
+    | RemovePlayer PlayerId
+    | PlayerRemoved GameId PlayerId (Result Http.Error String)
     | PlayerRemovedSuccess
     | ChatMsg Chat.Msg

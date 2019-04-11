@@ -18,26 +18,22 @@ License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 -}
 
-module Game.Person exposing (..)
+module Game.Player exposing (..)
 
-type alias PersonId = String
+type alias PlayerId = String
 
-type alias Person =
-    { id : PersonId
-    , accessLevel : AccessLevel
-    , username : String
+type alias Player =
+    { id : PlayerId
+    , role : Role
+    , displayName : String
+    , presence : Presence
     }
 
 type Presence
     = Online
     | Offline
 
-type alias PlayerPresence =
-    { id : String
-    , presence : Presence
-    }
-
-type AccessLevel
-    = Owner
-    | GameMaster
-    | Player
+type Role
+    = OwnerRole
+    | GameMasterRole
+    | PlayerRole

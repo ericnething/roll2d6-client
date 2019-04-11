@@ -40,7 +40,7 @@ import Game.Sheet as Sheet
 import Css exposing (..)
 import Game.Types exposing (..)
 import Game.GameType exposing (..)
-import Game.Person exposing (..)
+import Game.Player exposing (..)
 import Game.Sheets.Types as Sheets exposing (SheetId)
 import Game.Sheets as Sheets
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
@@ -87,7 +87,7 @@ subscriptions =
 update : Navigation.Key
        -> Msg
        -> Model
-       -> ( Model, Cmd Msg )
+       -> (Model, Cmd Msg)
 update navkey msg model =
     case msg of
         SheetsMsg (Sheets.OpenSheetPermissions sheetId) ->
@@ -147,7 +147,7 @@ update navkey msg model =
         ExitToLobby ->
             ( model
             , Cmd.batch
-                [ toCmd (ChatMsg Chat.LeaveCurrentRoom)
+                [ toCmd <| ChatMsg (Chat.LeaveRoom model.id)
                 , Navigation.replaceUrl
                     navkey
                     (Route.toUrlString Route.Lobby)
@@ -232,8 +232,8 @@ updateDebouncer =
             { model | debouncer = debouncer }
     }
 
-view : (Int, Int) -> Chat.Model -> Model -> Html Msg
-view viewportSize chatModel model =
+view : (Int, Int) -> Maybe Chat.Room -> Model -> Html Msg
+view viewportSize mChatRoom model =
     div
         [ css
             [ Css.property "display" "grid"
@@ -246,7 +246,9 @@ view viewportSize chatModel model =
         [ lazy topToolbar model
         , Sheets.view viewportSize model
             |> Html.Styled.map SheetsMsg
-        , lazy sidebar chatModel
+        , case mChatRoom of
+              Nothing -> div [] []
+              Just chatRoom -> lazy sidebar chatRoom
         , lazy overlayView model
         ]
 
@@ -268,7 +270,7 @@ topToolbar model =
             , Css.property "grid-column" "1 / 2"
             ]
         ]
-        [ buttons model.myPlayerInfo
+        [ buttons model.myPlayer
         , gameTitle model.title
         , div [ css [ displayFlex ] ]
             [ onlinePlayers model.players
@@ -298,7 +300,7 @@ exitGameButton =
                   ]
     [ text "Exit Game" ]
 
-buttons : Person -> Html Msg
+buttons : Player -> Html Msg
 buttons player =
     div [ css
           [ displayFlex
@@ -306,8 +308,8 @@ buttons player =
           , whiteSpace noWrap
           ]
         ]
-    (case player.accessLevel of
-         Player ->
+    (case player.role of
+         PlayerRole ->
              [ exitGameButton ]
          _ ->
              [ exitGameButton
@@ -374,7 +376,7 @@ invitePlayersCircleButton =
         [ text "+" ]
 
 
-onlinePlayers : List Person -> Html Msg
+onlinePlayers : List Player -> Html Msg
 onlinePlayers players =
     let
         avatar name bg =
@@ -423,9 +425,9 @@ onlinePlayers players =
              -- |> List.filter
              --    (\{ presence } -> presence == Online )
              |> List.map
-                (\{ username, id } ->
+                (\{ displayName, id } ->
                      avatar
-                     (String.left 1 username)
+                     (String.left 1 displayName)
                      "0074D9")
         )
 
@@ -633,7 +635,7 @@ instantInviteView mInvite =
 -- Player List
 --------------------------------------------------
 
-playerListView : List Person -> Html Msg
+playerListView : List Player -> Html Msg
 playerListView players =
     div [ css
           [ margin2 (Css.em 4) auto
@@ -654,7 +656,7 @@ playerListView players =
     ]
 
 
-playerListItemView : Person -> Html Msg
+playerListItemView : Player -> Html Msg
 playerListItemView player =
     div [ css
           [ displayFlex
@@ -672,7 +674,7 @@ playerListItemView player =
                 --           opacity (num 0.6)
                 ]
               ]
-              [ text player.username
+              [ text player.displayName
               -- , case player.presence of
               --       Online ->
               --           presenceIndicator "19b419" "online"
@@ -710,8 +712,8 @@ presenceIndicator color status =
 -- Side Menu
 --------------------------------------------------
 
-sidebar : Chat.Model -> Html Msg
-sidebar model =
+sidebar : Chat.Room -> Html Msg
+sidebar chatRoom =
     div [ css
           [ backgroundColor (hex "ddd")
           , Css.height (vh 100)
@@ -722,7 +724,7 @@ sidebar model =
 
         ]
     [ Icons.diceDefs
-    , Html.Styled.map ChatMsg (Chat.view model)
+    , Html.Styled.map ChatMsg (Chat.compactRoomView chatRoom)
     ]
 
 jumpToBottom : String -> Cmd Msg

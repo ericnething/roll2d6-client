@@ -27,48 +27,69 @@ import Json.Decode
 import Json.Encode
 import Ports exposing (XMPPClientRef)
 import Time
-import Game.Person exposing (Person)
 
-type alias Model =
-    { ref : XMPPClientRef
-    , connected : Bool
-    , room : JID
-    , input : String
+type alias Model r =
+    { r |
+      xmppClientRef : XMPPClientRef
+    , rooms : Dict BareJID Room
+    , me : Person
+    -- , friends : Dict PersonId Person
+    }
+
+------------------------------------------------------------
+--| Person
+------------------------------------------------------------
+
+type alias PersonId = String
+
+type alias Person =
+    { id : PersonId
+    , displayName : String
+    , presence : Presence
+    }
+
+type Presence
+    = Online
+    | Offline
+
+personToJID : Person -> JID
+personToJID { id, displayName } =
+    { full = id ++ "/" ++ displayName
+    , bare = id
+    , resource = displayName
+    }
+
+------------------------------------------------------------
+--| Conversation
+------------------------------------------------------------
+
+type alias Conversation =
+    { with : PersonId
     , messages : List Message
-    , roster : Dict String JID
-    , me : JID
+    , input : String
     }
 
-newModel : String -> Person -> Model
-newModel roomName me =
-    { ref = Json.Encode.null
-    , connected = False
-    , room = { full = roomName ++ "@muc.localhost"
-             , bare = roomName ++ "@muc.localhost"
-             , resource = ""
-             }
-    , input = ""
-    , messages = []
-    , roster = Dict.empty --Dict.fromList [(me.id, personToJID me)]
-    , me = personToJID me
-    }
+------------------------------------------------------------
+--| Room
+------------------------------------------------------------
 
 type alias RoomConn =
     { room : String
-    , username : String   
+    , displayName : String
     }
 
-type alias ConnectionInfo =
-    { jid : String
-    , password : String
+type alias RoomId = String
+
+type alias Room =
+    { id : RoomId
+    , input : String
+    , messages : List Message
+    , roster : Dict PersonId Person
     }
 
-personToJID : Person -> JID
-personToJID { id, username } =
-    { full = id ++ "/" ++ username
-    , bare = id
-    , resource = username
-    }
+------------------------------------------------------------
+--| JID
+------------------------------------------------------------
 
 type alias JID =
     { full : String
@@ -76,15 +97,16 @@ type alias JID =
     , resource : String
     }
 
+type alias BareJID = String
+
+------------------------------------------------------------
+--| Messages
+------------------------------------------------------------
+
 type alias NewMessage =
-    { to : JID
+    { to : BareJID
     , body : String
     }
-
-type Stanza
-    = StanzaMessage Message
-    | StanzaPresence Presence
-    | StanzaDecodeError Json.Decode.Error
 
 type alias Message =
     { from : JID
@@ -92,15 +114,14 @@ type alias Message =
     , timestamp : Time.Posix
     }
 
-type PresenceStatus
-    = Online
-    | Offline
+------------------------------------------------------------
+--| Stanzas
+------------------------------------------------------------
 
-type alias Presence =
-    { from : JID
-    , presence : PresenceStatus
-    }
-
+type Stanza
+    = MessageStanza Message
+    | PresenceStanza (JID, Presence)
+    | StanzaDecodeError Json.Decode.Error
 
 ------------------------------------------------------------
 --| Dice Rolling
@@ -144,11 +165,11 @@ type DiceRollRequest =
 ------------------------------------------------------------
 type Msg
     = StanzaReceived Stanza
-    | UpdateChatInput String
-    | ResetChatInput
+    | UpdateChatInput BareJID String
     | SendMessage NewMessage
-    | KeyPressChatInput
+    | EnterKeyPressed BareJID String
     -- | DiceRollResult DiceRoll
     | NoOp
-    | ClientConnected XMPPClientRef
-    | LeaveCurrentRoom
+    | ClientConnected
+    | JoinRoom RoomId
+    | LeaveRoom RoomId

@@ -19,7 +19,7 @@ License along with this program. If not, see
 -}
 
 module Chat exposing
-    ( view
+    ( compactRoomView
     , update
     , closeConnection
     , connectClient
@@ -41,13 +41,13 @@ import Browser.Dom as Dom
 import Time
 import Ports exposing (XMPPClientRef)
 import Json.Decode
+import Util exposing (toCmd)
 
 import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
 import Chat.Encode
     exposing
     ( encodeMessage
-    , encodeConnectionInfo
     , encodeRoomConn
     )
 
@@ -55,63 +55,62 @@ subscriptions : Sub Msg
 subscriptions =
     Sub.batch
         [ Ports.xmpp_received (StanzaReceived << decodeStanza)
-        , Ports.chatClientConnected ClientConnected
+        , Ports.chatClientConnected (always ClientConnected)
         ]
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model r -> (Model r, Cmd Msg)
 update msg model =
     case msg of
-        ClientConnected ref ->
-            ({ model | ref = ref, connected = True }
-            , Cmd.none
-            )
+        ClientConnected ->
+            (model, Cmd.none)
 
-        StanzaReceived (StanzaMessage message) ->
+        StanzaReceived (MessageStanza message) ->
             let _ = Debug.log "Message Received" message in
-            ({ model | messages = message :: model.messages }
+            ({ model
+                 | rooms =
+                     Dict.update
+                     message.from.bare
+                     (updateMessages message)
+                     model.rooms
+             }
             , jumpToBottom "chat-message-list"
             )
 
-        StanzaReceived (StanzaPresence { from, presence }) ->
-            case presence of
-                Online ->
-                    ({ model
-                         | roster
-                           = Dict.insert from.full from model.roster }
-                    , Cmd.none
-                    )
-                Offline ->
-                    ({ model
-                         | roster
-                           = Dict.remove from.full model.roster }
-                    , Cmd.none
-                    )
+        StanzaReceived (PresenceStanza (from, presence)) ->
+            (model
+            -- ({ model
+            --      | rooms =
+            --          Dict.update
+            --          from.bare
+            --          (updateRoster (updatePresence from presence))
+            --          model.rooms
+            --  }
+            , Cmd.none
+            )
 
         StanzaReceived (StanzaDecodeError e) ->
             let _ = Debug.log "Decoding Error" e in
             (model, Cmd.none)
 
-        UpdateChatInput s ->
-            ({ model | input = s }, Cmd.none)
-
-        ResetChatInput ->
-            ({ model | input = "" }, Cmd.none)
+        UpdateChatInput id s ->
+            ({ model
+                 | rooms = Dict.update id (updateChatInput s) model.rooms }
+            , Cmd.none)
 
         SendMessage newMessage ->
             ( model
             , Cmd.batch
-                [ Task.perform
-                      identity
-                      (Task.succeed ResetChatInput)
-                , Ports.xmpp_send (model.ref, encodeMessage newMessage)
+                [ toCmd (resetChatInput newMessage.to)
+                , Ports.xmpp_send (model.xmppClientRef, encodeMessage newMessage)
                 ]
             )
 
-        KeyPressChatInput ->            
+        EnterKeyPressed to input ->
             let
-                rawMessage = String.trim model.input
+                message = String.trim input
             in
-                if String.length rawMessage < 1
+                if
+                    String.length message < 1
                 then
                     (model, Cmd.none)
                 else
@@ -129,24 +128,28 @@ update msg model =
                     --                     (model, Cmd.none)
                             
                     --     Nothing ->
-                            (model
-                            , Task.succeed (NewMessage model.room rawMessage)
-                                |> Task.perform SendMessage
+                            ( model
+                            , toCmd <| SendMessage (NewMessage to message)
                             )
 
         NoOp ->
             (model, Cmd.none)
 
-        LeaveCurrentRoom ->
-            ({ model
-                 | messages = []
-                 , input = ""
-                 , roster = Dict.empty
-             }
+        JoinRoom id ->
+            ( model
+            , joinRoom
+                model.xmppClientRef
+                { room = id
+                , displayName = model.me.displayName
+                }
+            )
+
+        LeaveRoom id ->
+            ( model
             , leaveRoom
-                model.ref
-                { room = model.room.bare
-                , username = model.me.resource
+                model.xmppClientRef
+                { room = id
+                , displayName = model.me.displayName
                 }
             )
 
@@ -158,8 +161,45 @@ update msg model =
         --              (NewDiceRollMessage rollResult))
         --     )
 
-view : Model -> Html Msg
-view model =
+
+resetChatInput : BareJID -> Msg
+resetChatInput id = UpdateChatInput id ""
+
+-- updateRoster : Dict PersonId Person -> Maybe Person -> Maybe Person
+-- updateRoster roster mPerson =
+--     case mPerson of
+--         Just person -> Just { person | presence = presence }
+--         Nothing -> Nothing
+
+updatePresence : Presence -> Maybe Person -> Maybe Person
+updatePresence presence mPerson =
+    case mPerson of
+        Just person -> Just { person | presence = presence }
+        Nothing -> Nothing
+
+
+updateMessages : Message -> Maybe Room -> Maybe Room
+updateMessages message mRoom =
+    case mRoom of
+        Just room ->
+            Just { room | messages = message :: room.messages }
+
+        Nothing -> Nothing
+
+updateChatInput : String -> Maybe Room -> Maybe Room
+updateChatInput s mRoom =
+    case mRoom of
+        Just room ->
+            Just { room | input = s }
+
+        -- Just (Conversation conversation) ->
+        --     Conversation { conversation | input = s }
+
+        Nothing -> Nothing
+
+
+compactRoomView : Room -> Html Msg
+compactRoomView model =
     div [ css
           [ Css.property "display" "grid"
           , Css.property "grid-template-rows" "1fr auto"
@@ -176,11 +216,11 @@ view model =
     --         []
     --     Just model ->
             [ lazy messageLogView model.messages
-            , lazy inputView model.input
+            , lazy2 inputView model.id model.input
             ]--)
 
-inputView : String -> Html Msg
-inputView message =
+inputView : RoomId -> String -> Html Msg
+inputView to message =
     div [ css
             [ padding2 (Css.em 0.8) (px 0)
             ]
@@ -195,8 +235,8 @@ inputView message =
                 ]
               , rows 4
               , placeholder "Send a message or roll dice"
-              , onInput UpdateChatInput
-              , onEnter KeyPressChatInput
+              , onInput (UpdateChatInput to)
+              , onEnter (EnterKeyPressed to message)
               , value message
               ]
               []
@@ -372,16 +412,13 @@ jumpToBottom id =
     |> Task.attempt (\_ -> NoOp)
 
 
-closeConnection : Model -> Cmd msg
-closeConnection model =
-    -- case mmodel of
-    --     Nothing -> Cmd.none
-    --     Just model -> 
-            Ports.closeChatClient model.ref
+closeConnection : XMPPClientRef -> Cmd msg
+closeConnection ref =
+    Ports.closeChatClient ref
 
-connectClient : ConnectionInfo -> Cmd msg
-connectClient config =
-    Ports.connectChatClient (encodeConnectionInfo config)
+connectClient : Json.Decode.Value -> Cmd msg
+connectClient token =
+    Ports.connectChatClient token
 
 joinRoom : XMPPClientRef -> RoomConn -> Cmd msg
 joinRoom ref roomConn =

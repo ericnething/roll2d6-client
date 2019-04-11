@@ -20,12 +20,15 @@ License along with this program. If not, see
 
 module App
     exposing
-    ( view
+    ( init
+    , view
     , update
     , subscriptions
+    , routeToGame
+    , routeToLobby
     )
 
-import Main.Types exposing (..)
+import App.Types exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
 import Browser.Events
@@ -43,7 +46,7 @@ import Html.Styled.Lazy exposing (lazy)
 import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
-import Ports exposing (PouchDBRef)
+import Ports exposing (PouchDBRef, XMPPClientRef)
 import Game.Decode
     exposing
         ( decodeGame
@@ -51,18 +54,18 @@ import Game.Decode
         , decodeGameList
         )
 import Chat
-import Chat.Types as Chat
+import Chat.Types as Chat exposing (Person)
 import Task
 import Route exposing (Route)
 import Http
 import API
-import Invite
-import Game.Person
+import Game.Player
 import Util exposing (toCmd)
+import RemoteData exposing (RemoteData(..))
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : Sub Msg
+subscriptions =
     Sub.batch
         [ Ports.gameLoaded GameLoaded
         , Ports.gameLoadFailed (always GameLoadFailed)
@@ -83,28 +86,21 @@ subscriptions model =
         ]
 
 
-initialModel : Model
-initialModel key =
-    { screen = LobbyScreen Lobby.initialModel
-    , chat =
-        Chat.newModel
-            "test"
-            { id = "welkin@localhost"
-            , accessLevel = Game.Person.Owner
-            , username = "welkin"
-            }
+initialModel : XMPPClientRef -> Person -> Model
+initialModel ref me =
+    { xmppClientRef = ref
+    , games = NotAsked
+    , overlay = Lobby.OverlayNone
+    , me = me
+    , activeGame = NoGame
+    , rooms = Dict.empty
+    , tab = LobbyTab
     }
 
-
-init : (Model, Cmd Msg)
-init =
-    ( model
-    , Cmd.batch
-        [ Chat.connectClient
-              { jid = "welkin@localhost"
-              , password = "foobar"
-              }
-        ]
+init : XMPPClientRef -> Person -> (Model, Cmd Msg)
+init ref me =
+    ( initialModel ref me
+    , Cmd.none
     )
 
 update : Navigation.Key -> Msg -> Model -> (Model, Cmd Msg)
@@ -113,8 +109,8 @@ update navkey msg model =
         GameLoaded value ->
             case decodeGame value of
                 Ok toGameModel ->
-                    case model.screen of
-                        LoadingScreen progress ->
+                    case model.activeGame of
+                        LoadingGame id progress ->
                             let
                                 updatedProgress =
                                     { progress
@@ -122,8 +118,8 @@ update navkey msg model =
                                     }
                             in
                                 ({ model
-                                     | screen =
-                                         LoadingScreen updatedProgress
+                                     | activeGame =
+                                         LoadingGame id updatedProgress
                                  }
                                 , loadGameScreenIfDone updatedProgress
                                 )
@@ -145,8 +141,8 @@ update navkey msg model =
         MyPlayerInfoLoaded result ->
             case result of
                 Ok playerInfo ->
-                    case model.screen of
-                        LoadingScreen progress ->
+                    case model.activeGame of
+                        LoadingGame id progress ->
                             let
                                 updatedProgress =
                                     { progress
@@ -154,8 +150,8 @@ update navkey msg model =
                                     }
                             in
                                 ({ model
-                                     | screen =
-                                       LoadingScreen updatedProgress
+                                     | activeGame =
+                                       LoadingGame id updatedProgress
                                  }
                                 , loadGameScreenIfDone updatedProgress
                                 )
@@ -173,8 +169,8 @@ update navkey msg model =
         PlayerListLoaded result ->
             case result of
                 Ok players ->
-                    case model.screen of
-                        LoadingScreen progress ->
+                    case model.activeGame of
+                        LoadingGame id progress ->
                             let
                                 updatedProgress =
                                     { progress
@@ -182,8 +178,8 @@ update navkey msg model =
                                     }
                             in
                                 ({ model
-                                     | screen =
-                                       LoadingScreen updatedProgress
+                                     | activeGame =
+                                       LoadingGame id updatedProgress
                                  }
                                 , loadGameScreenIfDone updatedProgress
                                 )
@@ -203,12 +199,12 @@ update navkey msg model =
                 game = toGameModel myPlayerInfo players
             in
                 ({ model
-                     | screen = GameScreen game
+                     | activeGame = ActiveGame game
                  }
                 , Chat.joinRoom
-                    model.chat.ref
+                    model.xmppClientRef
                     { room = game.id
-                    , username = myPlayerInfo.username
+                    , displayName = myPlayerInfo.displayName
                     }
                 )
 
@@ -223,67 +219,35 @@ update navkey msg model =
             (model, toCmd (ChatMsg chatmsg))
 
         GameMsg localmsg ->
-            updateGameScreen localmsg model
+            updateGame navkey localmsg model
 
         LobbyMsg localmsg ->
-            updateLobbyScreen localmsg model
-
-        InviteMsg localmsg ->
-            updateInviteScreen localmsg model
+            let
+                (newModel, cmd) = Lobby.update navkey localmsg model
+            in
+                (newModel, Cmd.map LobbyMsg cmd)
 
         ChatMsg localmsg ->
             let
-                (newChat, cmd) = Chat.update localmsg model.chat
+                (newModel, cmd) = Chat.update localmsg model
             in
-                ({ model | chat = newChat }
-                , Cmd.map ChatMsg cmd)
-
-        WindowResized width height ->
-            ({ model | viewportSize = (width, height) }, Cmd.none)
+                (newModel, Cmd.map ChatMsg cmd)
 
 
-updateGameScreen : Game.Msg -> Model -> (Model, Cmd Msg)
-updateGameScreen localmsg model =
-    case model.screen of
-        GameScreen game ->
+updateGame : Navigation.Key -> Game.Msg -> Model -> (Model, Cmd Msg)
+updateGame navkey localmsg model =
+    case model.activeGame of
+        ActiveGame game ->
             let
                 (newGame, cmd) = Game.update navkey localmsg game
             in
-                ({ model | screen = GameScreen newGame }
+                ({ model | activeGame = ActiveGame newGame }
                 , Cmd.batch
                     [ Cmd.map GameMsg
                           (Game.maybeWriteToPouchDB localmsg newGame)
                     , Cmd.map GameMsg cmd
                     ]
                 )
-                
-        _ ->
-            (model, Cmd.none)
-
-
-updateLobbyScreen : Lobby.Msg -> Model -> (Model, Cmd Msg)
-updateLobbyScreen localmsg model =
-    case model.screen of
-        LobbyScreen lobby ->
-            let
-                (newLobby, cmd) = Lobby.update navkey localmsg lobby
-            in
-                ({ model | screen = LobbyScreen newLobby }
-                , Cmd.map LobbyMsg cmd)
-
-        _ ->
-            (model, Cmd.none)
-
-
-updateInviteScreen : Invite.Msg -> Model -> (Model, Cmd Msg)
-updateInviteScreen localmsg model =
-    case model.screen of
-        InviteScreen invite ->
-            let
-                (newInvite, cmd) = Invite.update navkey localmsg invite
-            in
-                ({ model | screen = InviteScreen newInvite }
-                , Cmd.map InviteMsg cmd)
 
         _ ->
             (model, Cmd.none)
@@ -303,20 +267,78 @@ loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =
             Cmd.none
 
 
-view : Model -> Html Msg
-view model =
-    case model.screen of
-        LobbyScreen submodel ->
-            Lobby.view submodel
-                |> Html.Styled.map LobbyMsg
+routeToGame : Model -> GameId -> (Model, Cmd Msg)
+routeToGame model gameId =
+    case model.activeGame of
+        NoGame ->
+            ({ model
+                 | activeGame = LoadingGame gameId emptyLoadingProgress
+                 , tab = GameTab
+             }
+            , Cmd.batch
+                [ Ports.loadGame gameId
+                , API.getMyPlayerInfo gameId
+                , API.getPlayers gameId
+                ]
+            )
 
-        LoadingScreen _ ->
-            div [] [ text "Loading game..." ]
+        LoadingGame id progress ->
+            if
+                gameId == id
+            then
+                (model, Cmd.none)
+            else
+                ({ model
+                     | activeGame = LoadingGame id emptyLoadingProgress
+                     , tab = GameTab
+                 }
+                , Cmd.batch
+                    [ Ports.loadGame gameId
+                    , API.getMyPlayerInfo gameId
+                    , API.getPlayers gameId
+                    ]
+                )
 
-        GameScreen game ->
-            Game.view model.viewportSize model.chat game
-                |> Html.Styled.map GameMsg
+        ActiveGame game ->
+            if
+                gameId == game.id
+            then
+                (model, Cmd.none)
+            else
+                ({ model
+                     | activeGame = LoadingGame gameId emptyLoadingProgress
+                     , tab = GameTab
+                 }
+                , Cmd.batch
+                    [ Ports.loadGame gameId
+                    , API.getMyPlayerInfo gameId
+                    , API.getPlayers gameId
+                    ]
+                )
 
-        InviteScreen invite ->
-            Invite.view invite
-                |> Html.Styled.map InviteMsg
+
+routeToLobby : Model -> (Model, Cmd Msg)
+routeToLobby model =
+    ({ model | tab = LobbyTab }
+    , Cmd.map LobbyMsg Lobby.init)
+        
+        
+view : (Int, Int) -> Model -> Html Msg
+view viewportSize model =
+    case model.tab of
+        LobbyTab ->
+            Lobby.view model
+                |> Html.Styled.map LobbyMsg 
+
+        GameTab ->
+            case model.activeGame of
+                LoadingGame _ _ ->
+                    div [] [ text "Loading game..." ]
+
+                ActiveGame game ->
+                    Game.view viewportSize (Dict.get game.id model.rooms) game
+                        |> Html.Styled.map GameMsg
+
+                NoGame ->
+                    div [] [ text "No game." ]
+

@@ -22,26 +22,15 @@ module Lobby.Types exposing (..)
 
 import Game.Types as Game
 import Game.GameType as Game
+import Game.Player exposing (Player)
 import RemoteData exposing (RemoteData(..), WebData)
 import Http
 
 
-type alias Model =
-    { games : WebData (List GameMetadata)
+type alias Model r =
+    { r |
+      games : WebData (List Game.GameSummary)
     , overlay : Overlay
-    }
-
-
-initialModel : Model
-initialModel =
-    { games = NotAsked
-    , overlay = OverlayNone
-    }
-
-
-type alias GameMetadata =
-    { id : Game.GameId
-    , title : String
     }
 
 type Overlay
@@ -59,7 +48,7 @@ type Msg
     | UpdateNewGameTitle String
     | UpdateNewGameType Game.GameType
     | GetGameList
-    | SetGameList (WebData (List GameMetadata))
+    | SetGameList (WebData (List Game.GameSummary))
     | LoadGame Game.GameId
     | Logout
     | LogoutResponse (Result Http.Error String)

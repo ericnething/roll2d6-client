@@ -23,113 +23,55 @@ module Main.Types exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
 import Url exposing (Url)
-import Game.Types as Game exposing (GameId)
-import Game.GameType as Game
-import Game.Person as Game
-import Game.Sheets.Types as Sheets
-import Game.Sheet.Types as Sheet
 import Json.Decode
-import Lobby.Types as Lobby
 import Login.Types as Login
-import Ports exposing (PouchDBRef)
+import Ports exposing (XMPPClientRef)
+import Chat.Types exposing (Person)
 import Route exposing (Route)
 import Http
+import App.Types as App
 import Invite
-import Chat.Types as Chat
 
 type alias Flags =
-    { windowSize : { width : Int
-                   , height : Int
-                   }
-    , credentials : { jid : Maybe String
-                    , username : Maybe String
-                    , password : Maybe String
-                    }
+    { windowSize : (Int, Int)
     }
 
 type alias Model =
     { screen : Screen
     , navkey : Navigation.Key
     , viewportSize : (Int, Int)
-    , chat : Chat.Model
-    -- , xmppClientRef : XMPPClientRef
-    -- , friends : Dict BareJID Person
-    -- , conversations : Dict BareJID Conversation
-    -- , games : Dict GameId GameInfo
-    -- , me : Person
-    -- , activeTab : Tab
-    -- , currentGame : CurrentGame
     }
-
--- type CurrentGame
---     = CurrentGame Game
---     | LoadingGame GameId
---     | NoGame
-
--- type Tab
---     = ChatTab
---     | GameTab
-
--- type alias Conversation =
---     { with : JID
---     , messages : List Message
---     , input : String
---     }
-
--- type alias GameInfo =
---     { id : GameId
---     , room : JID
---     , gameType : GameType
---     , players : List Person
---     }
-
--- type alias Person =
---     { jid : JID
---     , displayName : String
---     , presence : PresenceStatus
---     }
-
-type alias LoadingProgress =
-    { myPlayerInfo : Maybe Game.Person
-    , toGameModel : Maybe (Game.Person
-                          -> List Game.Person
-                          -> Game.Model)
-    , players : Maybe (List Game.Person)
-    }
-
-emptyLoadingProgress =
-    { myPlayerInfo = Nothing
-    , toGameModel = Nothing
-    , players = Nothing
-    }    
 
 type Screen
     = LoginScreen Login.Model
-    | LobbyScreen Lobby.Model
+    | AppScreen App.Model
     | LoadingScreen LoadingProgress
-    | GameScreen Game.Model
     | InviteScreen Invite.Model
 
+type alias LoadingProgress =
+    { xmppClientRef : Maybe XMPPClientRef
+    , me : Maybe Person
+    }
+
+type alias LoadingProgressComplete =
+    { xmppClientRef : XMPPClientRef
+    , me : Person
+    }
+
+emptyLoadingProgress : LoadingProgress
+emptyLoadingProgress =
+    { xmppClientRef = Nothing
+    , me = Nothing
+    }
 
 type Msg
     = NavigateToUrl UrlRequest
     | UrlChanged Url
     | RouteChanged (Maybe Route)
-    | GameMsg Game.Msg
-    | ChatMsg Chat.Msg
-    | LobbyMsg Lobby.Msg
     | LoginMsg Login.Msg
-    | GameLoaded Json.Decode.Value
-    | GameLoadFailed
-    | MyPlayerInfoLoaded (Result Http.Error Game.Person)
-    | PlayerListLoaded (Result Http.Error (List Game.Person))
-    | LoadGameScreen
-      { toGameModel : Game.Person
-                    -> List Game.Person
-                    -> Game.Model
-      , myPlayerInfo : Game.Person
-      , players : List Game.Person
-      }
-    | AuthFailed
+    | AppMsg App.Msg
     | InviteMsg Invite.Msg
     | WindowResized Int Int
+    | AppLoaded LoadingProgressComplete
+    | XMPPClientLoaded XMPPClientRef
+    | MyPersonLoaded Json.Decode.Value

@@ -37,13 +37,13 @@ module API
 import Http
 import Json.Decode exposing (decodeValue)
 import Json.Encode
-import Main.Types as Main
+import App.Types as App
 import Lobby.Types as Lobby
 import Login.Types as Login
 import Game.Types as Game
 import Game.Sheets.Types as Sheets
 import Game.Sheet.Types as Sheet
-import Game.Person as Person
+import Game.Player as Player
 import Invite
 import Game.Decode
     exposing
@@ -183,7 +183,7 @@ joinGame inviteId =
     in
         Http.send (Invite.JoinGame inviteId) request
 
-getPlayers : Game.GameId -> Cmd Main.Msg
+getPlayers : Game.GameId -> Cmd App.Msg
 getPlayers gameId =
     let
         request =
@@ -197,9 +197,9 @@ getPlayers gameId =
                 , withCredentials = False
                 }
     in
-        Http.send Main.PlayerListLoaded request
+        Http.send App.PlayerListLoaded request
 
-removePlayer : Game.GameId -> Person.PersonId -> Cmd Game.Msg
+removePlayer : Game.GameId -> Player.PlayerId -> Cmd Game.Msg
 removePlayer gameId playerId =
     let
         request =
@@ -217,7 +217,7 @@ removePlayer gameId playerId =
         Http.send (Game.PlayerRemoved gameId playerId) request
 
 
-getMyPlayerInfo : Game.GameId -> Cmd Main.Msg
+getMyPlayerInfo : Game.GameId -> Cmd App.Msg
 getMyPlayerInfo gameId =
     let
         request =
@@ -232,7 +232,7 @@ getMyPlayerInfo gameId =
                 , withCredentials = False
                 }
     in
-        Http.send Main.MyPlayerInfoLoaded request
+        Http.send App.MyPlayerInfoLoaded request
 
 
 generateNewSheetId : Game.GameId -> Sheet.SheetModel -> Cmd Sheets.Msg

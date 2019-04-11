@@ -34,13 +34,12 @@ module Game.Decode exposing
     )
 
 import Array exposing (Array)
-import Game.Types as Game
+import Game.Types as Game exposing (GameSummary)
 import Game.GameType as Game
-import Game.Person as Game
+import Game.Player as Game
 import Game.Sheets.Types as Sheets
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
-import Lobby.Types as Lobby
 import RemoteData
 import Time
 
@@ -69,67 +68,77 @@ scrollDecoder toMsg =
 -- Player List
 --------------------------------------------------
 
-decodePlayerList : Value -> Result Error (List Game.Person)
+decodePlayerList : Value -> Result Error (List Game.Player)
 decodePlayerList value =
     decodeValue playerListDecoder value
 
-playerListDecoder : Decoder (List Game.Person)
+playerListDecoder : Decoder (List Game.Player)
 playerListDecoder =
     list playerDecoder
 
-playerDecoder : Decoder Game.Person
+playerDecoder : Decoder Game.Player
 playerDecoder =
-    map3 Game.Person
+    map4 Game.Player
         (field "id" string)
-        (field "access" (string |> andThen accessLevelDecoder))
-        (field "username" string)
+        (field "role" roleDecoder)
+        (field "displayName" string)
+        (field "presence" presenceDecoder)
 
-accessLevelDecoder : String -> Decoder Game.AccessLevel
-accessLevelDecoder access =
-    case String.toLower access of
-        "owner" ->
-            succeed Game.Owner
-        "game master" ->
-            succeed Game.GameMaster
-        "player" ->
-            succeed Game.Player
-        _ ->
-            fail "Not a valid Access Level"
+roleDecoder : Decoder Game.Role
+roleDecoder =
+    string |> andThen (\role ->
+        case String.toLower role of
+            "owner" ->
+                succeed Game.OwnerRole
+            "game master" ->
+                succeed Game.GameMasterRole
+            "player" ->
+                succeed Game.PlayerRole
+            _ ->
+                fail "Not a valid Role"
+    )
 
-presenceDecoder : String -> Decoder Game.Presence
-presenceDecoder presence =
-    case String.toLower presence of
-        "online" ->
-            succeed Game.Online
-        "offline" ->
-            succeed Game.Offline
-        _ ->
-            fail "Not a valid Presence"
+presenceDecoder : Decoder Game.Presence
+presenceDecoder =
+    string |> andThen (\presence ->
+        case String.toLower presence of
+            "online" ->
+                succeed Game.Online
+            "offline" ->
+                succeed Game.Offline
+            _ ->
+                fail "Not a valid Presence"
+    )
 
 --------------------------------------------------
 -- Game Metadata List
 --------------------------------------------------
 
-decodeGameList : Value -> Result Error (List Lobby.GameMetadata)
+decodeGameList : Value -> Result Error (List GameSummary)
 decodeGameList value =
     decodeValue gameListDecoder value
 
 
-gameListDecoder : Decoder (List Lobby.GameMetadata)
+gameListDecoder : Decoder (List GameSummary)
 gameListDecoder =
     list gameMetadataDecoder
 
 
-gameMetadataDecoder : Decoder Lobby.GameMetadata
+gameMetadataDecoder : Decoder GameSummary
 gameMetadataDecoder =
-    map2 Lobby.GameMetadata
+    map4 GameSummary
         (field "id" string)
         (field "title" string)
+        (field "gameType" gameTypeDecoder)
+        (field "players" (list playerDecoder))
 
 
 --------------------------------------------------
 -- Game
 --------------------------------------------------
+
+type alias ToGame =
+    Game.Player -> List Game.Player -> Game.Model
 
 decodeGameId : Value -> Result Error Game.GameId
 decodeGameId value =
@@ -141,19 +150,12 @@ gameIdDecoder =
     string
 
 
-decodeGame : Value
-           -> Result Error
-              (Game.Person
-              -> List Game.Person
-              -> Game.Model)
+decodeGame : Value -> Result Error ToGame
 decodeGame value =
     decodeValue gameDecoder value
 
 
-gameDecoder : Decoder
-              (Game.Person
-              -> List Game.Person
-              -> Game.Model)
+gameDecoder : Decoder ToGame
 gameDecoder =
     at [ "game", "gameType" ] gameTypeDecoder
         |> andThen

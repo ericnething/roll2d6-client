@@ -43,25 +43,13 @@ import RemoteData exposing (RemoteData(..), WebData)
 import Task
 import Browser.Navigation as Navigation
 import Route
-import Game.Sheet as Sheet
+import Util exposing (toCmd)
 
-initialGameModel : String -> Game.GameType -> Game.GameData
-initialGameModel title gameType =
-    { title = title
-    , gameType = gameType
-    , sheetsOrdering = Array.fromList []
-    , sheetPermissions = Dict.empty
-    }
 
-init : ( Model, Cmd Msg )
-init =
-    ( initialModel
-    , Task.perform
-        identity
-        (Task.succeed GetGameList)
-    )
+init : Cmd Msg
+init = toCmd GetGameList
 
-update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
+update : Navigation.Key -> Msg -> Model r -> ( Model r, Cmd Msg )
 update navkey msg model =
     case msg of
         NewGame ->
@@ -71,7 +59,7 @@ update navkey msg model =
                     then
                         ( model
                         , API.newGame
-                            (initialGameModel title gameType)
+                            (Game.emptyGameData title gameType)
                         )
                     else
                         ( model, Cmd.none )
@@ -174,7 +162,7 @@ update navkey msg model =
             ( { model | overlay = OverlayNone }, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model r -> Html Msg
 view model =
     div
         [ css
@@ -248,7 +236,7 @@ gameButton =
             [ backgroundColor (hex "eee") ]
         ]
 
-gamePreview : GameMetadata -> Html Msg
+gamePreview : Game.GameSummary -> Html Msg
 gamePreview { id, title } =
     div []
         [ span
@@ -318,7 +306,7 @@ overlay =
         , overflowY scroll
         ]
 
-overlayView : Model -> Html Msg
+overlayView : Model r -> Html Msg
 overlayView model =
     case model.overlay of
         OverlayNone ->

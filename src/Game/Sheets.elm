@@ -39,7 +39,7 @@ import Game.Sheet as Sheet
 import Game.Sheet.Types exposing (SheetModel, SheetMsg)
 import Game.Sheets.Types exposing (..)
 import Game.GameType exposing (GameType)
-import Game.Person exposing (..)
+import Game.Player exposing (..)
 import Game.Encode exposing (encodeSheet)
 import Task
 import Util exposing (removeIndexFromArray, findArrayIndexOf, swapArray)
@@ -342,7 +342,7 @@ view viewportSize model =
             lazy2 sheetsView viewportSize model
         Just (FullSheet id editing) ->
             fullSheetView
-                { player = model.myPlayerInfo
+                { myPlayer = model.myPlayer
                 , fullSheet = FullSheet id editing
                 , sheetModel = Dict.get id model.sheets
                 , permissions =
@@ -351,9 +351,7 @@ view viewportSize model =
                         |> Maybe.map
                            (\perm -> (perm, model.players))
                 }
-                
 
-            
 
 --------------------------------------------------
 -- Game Sheets
@@ -366,7 +364,7 @@ sheetsView : (Int, Int)
               , sheetsViewportX : Float
               , gameType : GameType
               , movingSheet : MovingSheet
-              , myPlayerInfo : Person
+              , myPlayer : Player
               }
            -> Html Msg
 sheetsView (viewportWidth, _) { sheets
@@ -374,7 +372,7 @@ sheetsView (viewportWidth, _) { sheets
                               , sheetsViewportX
                               , gameType
                               , movingSheet
-                              , myPlayerInfo
+                              , myPlayer
                               } =
     let
         sheetWidth = 24 * 15
@@ -438,7 +436,7 @@ sheetsView (viewportWidth, _) { sheets
                                               _ ->
                                                   False
                                                       
-                                      , player = myPlayerInfo
+                                      , myPlayer = myPlayer
                                       }
                                  )
                                  acc
@@ -449,8 +447,8 @@ sheetsView (viewportWidth, _) { sheets
                 (0, Array.empty)
              |> Tuple.second
              |> (\array ->
-                     case myPlayerInfo.accessLevel of
-                         Player ->
+                     case myPlayer.role of
+                         PlayerRole ->
                              array
                          _ ->
                              Array.push
@@ -560,8 +558,8 @@ sheetList =
         ]
 
 
-sheetCard : Person -> SheetId -> SheetModel -> Html Msg
-sheetCard player id sheet =
+sheetCard : Player -> SheetId -> SheetModel -> Html Msg
+sheetCard myPlayer id sheet =
     div [ css
           [ borderRadius (Css.em 0.2)
           , backgroundColor (hex "fff")
@@ -576,8 +574,8 @@ sheetCard player id sheet =
             ]
           ]
           [ viewDetailsButton id
-          , case player.accessLevel of
-                Player ->
+          , case myPlayer.role of
+                PlayerRole ->
                     text ""
                 _ ->
                     moveButton id
@@ -621,10 +619,10 @@ sheetWrapper : { bounds : (Int, Int)
                , sheetId : SheetId
                , sheet : SheetModel
                , shift : Bool
-               , player : Person
+               , myPlayer : Player
                }
              -> Html Msg
-sheetWrapper { bounds, index, sheetId, sheet, shift, player } =
+sheetWrapper { bounds, index, sheetId, sheet, shift, myPlayer } =
     let
         (minBound, maxBound) = bounds
     in
@@ -643,7 +641,7 @@ sheetWrapper { bounds, index, sheetId, sheet, shift, player } =
                           Css.batch []
                     ]
                   ]
-                  [ sheetCard player sheetId sheet
+                  [ sheetCard myPlayer sheetId sheet
                   , spacer
                   , spacer
                   ]
@@ -664,17 +662,17 @@ fullSheetWrapper =
         , overflowY auto
         ]
 
-fullSheetView : { player : Person
+fullSheetView : { myPlayer : Player
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, List Person)
+                , permissions : Maybe (SheetPermission, List Player)
                 }
               -> Html Msg
-fullSheetView { player, fullSheet, sheetModel, permissions } =
+fullSheetView { myPlayer, fullSheet, sheetModel, permissions } =
     fullSheetWrapper []
         [ sheetList []
               [ fullSheetCard
-                    { player = player
+                    { myPlayer = myPlayer
                     , fullSheet = fullSheet
                     , sheetModel = sheetModel
                     , permissions = permissions
@@ -684,13 +682,13 @@ fullSheetView { player, fullSheet, sheetModel, permissions } =
               ]
         ]
 
-fullSheetCard : { player : Person
+fullSheetCard : { myPlayer : Player
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, List Person)
+                , permissions : Maybe (SheetPermission, List Player)
                 }
               -> Html Msg
-fullSheetCard { player
+fullSheetCard { myPlayer
               , fullSheet
               , sheetModel
               , permissions
@@ -720,7 +718,7 @@ fullSheetCard { player
                   ]
                 ]
                 [ editSheetToolbarView
-                      { player = player
+                      { myPlayer = myPlayer
                       , fullSheet = fullSheet
                       , permissions = permissions
                       }
@@ -740,11 +738,11 @@ fullSheetCard { player
                             [ defaultButton
                                   [ onClick CloseFullSheet ]
                                   [ text "← Go back to all sheets" ]
-                            , case player.accessLevel of
-                                  Player ->
+                            , case myPlayer.role of
+                                  PlayerRole ->
                                       if hasPermission
                                           (Maybe.map Tuple.first permissions)
-                                          player.id
+                                          myPlayer.id
                                       then
                                           editToggle
                                       else
@@ -765,12 +763,12 @@ fullSheetCard { player
 
 
 editSheetToolbarView :
-    { player : Person
+    { myPlayer : Player
     , fullSheet : FullSheet
-    , permissions : Maybe (SheetPermission, List Person)
+    , permissions : Maybe (SheetPermission, List Player)
     }
     -> Html Msg
-editSheetToolbarView { player, fullSheet, permissions } =
+editSheetToolbarView { myPlayer, fullSheet, permissions } =
     let
         (FullSheet sheetId isActive) = fullSheet
 
@@ -805,16 +803,16 @@ editSheetToolbarView { player, fullSheet, permissions } =
             ]
         [ sectionLabel "Assigned to"
         , assignedToSheetView permissions
-        , case player.accessLevel of
-              Player ->
+        , case myPlayer.role of
+              PlayerRole ->
                   text ""
               _ ->
                   defaultButton
                   [ onClick (OpenSheetPermissions sheetId) ]
                   [ text "Manage Permissions" ]
 
-        , case player.accessLevel of
-              Player ->
+        , case myPlayer.role of
+              PlayerRole ->
                   text ""
               _ ->
                   div []
@@ -830,8 +828,7 @@ editSheetToolbarView { player, fullSheet, permissions } =
                   ]
         ]
 
-assignedToSheetView : Maybe (SheetPermission, List Person)
-                    -> Html Msg
+assignedToSheetView : Maybe (SheetPermission, List Player) -> Html Msg
 assignedToSheetView mpermissions =
     case mpermissions of
         Just (permissions, players) ->
@@ -842,7 +839,7 @@ assignedToSheetView mpermissions =
                              (\player ->
                                   if List.member player.id ids
                                   then
-                                      li [] [ text player.username ]
+                                      li [] [ text player.displayName ]
                                   else
                                       text ""
                              )
@@ -944,12 +941,12 @@ toggleSwitch { offTitle, onTitle, isActive, toMsg } =
 sheetPermissionsView
     : SheetId
     -> { r |
-         myPlayerInfo : Person
-       , players : List Person
+         myPlayer : Player
+       , players : List Player
        , sheetPermissions : Dict SheetId SheetPermission
        }
     -> Html Msg
-sheetPermissionsView sheetId { myPlayerInfo
+sheetPermissionsView sheetId { myPlayer
                              , players
                              , sheetPermissions
                              } =
@@ -1013,7 +1010,7 @@ sheetPermissionsView sheetId { myPlayerInfo
                   , justifyContent spaceBetween
                   ]
                 ]
-                [ div [] [ text player.username ]
+                [ div [] [ text player.displayName ]
                 , toggleSwitch
                       { offTitle = ""
                       , onTitle = ""
@@ -1038,7 +1035,7 @@ sheetPermissionsView sheetId { myPlayerInfo
 
 
 hasPermission : Maybe SheetPermission
-              -> PersonId
+              -> PlayerId
               -> Bool
 hasPermission mpermissions playerId =
     case mpermissions of

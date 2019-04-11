@@ -25,6 +25,7 @@ module Invite
     , Model
     , update
     , view
+    , InviteId
     )
 
 import Game.Types as Game

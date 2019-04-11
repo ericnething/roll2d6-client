@@ -22,89 +22,58 @@ module App.Types exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Navigation
+import Dict exposing (Dict)
 import Url exposing (Url)
 import Game.Types as Game exposing (GameId)
 import Game.GameType as Game
-import Game.Person as Game
+import Game.Player as Game
 import Game.Sheets.Types as Sheets
 import Game.Sheet.Types as Sheet
 import Json.Decode
 import Lobby.Types as Lobby
-import Ports exposing (PouchDBRef)
+import Ports exposing (XMPPClientRef)
 import Route exposing (Route)
 import Http
 import Invite
-import Chat.Types as Chat
+import Chat.Types as Chat exposing (JID, Person)
+import RemoteData exposing (RemoteData(..), WebData)
 
-type alias Flags =
-    { windowSize : { width : Int
-                   , height : Int
-                   }
-    , credentials : { jid : Maybe String
-                    , username : Maybe String
-                    , password : Maybe String
-                    }
-    }
 
 type alias Model =
-    { screen : Screen
-    , chat : Chat.Model
-    -- , xmppClientRef : XMPPClientRef
-    -- , friends : Dict BareJID Person
+    { xmppClientRef : XMPPClientRef
+    , games : WebData (List Game.GameSummary)
+    , overlay : Lobby.Overlay
+    , me : Person
+    , activeGame : ActiveGame
+    , rooms : Dict Chat.RoomId Chat.Room
+    -- , friends : Dict BareJID Contact
     -- , conversations : Dict BareJID Conversation
-    -- , games : Dict GameId GameInfo
-    -- , me : Person
-    -- , activeTab : Tab
-    -- , currentGame : CurrentGame
+    , tab : Tab
     }
 
--- type CurrentGame
---     = CurrentGame Game
---     | LoadingGame GameId
---     | NoGame
 
--- type Tab
---     = ChatTab
---     | GameTab
+type ActiveGame
+    = ActiveGame Game.Model
+    | LoadingGame GameId LoadingProgress
+    | NoGame
 
--- type alias Conversation =
---     { with : JID
---     , messages : List Message
---     , input : String
---     }
-
--- type alias GameInfo =
---     { id : GameId
---     , room : JID
---     , gameType : GameType
---     , players : List Person
---     }
-
--- type alias Person =
---     { jid : JID
---     , displayName : String
---     , presence : PresenceStatus
---     }
+type Tab
+    = LobbyTab
+    | GameTab
 
 type alias LoadingProgress =
-    { myPlayerInfo : Maybe Game.Person
-    , toGameModel : Maybe (Game.Person
-                          -> List Game.Person
+    { myPlayerInfo : Maybe Game.Player
+    , toGameModel : Maybe (Game.Player
+                          -> List Game.Player
                           -> Game.Model)
-    , players : Maybe (List Game.Person)
+    , players : Maybe (List Game.Player)
     }
 
 emptyLoadingProgress =
     { myPlayerInfo = Nothing
     , toGameModel = Nothing
     , players = Nothing
-    }    
-
-type Screen
-    = LobbyScreen Lobby.Model
-    | LoadingScreen LoadingProgress
-    | GameScreen Game.Model
-    | InviteScreen Invite.Model
+    }
 
 
 type Msg
@@ -113,14 +82,13 @@ type Msg
     | LobbyMsg Lobby.Msg
     | GameLoaded Json.Decode.Value
     | GameLoadFailed
-    | MyPlayerInfoLoaded (Result Http.Error Game.Person)
-    | PlayerListLoaded (Result Http.Error (List Game.Person))
+    | MyPlayerInfoLoaded (Result Http.Error Game.Player)
+    | PlayerListLoaded (Result Http.Error (List Game.Player))
     | LoadGameScreen
-      { toGameModel : Game.Person
-                    -> List Game.Person
+      { toGameModel : Game.Player
+                    -> List Game.Player
                     -> Game.Model
-      , myPlayerInfo : Game.Person
-      , players : List Game.Person
+      , myPlayerInfo : Game.Player
+      , players : List Game.Player
       }
     | AuthFailed
-    | InviteMsg Invite.Msg

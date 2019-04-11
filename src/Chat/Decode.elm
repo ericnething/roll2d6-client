@@ -19,13 +19,28 @@ License along with this program. If not, see
 -}
 
 module Chat.Decode
-    exposing ( decodeStanza )
+    exposing
+    ( decodeStanza
+    , decodePerson
+    )
 
 import Array exposing (Array)
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Time
 import Chat.Types exposing (..)
+
+
+
+decodePerson : Value -> Result Error Person
+decodePerson = decodeValue personDecoder
+
+personDecoder : Decoder Person
+personDecoder =
+    succeed Person
+    |> required "id" string
+    |> required "displayName" string
+    |> required "presence" presenceDecoder
 
 ------------------------------------------------------------
 --| Messages and Presence
@@ -43,38 +58,38 @@ stanzaDecoder =
         |> andThen
            (\type_ ->
                 case type_ of
-                    "message" -> map StanzaMessage messageDecoder
-                    "presence" -> map StanzaPresence presenceDecoder
+                    "message" -> map MessageStanza messageStanzaDecoder
+                    "presence" -> map PresenceStanza presenceStanzaDecoder
                     _ ->
                         fail ("Invalid Stanza type: " ++ type_)
            )
 
-messageDecoder : Decoder Message
-messageDecoder =
-    map3 Message
-    (field "from" jidDecoder)
-    (field "body" string)
-    (field "timestamp" timestampDecoder)
+messageStanzaDecoder : Decoder Message
+messageStanzaDecoder =
+    succeed Message
+    |> required "from" jidDecoder
+    |> required "body" string
+    |> required "timestamp" timestampDecoder
 
-presenceDecoder : Decoder Presence
-presenceDecoder =
-    map2 Presence
-    (field "from" jidDecoder)
-    (field "type" presenceStatusDecoder)
+presenceStanzaDecoder : Decoder (JID, Presence)
+presenceStanzaDecoder =
+    succeed Tuple.pair
+    |> required "from" jidDecoder
+    |> required "type" presenceDecoder
 
 jidDecoder : Decoder JID
 jidDecoder =
-    map3 JID
-    (field "full" string)
-    (field "bare" string)
-    (field "resource" string)
+    succeed JID
+    |> required "full" string
+    |> required "bare" string
+    |> required "resource" string
     
 timestampDecoder : Decoder Time.Posix
 timestampDecoder =
     int |> andThen (succeed << Time.millisToPosix)
 
-presenceStatusDecoder : Decoder PresenceStatus
-presenceStatusDecoder =
+presenceDecoder : Decoder Presence
+presenceDecoder =
     string
         |> andThen
            (\type_ ->

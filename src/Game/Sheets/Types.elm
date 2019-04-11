@@ -24,7 +24,7 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Game.GameType exposing (GameType)
 import Game.Sheet.Types exposing (SheetMsg, SheetModel)
-import Game.Person exposing (..)
+import Game.Player exposing (..)
 import Browser.Dom as Dom
 import Http
 import Json.Decode
@@ -42,15 +42,21 @@ type alias GameId = String
 type alias Model r =
     { r |
       ref : PouchDBRef
+
+    -- Game Info
+    , gameType : GameType
+    , id : GameId
+
+    -- Players
+    , players : List Player
+    , myPlayer : Player
+
+    -- Sheets
     , sheets : Dict SheetId SheetModel
     , fullSheet : Maybe FullSheet
     , sheetsViewportX : Float
-    , gameType : GameType
-    , myPlayerInfo : Person
-    , id : GameId
     , sheetsOrdering : Array SheetId
     , movingSheet : MovingSheet
-    , players : List Person
     , sheetPermissions : Dict SheetId SheetPermission
     }
 
@@ -65,7 +71,7 @@ type VisualShift
 
 type SheetPermission
     = AllPlayers
-    | SomePlayers (List PersonId)
+    | SomePlayers (List PlayerId)
 
 type Msg
     = SheetMsg SheetId SheetMsg

@@ -48,11 +48,6 @@ update navkey msg model =
                       { username = model.username
                       , password = model.password
                       }
-                , Ports.saveCredentials
-                    ((model.username ++ "@localhost")
-                    , model.username
-                    , model.password
-                    )
                 ]
             )
 

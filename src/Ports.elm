@@ -46,9 +46,9 @@ port xmpp_send : (XMPPClientRef, Value) -> Cmd msg
 port xmpp_received : (Value -> msg) -> Sub msg
 port xmpp_raw_received : (Value -> msg) -> Sub msg
 port closeChatClient : XMPPClientRef -> Cmd msg
-port connectChatClient : XMPPClientRef -> Cmd msg
+port connectChatClient : Value -> Cmd msg
 port chatClientConnected : (Value -> msg) -> Sub msg
 port joinRoom : (XMPPClientRef, Value) -> Cmd msg
 port leaveRoom : (XMPPClientRef, Value) -> Cmd msg
+port newChatClient : (Value -> msg) -> Sub msg
 
-port saveCredentials : (String, String, String) -> Cmd msg

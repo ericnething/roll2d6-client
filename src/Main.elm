@@ -44,6 +44,7 @@ import App.Types as App
 import Invite
 import Ports
 import Chat.Decode as Chat
+import Chat.Types as Chat
 
 
 main : Program Flags Model Msg
@@ -70,7 +71,8 @@ subscriptions model =
     Sub.batch
         [ Sub.map AppMsg App.subscriptions
         , Browser.Events.onResize WindowResized
-        , Ports.newChatClient XMPPClientLoaded
+        , Ports.chatClientCreated XMPPClientLoaded
+        , Ports.chatClientConnected (always XMPPClientConnected)
         ]
 
 
@@ -127,11 +129,26 @@ update msg model =
                 (app, cmd) = App.init xmppClientRef me
             in
                 ({ model | screen = AppScreen app }
-                , Cmd.map AppMsg cmd)
-
+                , Cmd.batch
+                    [ Cmd.map (AppMsg << App.LobbyMsg) API.getAllGames
+                    , Cmd.map AppMsg cmd
+                    ]
+                )
+                
         XMPPClientLoaded ref ->
             updateLoadingProgress model (\progress ->
                 { progress | xmppClientRef = Just ref }
+            )
+
+        XMPPClientConnected ->
+            updateLoadingProgress model (\progress ->
+                { progress
+                    | isConnected = True
+                    , me = Just { id = "welkin@localhost"
+                                , displayName = "Welkin"
+                                , presence = Chat.Online
+                                }
+                }
             )
 
         MyPersonLoaded meJson ->
@@ -145,9 +162,9 @@ update msg model =
 
 
 loadAppIfComplete : LoadingProgress -> Cmd Msg
-loadAppIfComplete { xmppClientRef, me } =
-    case (xmppClientRef, me) of
-        (Just ref, Just myPerson) ->
+loadAppIfComplete { xmppClientRef, isConnected, me } =
+    case (xmppClientRef, isConnected, me) of
+        (Just ref, True, Just myPerson) ->
             toCmd <| AppLoaded
             { xmppClientRef = ref
             , me = myPerson
@@ -237,7 +254,7 @@ changeRouteTo route model =
                     -- in
                         ({ model | screen = LoadingScreen emptyLoadingProgress }
                         -- , Cmd.map AppMsg cmd)
-                        , Ports.connectChatClient Json.Encode.null)
+                        , Ports.createChatClient Json.Encode.null)
 
         Just (Route.Game gameId) ->
             case model.screen of

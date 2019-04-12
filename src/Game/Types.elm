@@ -127,7 +127,6 @@ type alias GameSummary =
     { id : GameId
     , title : String
     , gameType : GameType
-    , players : List Player
     }
 
 type alias GameId =

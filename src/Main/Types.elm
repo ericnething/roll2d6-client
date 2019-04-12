@@ -50,6 +50,7 @@ type Screen
 
 type alias LoadingProgress =
     { xmppClientRef : Maybe XMPPClientRef
+    , isConnected : Bool
     , me : Maybe Person
     }
 
@@ -61,6 +62,7 @@ type alias LoadingProgressComplete =
 emptyLoadingProgress : LoadingProgress
 emptyLoadingProgress =
     { xmppClientRef = Nothing
+    , isConnected = False
     , me = Nothing
     }
 
@@ -74,4 +76,5 @@ type Msg
     | WindowResized Int Int
     | AppLoaded LoadingProgressComplete
     | XMPPClientLoaded XMPPClientRef
+    | XMPPClientConnected
     | MyPersonLoaded Json.Decode.Value

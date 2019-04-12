@@ -200,12 +200,16 @@ update navkey msg model =
             in
                 ({ model
                      | activeGame = ActiveGame game
+                     , rooms =
+                         Dict.insert (game.id ++ "@muc.localhost")
+                         { id = game.id ++ "@muc.localhost"
+                         , input = ""
+                         , messages = []
+                         , roster = Dict.empty
+                         }
+                         model.rooms
                  }
-                , Chat.joinRoom
-                    model.xmppClientRef
-                    { room = game.id
-                    , displayName = myPlayerInfo.displayName
-                    }
+                , Cmd.map ChatMsg <| toCmd (Chat.JoinRoom game.id)
                 )
 
         AuthFailed ->
@@ -336,7 +340,7 @@ view viewportSize model =
                     div [] [ text "Loading game..." ]
 
                 ActiveGame game ->
-                    Game.view viewportSize (Dict.get game.id model.rooms) game
+                    Game.view viewportSize (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
                         |> Html.Styled.map GameMsg
 
                 NoGame ->

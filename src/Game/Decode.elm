@@ -42,7 +42,6 @@ import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import RemoteData
 import Time
-
 import Game.Sheet.Types as Sheet
 
 import Fate
@@ -78,11 +77,14 @@ playerListDecoder =
 
 playerDecoder : Decoder Game.Player
 playerDecoder =
-    map4 Game.Player
-        (field "id" string)
-        (field "role" roleDecoder)
-        (field "displayName" string)
-        (field "presence" presenceDecoder)
+    succeed Game.Player
+        |> required "id" string
+        |> required "access" roleDecoder
+        |> required "username" string
+        |> hardcoded Game.Online
+        -- |> required "role" roleDecoder
+        -- |> required "displayName" string
+        -- |> required "presence" presenceDecoder
 
 roleDecoder : Decoder Game.Role
 roleDecoder =
@@ -121,16 +123,15 @@ decodeGameList value =
 
 gameListDecoder : Decoder (List GameSummary)
 gameListDecoder =
-    list gameMetadataDecoder
+    list gameSummaryDecoder
 
 
-gameMetadataDecoder : Decoder GameSummary
-gameMetadataDecoder =
-    map4 GameSummary
-        (field "id" string)
-        (field "title" string)
-        (field "gameType" gameTypeDecoder)
-        (field "players" (list playerDecoder))
+gameSummaryDecoder : Decoder GameSummary
+gameSummaryDecoder =
+    succeed GameSummary
+        |> required "id" string
+        |> required "title" string
+        |> required "gameType" gameTypeDecoder
 
 
 --------------------------------------------------

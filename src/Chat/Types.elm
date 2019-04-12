@@ -24,7 +24,6 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Browser.Dom as Dom
 import Json.Decode
-import Json.Encode
 import Ports exposing (XMPPClientRef)
 import Time
 

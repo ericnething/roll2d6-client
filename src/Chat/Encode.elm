@@ -18,11 +18,7 @@ License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 -}
 
-module Chat.Encode
-    exposing
-    ( encodeMessage
-    , encodeRoomConn
-    )
+module Chat.Encode exposing (..)
 
 import Array exposing (Array)
 import Dict exposing (Dict)

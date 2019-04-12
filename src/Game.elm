@@ -246,9 +246,7 @@ view viewportSize mChatRoom model =
         [ lazy topToolbar model
         , Sheets.view viewportSize model
             |> Html.Styled.map SheetsMsg
-        , case mChatRoom of
-              Nothing -> div [] []
-              Just chatRoom -> lazy sidebar chatRoom
+        , lazy sidebar mChatRoom
         , lazy overlayView model
         ]
 
@@ -712,8 +710,8 @@ presenceIndicator color status =
 -- Side Menu
 --------------------------------------------------
 
-sidebar : Chat.Room -> Html Msg
-sidebar chatRoom =
+sidebar : Maybe Chat.Room -> Html Msg
+sidebar mChatRoom =
     div [ css
           [ backgroundColor (hex "ddd")
           , Css.height (vh 100)
@@ -724,7 +722,11 @@ sidebar chatRoom =
 
         ]
     [ Icons.diceDefs
-    , Html.Styled.map ChatMsg (Chat.compactRoomView chatRoom)
+    , case mChatRoom of
+          Just chatRoom ->
+              Html.Styled.map ChatMsg (Chat.compactRoomView chatRoom)
+          Nothing ->
+              text ""
     ]
 
 jumpToBottom : String -> Cmd Msg

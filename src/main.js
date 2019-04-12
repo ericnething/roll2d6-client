@@ -244,21 +244,9 @@ app.ports.dragstart.subscribe(function (event) {
 //----------------------------------------------
 //  XMPP
 //----------------------------------------------
-
-app.ports.xmpp_send.subscribe(function (data) {
-  const client = data[0];
-  const message = data[1];
-  message.type = "groupchat";
-  message.to = "test@muc.localhost";
-  client.sendMessage(message);
-});
-
-// app.ports.closeChatClient.subscribe(function (client) {
-//   client.disconnect();
-// });
-
-app.ports.connectChatClient.subscribe(function (data) {
-  const client = XMPP.createClient({
+let client;
+app.ports.createChatClient.subscribe(function (data) {
+  client = XMPP.createClient({
     jid: "welkin@localhost" , //data.jid,
     password: "foobar", //data.password,
     wsURL: "ws://localhost:5280/ws-xmpp",
@@ -267,7 +255,7 @@ app.ports.connectChatClient.subscribe(function (data) {
     useStreamManagement: true,
     resource: "web"
   });
-  app.ports.newChatClient.send(client);
+  app.ports.chatClientCreated.send(client);
 
   client.enableKeepAlive({ interval: 45, timeout: 120 });
 
@@ -320,21 +308,56 @@ app.ports.connectChatClient.subscribe(function (data) {
   client.connect();
 });
 
-app.ports.joinRoom.subscribe(function (args) {
-  const client = args[0];
-  const data = args[1];
-  client.joinRoom("test@muc.localhost" /*data.room*/, data.username, {
-    status: "It's going to be a great day",
-    joinMuc: {
-      history: {
-        maxstanzas: 20
+const xmppCommand = {
+  setRoomAffiliation: function(client, { room, person, affiliation }) {
+    client.setRoomAffiliation(room, person, affiliation);
+  },
+  createGameRoom: function(client, { room, title, gameType, nickname }) {
+    client.joinRoom(room, nickname);
+    client.configureRoom(room, {
+      fields: [
+        { name: "FORM_TYPE",
+          value: "http://jabber.org/protocol/muc#roomconfig"
+        },
+        { name: "muc#roomconfig_persistentroom", value: "1" },
+        { name: "muc#roomconfig_membersonly", value: "1" },
+        { name: "muc#roomconfig_roomname", value: title },
+        { name: "muc#roomconfig_roomdesc", value: gameType }
+      ]
+    });
+  },
+  addPlayer: function(client, { room, person }) {
+    client.setRoomAffiliation(room, person, "member");
+  },
+  removePlayer: function(client, { room, person }) {
+    client.setRoomAffiliation(room, person, "none");
+  },
+  joinRoom: function (client, { displayName, room }) {
+    client.joinRoom(`${room}@muc.localhost`, displayName, {
+      status: "It's going to be a great day",
+      joinMuc: {
+        history: {
+          maxstanzas: 20
+        }
       }
-    }
-  });
-});
+    });
+  },
+  leaveRoom: function (client, { displayName, room }) {
+    client.leaveRoom(`${room}@muc.localhost`, displayName);
+  },
+  sendMessage: function (client, message) {
+    message.type = "groupchat";
+    // message.to = "test@muc.localhost";
+    client.sendMessage(message);
+  }
+}
 
-app.ports.leaveRoom.subscribe(function (args) {
-  const client = args[0];
-  const data = args[1];
-  client.leaveRoom("test@muc.localhost" /*data.room*/, data.username);
+app.ports.xmpp_send.subscribe(function (args) {
+  const client = args.client;
+  const command = args.command;
+  const data = args.data;
+  const cmd = xmppCommand[command];
+  if (cmd) {
+    cmd(client, data);
+  }
 });

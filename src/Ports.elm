@@ -42,13 +42,9 @@ port dragstart : Value -> Cmd msg
 
 type alias XMPPClientRef = Value
 
-port xmpp_send : (XMPPClientRef, Value) -> Cmd msg
+port xmpp_send : Value -> Cmd msg
 port xmpp_received : (Value -> msg) -> Sub msg
-port xmpp_raw_received : (Value -> msg) -> Sub msg
-port closeChatClient : XMPPClientRef -> Cmd msg
-port connectChatClient : Value -> Cmd msg
+port createChatClient : Value -> Cmd msg
+port chatClientCreated : (Value -> msg) -> Sub msg
+port destroyChatClient : XMPPClientRef -> Cmd msg
 port chatClientConnected : (Value -> msg) -> Sub msg
-port joinRoom : (XMPPClientRef, Value) -> Cmd msg
-port leaveRoom : (XMPPClientRef, Value) -> Cmd msg
-port newChatClient : (Value -> msg) -> Sub msg
-

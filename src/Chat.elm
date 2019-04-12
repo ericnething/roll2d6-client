@@ -21,9 +21,6 @@ License along with this program. If not, see
 module Chat exposing
     ( compactRoomView
     , update
-    , closeConnection
-    , connectClient
-    , joinRoom
     , subscriptions
     )
 
@@ -39,17 +36,13 @@ import Css exposing (..)
 import Task
 import Browser.Dom as Dom
 import Time
-import Ports exposing (XMPPClientRef)
 import Json.Decode
 import Util exposing (toCmd)
-
+import Ports
 import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
-import Chat.Encode
-    exposing
-    ( encodeMessage
-    , encodeRoomConn
-    )
+import Chat.Encode exposing (encodeMessage)
+import Chat.XMPP as XMPP
 
 subscriptions : Sub Msg
 subscriptions =
@@ -65,7 +58,9 @@ update msg model =
             (model, Cmd.none)
 
         StanzaReceived (MessageStanza message) ->
-            let _ = Debug.log "Message Received" message in
+            let _ = Debug.log "Message Received" message
+                _ = Debug.log "Current Rooms" model.rooms
+            in
             ({ model
                  | rooms =
                      Dict.update
@@ -101,7 +96,9 @@ update msg model =
             ( model
             , Cmd.batch
                 [ toCmd (resetChatInput newMessage.to)
-                , Ports.xmpp_send (model.xmppClientRef, encodeMessage newMessage)
+                , XMPP.sendMessage
+                      model.xmppClientRef
+                      newMessage
                 ]
             )
 
@@ -137,7 +134,7 @@ update msg model =
 
         JoinRoom id ->
             ( model
-            , joinRoom
+            , XMPP.joinRoom
                 model.xmppClientRef
                 { room = id
                 , displayName = model.me.displayName
@@ -146,7 +143,7 @@ update msg model =
 
         LeaveRoom id ->
             ( model
-            , leaveRoom
+            , XMPP.leaveRoom
                 model.xmppClientRef
                 { room = id
                 , displayName = model.me.displayName
@@ -411,19 +408,3 @@ jumpToBottom id =
        )
     |> Task.attempt (\_ -> NoOp)
 
-
-closeConnection : XMPPClientRef -> Cmd msg
-closeConnection ref =
-    Ports.closeChatClient ref
-
-connectClient : Json.Decode.Value -> Cmd msg
-connectClient token =
-    Ports.connectChatClient token
-
-joinRoom : XMPPClientRef -> RoomConn -> Cmd msg
-joinRoom ref roomConn =
-    Ports.joinRoom (ref, encodeRoomConn roomConn)
-
-leaveRoom : XMPPClientRef -> RoomConn -> Cmd msg
-leaveRoom ref roomConn =
-    Ports.leaveRoom (ref, encodeRoomConn roomConn)

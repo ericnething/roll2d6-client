@@ -30,6 +30,7 @@ import Route exposing (Route)
 import Http
 import App.Types as App
 import Invite
+import Game.Types exposing (GameId)
 
 type alias Flags =
     { windowSize : (Int, Int)
@@ -71,4 +72,5 @@ type Msg
     | InviteMsg Invite.Msg
     | WindowResized Int Int
     | AppLoaded LoadingProgressComplete
+    | AppLoadedWithGame { me : Person, gameId : GameId }
     | MyPersonLoaded Json.Decode.Value

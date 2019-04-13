@@ -46,6 +46,7 @@ import Ports exposing (XMPPClient)
 import Chat.Decode as Chat
 import Chat.Types as Chat
 import Chat.XMPP as XMPP
+import Game.Types exposing (GameId)
 
 
 main : Program Flags Model Msg
@@ -132,6 +133,18 @@ update msg model =
                 , Cmd.batch
                     [ Cmd.map (AppMsg << App.LobbyMsg) API.getAllGames
                     , Cmd.map AppMsg cmd
+                    ]
+                )
+
+        AppLoadedWithGame { gameId, me } ->
+            let
+                (app, cmd) = App.init me
+                (newApp, gameCmd) = App.routeToGame app gameId
+            in
+                ({ model | screen = AppScreen newApp }
+                , Cmd.batch
+                    [ Cmd.map AppMsg cmd
+                    , Cmd.map AppMsg gameCmd
                     ]
                 )
 
@@ -242,7 +255,7 @@ changeRouteTo route model =
                         ({ model | screen = AppScreen newApp }
                         , Cmd.map AppMsg cmd)
 
-                _ -> initApp model
+                _ -> initAppWithGame gameId model
 
         Just (Route.Invite inviteId) ->
             ({ model | screen = InviteScreen Invite.initialModel }
@@ -259,6 +272,22 @@ initApp model =
         [ toCmd <|
               AppLoaded
               { me = { id = "welkin@localhost"
+                     , displayName = "Welkin"
+                     , presence = Chat.Online
+                     }
+              }
+        , XMPP.connect model.xmppClient
+        ]
+    )
+
+initAppWithGame : GameId -> Model -> (Model, Cmd Msg)
+initAppWithGame gameId model =
+    ({ model | screen = LoadingScreen emptyLoadingProgress }
+    , Cmd.batch
+        [ toCmd <|
+              AppLoadedWithGame
+              { gameId = gameId
+              , me = { id = "welkin@localhost"
                      , displayName = "Welkin"
                      , presence = Chat.Online
                      }

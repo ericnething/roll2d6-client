@@ -25,7 +25,6 @@ import Browser.Navigation as Navigation
 import Url exposing (Url)
 import Json.Decode
 import Login.Types as Login
-import Ports exposing (XMPPClientRef)
 import Chat.Types exposing (Person)
 import Route exposing (Route)
 import Http
@@ -34,12 +33,14 @@ import Invite
 
 type alias Flags =
     { windowSize : (Int, Int)
+    , xmppClient : Json.Decode.Value
     }
 
 type alias Model =
     { screen : Screen
     , navkey : Navigation.Key
     , viewportSize : (Int, Int)
+    , xmppClient : Json.Decode.Value
     }
 
 type Screen
@@ -49,21 +50,16 @@ type Screen
     | InviteScreen Invite.Model
 
 type alias LoadingProgress =
-    { xmppClientRef : Maybe XMPPClientRef
-    , isConnected : Bool
-    , me : Maybe Person
+    { me : Maybe Person
     }
 
 type alias LoadingProgressComplete =
-    { xmppClientRef : XMPPClientRef
-    , me : Person
+    { me : Person
     }
 
 emptyLoadingProgress : LoadingProgress
 emptyLoadingProgress =
-    { xmppClientRef = Nothing
-    , isConnected = False
-    , me = Nothing
+    { me = Nothing
     }
 
 type Msg
@@ -75,6 +71,4 @@ type Msg
     | InviteMsg Invite.Msg
     | WindowResized Int Int
     | AppLoaded LoadingProgressComplete
-    | XMPPClientLoaded XMPPClientRef
-    | XMPPClientConnected
     | MyPersonLoaded Json.Decode.Value

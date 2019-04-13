@@ -42,9 +42,10 @@ import Util exposing (toCmd)
 import App
 import App.Types as App
 import Invite
-import Ports
+import Ports exposing (XMPPClient)
 import Chat.Decode as Chat
 import Chat.Types as Chat
+import Chat.XMPP as XMPP
 
 
 main : Program Flags Model Msg
@@ -71,16 +72,15 @@ subscriptions model =
     Sub.batch
         [ Sub.map AppMsg App.subscriptions
         , Browser.Events.onResize WindowResized
-        , Ports.chatClientCreated XMPPClientLoaded
-        , Ports.chatClientConnected (always XMPPClientConnected)
         ]
 
 
 initialModel : Flags -> Navigation.Key -> Model
-initialModel { windowSize } key =
+initialModel { windowSize, xmppClient } key =
     { screen = LoginScreen Login.initialModel
     , navkey = key
     , viewportSize = windowSize
+    , xmppClient = xmppClient
     }
 
 
@@ -112,7 +112,7 @@ update msg model =
             changeRouteTo route model
 
         AppMsg localmsg ->
-            updateAppScreen localmsg model
+            updateAppScreen model.xmppClient localmsg model
 
         LoginMsg localmsg ->
             updateLoginScreen localmsg model
@@ -124,9 +124,9 @@ update msg model =
             ({ model | viewportSize = (width, height) }, Cmd.none)
 
 
-        AppLoaded { xmppClientRef, me } ->
+        AppLoaded { me } ->
             let
-                (app, cmd) = App.init xmppClientRef me
+                (app, cmd) = App.init me
             in
                 ({ model | screen = AppScreen app }
                 , Cmd.batch
@@ -134,22 +134,6 @@ update msg model =
                     , Cmd.map AppMsg cmd
                     ]
                 )
-                
-        XMPPClientLoaded ref ->
-            updateLoadingProgress model (\progress ->
-                { progress | xmppClientRef = Just ref }
-            )
-
-        XMPPClientConnected ->
-            updateLoadingProgress model (\progress ->
-                { progress
-                    | isConnected = True
-                    , me = Just { id = "welkin@localhost"
-                                , displayName = "Welkin"
-                                , presence = Chat.Online
-                                }
-                }
-            )
 
         MyPersonLoaded meJson ->
             updateLoadingProgress model (\progress ->
@@ -162,12 +146,11 @@ update msg model =
 
 
 loadAppIfComplete : LoadingProgress -> Cmd Msg
-loadAppIfComplete { xmppClientRef, isConnected, me } =
-    case (xmppClientRef, isConnected, me) of
-        (Just ref, True, Just myPerson) ->
+loadAppIfComplete { me } =
+    case me of
+        Just myPerson ->
             toCmd <| AppLoaded
-            { xmppClientRef = ref
-            , me = myPerson
+            { me = myPerson
             }
             
         _ ->
@@ -215,12 +198,12 @@ updateInviteScreen localmsg model =
             (model, Cmd.none)
 
 
-updateAppScreen : App.Msg -> Model -> (Model, Cmd Msg)
-updateAppScreen localmsg model =
+updateAppScreen : XMPPClient -> App.Msg -> Model -> (Model, Cmd Msg)
+updateAppScreen xmppClient localmsg model =
     case model.screen of
         AppScreen app ->
             let
-                (newApp, cmd) = App.update model.navkey localmsg app
+                (newApp, cmd) = App.update xmppClient model.navkey localmsg app
             in
                 ({ model | screen = AppScreen newApp }
                 , Cmd.map AppMsg cmd)
@@ -248,13 +231,7 @@ changeRouteTo route model =
                         ({ model | screen = AppScreen newApp }
                         , Cmd.map AppMsg cmd)
 
-                _ ->
-                    -- let
-                    --     (newApp, cmd) = App.init
-                    -- in
-                        ({ model | screen = LoadingScreen emptyLoadingProgress }
-                        -- , Cmd.map AppMsg cmd)
-                        , Ports.createChatClient Json.Encode.null)
+                _ -> initApp model
 
         Just (Route.Game gameId) ->
             case model.screen of
@@ -265,7 +242,7 @@ changeRouteTo route model =
                         ({ model | screen = AppScreen newApp }
                         , Cmd.map AppMsg cmd)
 
-                _ -> (model, Cmd.none)
+                _ -> initApp model
 
         Just (Route.Invite inviteId) ->
             ({ model | screen = InviteScreen Invite.initialModel }
@@ -275,6 +252,21 @@ changeRouteTo route model =
             (model, Cmd.none)
 
 
+initApp : Model -> (Model, Cmd Msg)
+initApp model =
+    ({ model | screen = LoadingScreen emptyLoadingProgress }
+    , Cmd.batch
+        [ toCmd <|
+              AppLoaded
+              { me = { id = "welkin@localhost"
+                     , displayName = "Welkin"
+                     , presence = Chat.Online
+                     }
+              }
+        , XMPP.connect model.xmppClient
+        ]
+    )
+    
 view : Model -> Html Msg
 view model =
     case model.screen of

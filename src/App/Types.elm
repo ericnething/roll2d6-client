@@ -31,7 +31,7 @@ import Game.Sheets.Types as Sheets
 import Game.Sheet.Types as Sheet
 import Json.Decode
 import Lobby.Types as Lobby
-import Ports exposing (XMPPClientRef)
+import Ports exposing (XMPPClient)
 import Route exposing (Route)
 import Http
 import Invite
@@ -40,15 +40,11 @@ import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias Model =
-    { xmppClientRef : XMPPClientRef
-    , games : WebData (List Game.GameSummary)
+    { games : WebData (List Game.GameSummary)
     , overlay : Lobby.Overlay
     , me : Person
     , activeGame : ActiveGame
     , rooms : Dict Chat.RoomId Chat.Room
-    -- , friends : Dict BareJID Contact
-    -- , conversations : Dict BareJID Conversation
-    , tab : Tab
     }
 
 
@@ -56,10 +52,6 @@ type ActiveGame
     = ActiveGame Game.Model
     | LoadingGame GameId LoadingProgress
     | NoGame
-
-type Tab
-    = LobbyTab
-    | GameTab
 
 type alias LoadingProgress =
     { myPlayerInfo : Maybe Game.Player

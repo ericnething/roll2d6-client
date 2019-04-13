@@ -30,7 +30,7 @@ import Debouncer.Messages as Debouncer
     , toDebouncer
     , fromSeconds
     )
-import Ports exposing (PouchDBRef, XMPPClientRef)
+import Ports exposing (PouchDBRef, XMPPClient)
 import RemoteData exposing (WebData)
 import Http
 import Time

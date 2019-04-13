@@ -21,7 +21,7 @@ License along with this program. If not, see
 module Chat.XMPP exposing (..)
 
 import Json.Decode
-import Ports exposing (XMPPClientRef)
+import Ports exposing (XMPPClient)
 import Chat.Types exposing (RoomConn, NewMessage)
 import Chat.Encode as Chat
 import Json.Encode as JE exposing (Value)
@@ -31,9 +31,11 @@ type Command
     = JoinRoom RoomConn
     | LeaveRoom RoomConn
     | SendMessage NewMessage
+    | Connect
+    | Disconnect
 
 
-encodeSend : XMPPClientRef -> Command -> Value
+encodeSend : XMPPClient -> Command -> Value
 encodeSend ref command =
     JE.object
     [ ("client", ref)
@@ -47,6 +49,8 @@ showCommand command =
         JoinRoom _ -> "joinRoom"
         LeaveRoom _ -> "leaveRoom"
         SendMessage _ -> "sendMessage"
+        Connect -> "connect"
+        Disconnect -> "disconnect"
 
 encodeCommand : Command -> Value
 encodeCommand command =
@@ -54,20 +58,30 @@ encodeCommand command =
         JoinRoom data -> Chat.encodeRoomConn data
         LeaveRoom data -> Chat.encodeRoomConn data
         SendMessage data -> Chat.encodeMessage data
+        Connect -> JE.null
+        Disconnect -> JE.null
 
 
-xmpp_send : XMPPClientRef -> Command -> Cmd msg
-xmpp_send ref command =
-    Ports.xmpp_send (encodeSend ref command)
+xmpp_send : XMPPClient -> Command -> Cmd msg
+xmpp_send client command =
+    Ports.xmpp_send (encodeSend client command)
 
-joinRoom : XMPPClientRef -> RoomConn -> Cmd msg
-joinRoom ref roomConn =
-    xmpp_send ref (JoinRoom roomConn)
+connect : XMPPClient -> Cmd msg
+connect client =
+    xmpp_send client Connect
 
-leaveRoom : XMPPClientRef -> RoomConn -> Cmd msg
-leaveRoom ref roomConn =
-    xmpp_send ref (LeaveRoom roomConn)
+disconnect : XMPPClient -> Cmd msg
+disconnect client =
+    xmpp_send client Disconnect
 
-sendMessage : XMPPClientRef -> NewMessage -> Cmd msg
-sendMessage ref message =
-    xmpp_send ref (SendMessage message)
+joinRoom : XMPPClient -> RoomConn -> Cmd msg
+joinRoom client roomConn =
+    xmpp_send client (JoinRoom roomConn)
+
+leaveRoom : XMPPClient -> RoomConn -> Cmd msg
+leaveRoom client roomConn =
+    xmpp_send client (LeaveRoom roomConn)
+
+sendMessage : XMPPClient -> NewMessage -> Cmd msg
+sendMessage client message =
+    xmpp_send client (SendMessage message)

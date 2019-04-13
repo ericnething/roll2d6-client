@@ -38,7 +38,7 @@ import Browser.Dom as Dom
 import Time
 import Json.Decode
 import Util exposing (toCmd)
-import Ports
+import Ports exposing (XMPPClient)
 import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
 import Chat.Encode exposing (encodeMessage)
@@ -48,11 +48,11 @@ subscriptions : Sub Msg
 subscriptions =
     Sub.batch
         [ Ports.xmpp_received (StanzaReceived << decodeStanza)
-        , Ports.chatClientConnected (always ClientConnected)
+        , Ports.xmpp_connected (always ClientConnected)
         ]
 
-update : Msg -> Model r -> (Model r, Cmd Msg)
-update msg model =
+update : XMPPClient -> Msg -> Model r -> (Model r, Cmd Msg)
+update xmppClient msg model =
     case msg of
         ClientConnected ->
             (model, Cmd.none)
@@ -97,7 +97,7 @@ update msg model =
             , Cmd.batch
                 [ toCmd (resetChatInput newMessage.to)
                 , XMPP.sendMessage
-                      model.xmppClientRef
+                      xmppClient
                       newMessage
                 ]
             )
@@ -135,7 +135,7 @@ update msg model =
         JoinRoom id ->
             ( model
             , XMPP.joinRoom
-                model.xmppClientRef
+                xmppClient
                 { room = id
                 , displayName = model.me.displayName
                 }
@@ -144,7 +144,7 @@ update msg model =
         LeaveRoom id ->
             ( model
             , XMPP.leaveRoom
-                model.xmppClientRef
+                xmppClient
                 { room = id
                 , displayName = model.me.displayName
                 }

@@ -24,15 +24,13 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Browser.Dom as Dom
 import Json.Decode
-import Ports exposing (XMPPClientRef)
+import Ports exposing (XMPPClient)
 import Time
 
 type alias Model r =
     { r |
-      xmppClientRef : XMPPClientRef
-    , rooms : Dict BareJID Room
+      rooms : Dict BareJID Room
     , me : Person
-    -- , friends : Dict PersonId Person
     }
 
 ------------------------------------------------------------

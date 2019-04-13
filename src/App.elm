@@ -46,7 +46,7 @@ import Html.Styled.Lazy exposing (lazy)
 import Json.Decode
 import Lobby
 import Lobby.Types as Lobby
-import Ports exposing (PouchDBRef, XMPPClientRef)
+import Ports exposing (PouchDBRef, XMPPClient)
 import Game.Decode
     exposing
         ( decodeGame
@@ -86,25 +86,23 @@ subscriptions =
         ]
 
 
-initialModel : XMPPClientRef -> Person -> Model
-initialModel ref me =
-    { xmppClientRef = ref
-    , games = NotAsked
+initialModel : Person -> Model
+initialModel me =
+    { games = NotAsked
     , overlay = Lobby.OverlayNone
     , me = me
     , activeGame = NoGame
     , rooms = Dict.empty
-    , tab = LobbyTab
     }
 
-init : XMPPClientRef -> Person -> (Model, Cmd Msg)
-init ref me =
-    ( initialModel ref me
+init : Person -> (Model, Cmd Msg)
+init me =
+    ( initialModel me
     , Cmd.none
     )
 
-update : Navigation.Key -> Msg -> Model -> (Model, Cmd Msg)
-update navkey msg model =
+update : XMPPClient -> Navigation.Key -> Msg -> Model -> (Model, Cmd Msg)
+update xmppClient navkey msg model =
     case msg of
         GameLoaded value ->
             case decodeGame value of
@@ -233,7 +231,7 @@ update navkey msg model =
 
         ChatMsg localmsg ->
             let
-                (newModel, cmd) = Chat.update localmsg model
+                (newModel, cmd) = Chat.update xmppClient localmsg model
             in
                 (newModel, Cmd.map ChatMsg cmd)
 
@@ -273,76 +271,34 @@ loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =
 
 routeToGame : Model -> GameId -> (Model, Cmd Msg)
 routeToGame model gameId =
-    case model.activeGame of
-        NoGame ->
-            ({ model
-                 | activeGame = LoadingGame gameId emptyLoadingProgress
-                 , tab = GameTab
-             }
-            , Cmd.batch
-                [ Ports.loadGame gameId
-                , API.getMyPlayerInfo gameId
-                , API.getPlayers gameId
-                ]
-            )
+    ({ model
+         | activeGame = LoadingGame gameId emptyLoadingProgress
+     }
+    , Cmd.batch
+        [ Ports.loadGame gameId
+        , API.getMyPlayerInfo gameId
+        , API.getPlayers gameId
+        ]
+    )
 
-        LoadingGame id progress ->
-            if
-                gameId == id
-            then
-                (model, Cmd.none)
-            else
-                ({ model
-                     | activeGame = LoadingGame id emptyLoadingProgress
-                     , tab = GameTab
-                 }
-                , Cmd.batch
-                    [ Ports.loadGame gameId
-                    , API.getMyPlayerInfo gameId
-                    , API.getPlayers gameId
-                    ]
-                )
-
-        ActiveGame game ->
-            if
-                gameId == game.id
-            then
-                (model, Cmd.none)
-            else
-                ({ model
-                     | activeGame = LoadingGame gameId emptyLoadingProgress
-                     , tab = GameTab
-                 }
-                , Cmd.batch
-                    [ Ports.loadGame gameId
-                    , API.getMyPlayerInfo gameId
-                    , API.getPlayers gameId
-                    ]
-                )
-
-
+    
 routeToLobby : Model -> (Model, Cmd Msg)
 routeToLobby model =
-    ({ model | tab = LobbyTab }
+    ({ model | activeGame = NoGame }
     , Cmd.map LobbyMsg Lobby.init)
         
         
 view : (Int, Int) -> Model -> Html Msg
 view viewportSize model =
-    case model.tab of
-        LobbyTab ->
+    case model.activeGame of
+        LoadingGame _ _ ->
+            div [] [ text "Loading game..." ]
+                
+        ActiveGame game ->
+            Game.view viewportSize (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
+                |> Html.Styled.map GameMsg
+                                   
+        NoGame ->
             Lobby.view model
                 |> Html.Styled.map LobbyMsg 
-
-        GameTab ->
-            case model.activeGame of
-                LoadingGame _ _ ->
-                    div [] [ text "Loading game..." ]
-
-                ActiveGame game ->
-                    Game.view viewportSize (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
-                        |> Html.Styled.map GameMsg
-
-                NoGame ->
-                    div [] [ text "No game." ]
 

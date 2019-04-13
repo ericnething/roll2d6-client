@@ -27,7 +27,8 @@ const app = Elm.Main.init({
     windowSize: [
       document.documentElement.clientWidth,
       document.documentElement.clientHeight
-    ]
+    ],
+    xmppClient: createChatClient()
   }
 });
 
@@ -244,9 +245,9 @@ app.ports.dragstart.subscribe(function (event) {
 //----------------------------------------------
 //  XMPP
 //----------------------------------------------
-let client;
-app.ports.createChatClient.subscribe(function (data) {
-  client = XMPP.createClient({
+
+function createChatClient() {
+  const client = XMPP.createClient({
     jid: "welkin@localhost" , //data.jid,
     password: "foobar", //data.password,
     wsURL: "ws://localhost:5280/ws-xmpp",
@@ -255,7 +256,6 @@ app.ports.createChatClient.subscribe(function (data) {
     useStreamManagement: true,
     resource: "web"
   });
-  app.ports.chatClientCreated.send(client);
 
   client.enableKeepAlive({ interval: 45, timeout: 120 });
 
@@ -304,11 +304,16 @@ app.ports.createChatClient.subscribe(function (data) {
       });
     });
   });
-
-  client.connect();
-});
+  return client;
+}
 
 const xmppCommand = {
+  connect: function(client) {
+    client.connect();
+  },
+  disconnect: function(client) {
+    client.disconnect();
+  },
   setRoomAffiliation: function(client, { room, person, affiliation }) {
     client.setRoomAffiliation(room, person, affiliation);
   },

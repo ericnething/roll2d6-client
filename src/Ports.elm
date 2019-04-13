@@ -40,11 +40,10 @@ type alias PouchDBRef = Value
 port dragstart : Value -> Cmd msg
 
 
-type alias XMPPClientRef = Value
+type alias XMPPClient = Value
 
 port xmpp_send : Value -> Cmd msg
 port xmpp_received : (Value -> msg) -> Sub msg
-port createChatClient : Value -> Cmd msg
-port chatClientCreated : (Value -> msg) -> Sub msg
-port destroyChatClient : XMPPClientRef -> Cmd msg
-port chatClientConnected : (Value -> msg) -> Sub msg
+port xmpp_connect : XMPPClient -> Cmd msg
+port xmpp_connected : (Value -> msg) -> Sub msg
+port xmpp_disconnect : (Value -> msg) -> Sub msg

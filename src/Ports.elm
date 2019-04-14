@@ -44,6 +44,4 @@ type alias XMPPClient = Value
 
 port xmpp_send : Value -> Cmd msg
 port xmpp_received : (Value -> msg) -> Sub msg
-port xmpp_connect : XMPPClient -> Cmd msg
 port xmpp_connected : (Value -> msg) -> Sub msg
-port xmpp_disconnect : (Value -> msg) -> Sub msg

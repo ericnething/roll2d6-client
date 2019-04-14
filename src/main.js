@@ -32,7 +32,6 @@ const app = Elm.Main.init({
   }
 });
 
-
 //----------------------------------------------
 //  Couch DB
 //----------------------------------------------
@@ -261,7 +260,7 @@ function createChatClient() {
 
   client.on("connected", function() {
     console.log("connected at " + new Date);
-    app.ports.chatClientConnected.send(null);
+    app.ports.xmpp_connected.send(null);
   });
 
   client.on("disconnected", function() {

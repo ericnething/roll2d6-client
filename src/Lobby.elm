@@ -44,6 +44,7 @@ import Task
 import Browser.Navigation as Navigation
 import Route
 import Util exposing (toCmd)
+import Icons
 
 
 init : Cmd Msg
@@ -53,8 +54,8 @@ update : Navigation.Key -> Msg -> Model r -> ( Model r, Cmd Msg )
 update navkey msg model =
     case msg of
         NewGame ->
-            case model.overlay of
-                NewGameSettings { title, gameType } ->
+            case model.newGameForm of
+                NewGameForm { title, gameType } ->
                     if String.length title > 0
                     then
                         ( model
@@ -72,7 +73,7 @@ update navkey msg model =
         NewGameResponse result ->
             case result of
                 Success gameId ->
-                    ({ model | overlay = OverlayNone }
+                    ({ model | newGameForm = NewGameFormNone }
                     , Navigation.replaceUrl
                         navkey
                         (Route.toUrlString (Route.Game gameId))
@@ -81,11 +82,11 @@ update navkey msg model =
                     ( model, Cmd.none )
 
         UpdateNewGameTitle title ->
-            case model.overlay of
-                NewGameSettings settings ->
+            case model.newGameForm of
+                NewGameForm settings ->
                     ({ model
-                         | overlay =
-                             NewGameSettings
+                         | newGameForm =
+                             NewGameForm
                              { settings | title = title }
                      }
                     , Cmd.none
@@ -95,11 +96,11 @@ update navkey msg model =
                     ( model, Cmd.none )
 
         UpdateNewGameType gameType ->
-            case model.overlay of
-                NewGameSettings settings ->
+            case model.newGameForm of
+                NewGameForm settings ->
                     ({ model
-                         | overlay =
-                             NewGameSettings
+                         | newGameForm =
+                             NewGameForm
                              { settings | gameType = gameType }
                      }
                     , Cmd.none
@@ -155,11 +156,14 @@ update navkey msg model =
                 Err status ->
                     (model, Cmd.none)
 
-        OpenOverlay overlay_ ->
-            ( { model | overlay = overlay_ }, Cmd.none )
+        OpenNewGameForm ->
+            ( { model | newGameForm = emptyNewGameForm }, Cmd.none )
 
-        CloseOverlay ->
-            ( { model | overlay = OverlayNone }, Cmd.none )
+        CloseNewGameForm ->
+            ( { model | newGameForm = NewGameFormNone }, Cmd.none )
+
+        SwitchTab ->
+            (model, Cmd.none)
 
 
 view : Model r -> Html Msg
@@ -167,220 +171,328 @@ view model =
     div
         [ css
             [ Css.property "display" "grid"
-            , Css.property "grid-template-rows" "3rem auto"
-            , backgroundColor (hex "36393f")
+            , Css.property "grid-template-rows" "3rem calc(100vh - 3rem)"
+            , Css.property "grid-template-columns" "1fr"
+            , backgroundColor (hex "302633")
             , Css.minHeight (vh 100)
             ]
         ]
-        [ topNavigation
-        , div
-            [ css
-                [ color (hex "fff")
-                , padding (Css.em 1)
+        [ topNavigation model
+        , div [ css
+                [ displayFlex
+                , justifyContent center
+                , color (hex "fff")
+                , padding3 (Css.em 3) (Css.em 1) (Css.em 0)
+                , overflowY scroll
                 ]
-            ]
-          <|
-            case model.games of
-                NotAsked ->
-                    [ text "Not Asked" ]
-
-                Loading ->
-                    [ text "Loading" ]
-
-                Failure err ->
-                    [ text "Request Failed" ]
-
-                Success games ->
-                    [ h1 [] [ text "My Games" ]
-                    , div [ css
-                            [ margin2 (Css.em 1) (Css.em 0) ]
-                          ]
-                        (games
-                            |> List.reverse
-                            |> List.map gamePreview
-                        )
-                    , defaultButton
-                        [ type_ "button"
-                        , onClick
-                              (OpenOverlay
-                                   emptyNewGameSettings)
-                        ]
-                        [ text "Create new game" ]
-                    ]
-        , overlayView model
+              ]
+              [ maybeGameListView model ]
         ]
 
+
+tabView : String -> Msg -> Bool -> Html Msg
+tabView name handleClick isActive =
+    div [ css
+          [ if isActive then
+                Css.batch
+                    [ backgroundColor (rgba 255 255 255 0.2)
+                    , color (hex "fff")
+                    ]
+            else
+                Css.batch
+                    [ color (rgba 255 255 255 0.70)
+                    , hover
+                        [ color (hex "fff") ]
+                    ]
+          , borderRadius (px 4)
+          , padding2 (Css.em 0.4) (Css.em 0.7)
+          , cursor pointer
+          ]
+        , onClick handleClick
+        ]
+        [ text name
+        ]
+
+tabsView : Model r -> Html Msg
+tabsView model =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+        [ tabView "Games" SwitchTab True
+        , tabView "Invites" SwitchTab False
+        , tabView "Messages" SwitchTab False
+        , tabView "Settings" SwitchTab False
+        ]
+
+maybeGameListView :
+    { r |
+      newGameForm : NewGameForm
+    , games : WebData (List Game.GameSummary)
+    } -> Html Msg
+maybeGameListView model =
+    case model.games of
+        NotAsked ->
+            div [] [ text "Not Asked" ]
+                
+        Loading ->
+            div [] [ text "Loading" ]
+                        
+        Failure err ->
+            div [] [ text "Request Failed" ]
+                                
+        Success games ->
+            gameListView model.newGameForm games
+
+gameListView : NewGameForm -> List Game.GameSummary -> Html Msg
+gameListView newGameForm games =
+    let
+        rows = tbody []
+            (games
+            |> List.reverse
+            |> List.map gamePreview
+            )
+        styledTh =
+            styled th
+                [ borderBottom3 (px 1) solid (rgba 255 255 255 0.70) ]
+        headers =
+            tr [ css
+                 [ fontSize (Css.em 0.9)
+                 , textAlign left
+                 , color (rgba 255 255 255 0.70)
+                 ]
+               ]
+                [ styledTh [] [ text "Title" ]
+                , styledTh [] [ text "Game System" ]
+                , styledTh [] [ text "Owner"]
+                , styledTh [] [ text ""]
+                ]
+    in
+    div [ css
+          [ Css.width (Css.em 48) ]
+        ]
+        [ Html.Styled.table
+              [ css
+                [ Css.width (Css.em 48)
+                , borderSpacing2 (px 0) (Css.em 1)
+                ]
+              ]
+              [ colgroup []
+                    [ col [ css [ Css.width (pct 40)] ] []
+                    , col [ css [ Css.width (pct 25)] ] []
+                    , col [ css [ Css.width (pct 25)] ] []
+                    , col [ css [ Css.width (pct 10)] ] []
+                    ]
+              , headers
+              , rows
+              ]
+        , newGameView newGameForm
+        ]
+
+gamePreview : Game.GameSummary -> Html Msg
+gamePreview { id, title, gameType } =
+    tr [ css [ margin2 (Css.em 1) (Css.em 0) ] ]
+        [ td
+              [ css
+                [ marginRight (Css.em 1)
+                , paddingRight (Css.em 1)
+                ]
+              ]
+              [ text title ]
+        , td [ css [ paddingRight (Css.em 1) ] ]
+            [ text (Game.showGameType gameType) ]
+        , td [ css [ paddingRight (Css.em 1) ] ]
+            [ userBadge ]
+        , td [ css [ textAlign right ] ]
+            [ defaultButton
+                  [ onClick (LoadGame id) ]
+                  [ text "Play" ]
+            ]
+        ]
 
 defaultButton =
     styled button
         [ whiteSpace noWrap
         , padding2 (Css.em 0.1) (Css.em 0.5)
-        , backgroundColor (hex "fff")
-        , border3 (px 1) solid (hex "ccc")
+        , backgroundColor transparent
+        , border3 (px 1) solid (hex "eee")
+        , color (hex "eee")
         , borderRadius (px 4)
         , cursor pointer
         , hover
-            [ backgroundColor (hex "eee") ]
-        ]
-
-
-gameButton =
-    styled button
-        [ whiteSpace noWrap
-        , padding2 (Css.em 1) (Css.em 1)
-        , backgroundColor (hex "aaa")
-        , border3 (px 1) solid (hex "ccc")
-        , borderRadius (px 4)
-        , cursor pointer
-        , hover
-            [ backgroundColor (hex "eee") ]
-        ]
-
-gamePreview : Game.GameSummary -> Html Msg
-gamePreview { id, title } =
-    div []
-        [ span
-              [ css
-                [ marginRight (Css.em 1) ]
-              ]
-              [ text title ]
-        , defaultButton
-            [ onClick (LoadGame id)
+            [ backgroundColor (hex "eee")
+            , color (hex "302633")
             ]
-            [ text "Join Game" ]
         ]
 
+newGameButton =
+    defaultButton
+    [ type_ "button"
+    , onClick OpenNewGameForm
+    ]
+    [ text "Create new game" ]
+    
+userBadge : Html Msg
+userBadge =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+    [ img [ css
+            [ borderRadius (pct 50)
+            , Css.height (px 32)
+            , Css.width auto
+            ]
+          , src "/lib/fox-avatar-2.jpg"
+          ] []
+    , span [ css
+             [ marginLeft (Css.em 0.5)
+             ]
+           ]
+        [ text "Geronimo" ]
+    ]
 
-topNavigation : Html Msg
-topNavigation =
+
+topNavigationSection =
+    styled div
+        [ displayFlex
+        , flex (int 1)
+        , justifyContent center
+        ]
+
+topNavigation : Model r -> Html Msg
+topNavigation model =
     header
         [ css
             [ displayFlex
             , alignItems center
             , justifyContent spaceBetween
-            , backgroundColor (rgba 0 0 0 0.15)
-            , Css.height (Css.rem 3)
+            , backgroundColor transparent
             , color (hex "fff")
-            , padding2 (px 0) (Css.em 1)
-            , position sticky
-            , top (px 0)
+            , padding2 (Css.em 0) (Css.em 1)
+            , Css.property "grid-column" "1 / 2"
             ]
         ]
-        [ h1 [] [ text "Fate RPG" ]
-        , defaultButton
-              [ type_ "button"
-              , onClick Logout
-              ]
-              [ text "Log out" ]
+        [ topNavigationSection []
+          [ span [ css [ marginRight auto ] ]
+                [ userBadge ]
+          ]
+        , topNavigationSection [] [ tabsView model ]
+        , topNavigationSection []
+              [ span [ css [ marginLeft auto ] ] [] ]
         ]
 
 
-topToolbar : Html msg
-topToolbar =
-    div
-        [ css
-            [ displayFlex
-            , alignItems center
-            , backgroundColor (hex "0079bf")
-            , Css.height (Css.rem 3)
-            , color (hex "fff")
-            , padding2 (px 0) (Css.em 1)
-            ]
-        ]
-        [ text "Toolbar" ]
-
-
---------------------------------------------------
--- Overlay
---------------------------------------------------
-
-overlay =
-    styled div
-        [ position fixed
-        , top (px 0)
-        , left (px 0)
-        , Css.height (vh 100)
-        , Css.width (vw 100)
-        , Css.property "pointer-events" "all"
-        , backgroundColor (rgba 0 0 0 0.5)
-        , overflowY scroll
-        ]
-
-overlayView : Model r -> Html Msg
-overlayView model =
-    case model.overlay of
-        OverlayNone ->
-            text ""
+newGameView : NewGameForm -> Html Msg
+newGameView newGameForm =
+    case newGameForm of
+        NewGameFormNone ->
+            newGameButton
                 
-        NewGameSettings newGameSettings ->
-            overlay [] [ newGameView newGameSettings ]
+        NewGameForm newGameSettings ->
+            div [] [ newGameFormView newGameSettings ]
 
 
-newGameView : NewGameSettingsModel -> Html Msg
-newGameView { title, gameType } =
+newGameFormView : NewGameFormModel -> Html Msg
+newGameFormView { title, gameType } =
     div [ css
-          [ margin2 (Css.em 4) auto
-          , backgroundColor (hex "fff")
-          , padding2 (Css.em 2) (Css.em 1)
-          , Css.width (Css.em 32)
+          [ backgroundColor (rgba 255 255 255 0.2)
+          , padding (Css.em 1)
           , borderRadius (Css.em 0.2)
+          , displayFlex
+          , alignItems end
           ]
         ]
     [ div [ css
-            [ fontWeight bold
-            , fontSize (Css.em 1.2)
+            [ Css.width (pct 45) -- flex (int 1)
+            , marginRight (Css.em 1)
             ]
           ]
-          [ text "Create a new game" ]
-    , sectionLabel "Select your game type"
-    , radioInputList
-          [ css
-            [ Css.property "column-count" "2"
+        [ formInputLabel "Title"
+        , input
+              [ type_ "text"
+              , css [ inputStyles ]
+              , onInput UpdateNewGameTitle
+              , value title
+              ]
+              []
+        ]
+    , div [ css
+            [ Css.width (pct 30)
+            , marginRight (Css.em 1)
             ]
           ]
-          { toMsg = UpdateNewGameType
-          , options = Game.gameTypeOptions
-          , selected = gameType
-          , showOption = Game.showGameType
-          }
-    , sectionLabel "Enter your game title"
-    , input
-          [ type_ "text"
-          , css [ inputStyles ]
-          , onInput UpdateNewGameTitle
-          , value title
+        [ formInputLabel "Game System"
+        , radioInputList
+              [ css
+                [ overflowY scroll
+                , Css.height (px 26.5)
+                ]
+              ]
+              { toMsg = UpdateNewGameType
+              , options = Game.gameTypeOptions
+              , selected = gameType
+              , showOption = Game.showGameType
+              }
+        ]
+    , div [ css
+            [ Css.width (pct 15)
+            , textAlign right
+            ]
           ]
-          []
-    , newGameViewButtons
+        [ newGameFormSubmitButton ]
+    , div [ css
+            [ Css.width (pct 10)
+            , textAlign right
+            ]
+          ]
+          [ closeFormButton ]
     ]
 
-newGameViewButtons : Html Msg
-newGameViewButtons =
-    div [ css
-          [ margin3 (Css.em 2) (px 0) (px 0)
-          ]
-        ]
-        [ defaultButton
-              [ onClick NewGame
-              , css [ marginRight (Css.em 1) ]
-              ]
-              [ text "Create Game" ]
-        , defaultButton
-              [ onClick CloseOverlay
-              , css
-                    [ backgroundColor (hex "ff0000")
-                    , color (hex "fff")
-                    , hover
-                          [ backgroundColor (hex "ee0000") ]
-                    ]
-              ]
-              [ text "Cancel" ]
-        ]
+newGameFormSubmitButton : Html Msg
+newGameFormSubmitButton =
+    button [ css
+             [ whiteSpace noWrap
+             , padding2 (Css.em 0.25) (Css.em 0.5)
+             , backgroundColor (hex "0D8624")
+             , border (px 0)
+             , color (hex "eee")
+             , borderRadius (px 4)
+             , cursor pointer
+             , hover
+                   [ backgroundColor (hex "eee")
+                   , color (hex "302633")
+                   ]
+             ]
+           , onClick NewGame
+           ]
+    [ text "Create Game" ]
+
+closeFormButton : Html Msg
+closeFormButton =
+    button [ css
+             [ whiteSpace noWrap
+             , padding (Css.em 0.5)
+             , backgroundColor transparent
+             , border (px 0)
+             , color (hex "eee")
+             , cursor pointer
+             , Css.property "transform" "translate(1em, -1.5em)"
+             -- , hover
+             --       [ backgroundColor (hex "eee")
+             --       , color (hex "302633")
+             --       ]
+             ]
+           , onClick CloseNewGameForm
+           ]
+    [ Icons.xCircle ]
 
 
-emptyNewGameSettings : Overlay
-emptyNewGameSettings =
-    NewGameSettings
+emptyNewGameForm : NewGameForm
+emptyNewGameForm =
+    NewGameForm
     { title = ""
     , gameType = Game.Fate
     }
@@ -390,22 +502,18 @@ inputStyles : Css.Style
 inputStyles =
     batch
         [ Css.width (pct 100)
-        , border3 (px 1) solid (hex "888")
+        , border (px 0)
         , borderRadius (px 4)
-        , padding (Css.em 0.25)
+        , padding2 (Css.em 0.25) (Css.em 0.5)
         , flex (int 1)
         ]
 
-sectionLabel : String -> Html msg
-sectionLabel title =
+formInputLabel : String -> Html msg
+formInputLabel title =
     div
         [ css
             [ fontSize (Css.em 1)
-            , color (hex "555")
-            , Css.property "font-variant" "small-caps"
-            , Css.property "letter-spacing" "0.1em"
-            , fontWeight bold
-            , margin3 (Css.em 1) (px 0) (Css.em 0.65)
+            , color (hex "eee")
             ]
         ]
         [ text title ]
@@ -423,21 +531,21 @@ radioInputList attrs { toMsg, options, selected, showOption } =
         optionView option =
             label [ css
                     [ display block
-                    , marginBottom (Css.em 0.25)
+                    -- , marginBottom (Css.em 0.25)
                     , fontSize (Css.em 1)
                     , padding2 (Css.em 0.1) (Css.em 0.6)
-                    , borderRadius (Css.em 0.25)
+                    -- , borderRadius (Css.em 0.25)
                     , userSelect_none
                     , cursor pointer
                     , if (selected == option) then
                           batch
-                          [ backgroundColor (hex "333")
+                          [ backgroundColor (hex "302633")
                           , color (hex "fff")
                           ]
                       else
                           batch
                           [ hover
-                            [ backgroundColor (hex "eee")
+                            [ backgroundColor (hex "302633")
                             ]
                           ]
                     ]

@@ -41,7 +41,7 @@ import RemoteData exposing (RemoteData(..), WebData)
 
 type alias Model =
     { games : WebData (List Game.GameSummary)
-    , overlay : Lobby.Overlay
+    , newGameForm : Lobby.NewGameForm
     , me : Person
     , activeGame : ActiveGame
     , rooms : Dict Chat.RoomId Chat.Room

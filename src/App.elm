@@ -89,7 +89,7 @@ subscriptions =
 initialModel : Person -> Model
 initialModel me =
     { games = NotAsked
-    , overlay = Lobby.OverlayNone
+    , newGameForm = Lobby.NewGameFormNone
     , me = me
     , activeGame = NoGame
     , rooms = Dict.empty

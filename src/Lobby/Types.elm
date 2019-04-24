@@ -30,14 +30,14 @@ import Http
 type alias Model r =
     { r |
       games : WebData (List Game.GameSummary)
-    , overlay : Overlay
+    , newGameForm : NewGameForm
     }
 
-type Overlay
-    = OverlayNone
-    | NewGameSettings NewGameSettingsModel
+type NewGameForm
+    = NewGameFormNone
+    | NewGameForm NewGameFormModel
 
-type alias NewGameSettingsModel =
+type alias NewGameFormModel =
     { title : String
     , gameType : Game.GameType
     }
@@ -52,5 +52,6 @@ type Msg
     | LoadGame Game.GameId
     | Logout
     | LogoutResponse (Result Http.Error String)
-    | OpenOverlay Overlay
-    | CloseOverlay
+    | OpenNewGameForm
+    | CloseNewGameForm
+    | SwitchTab

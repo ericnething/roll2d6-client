@@ -106,7 +106,7 @@ encodeGameType gameType =
             string "red-markets"
 
 
-encodeNewGameSettings : Lobby.NewGameSettingsModel -> Value
+encodeNewGameSettings : Lobby.NewGameFormModel -> Value
 encodeNewGameSettings { title, gameType } =
     object
         [ ( "title", string title )

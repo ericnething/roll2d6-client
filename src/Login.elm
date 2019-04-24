@@ -93,7 +93,7 @@ view : Model -> Html Msg
 view model =
     div [ css
           [ color (hex "eee")
-          , backgroundColor (hex "36393f")
+          , backgroundColor (hex "302633")
           , Css.minHeight (vh 100)
           , displayFlex
           , justifyContent spaceAround

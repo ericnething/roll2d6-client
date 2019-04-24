@@ -245,6 +245,46 @@ app.ports.dragstart.subscribe(function (event) {
 //  XMPP
 //----------------------------------------------
 
+const xmpp_plugins = {
+  diceroll: function(client, stanzas) {
+    const types = stanzas.utils;
+
+    const Foo = stanzas.define({
+        name: 'diceroll',
+        element: 'diceroll',
+        namespace: 'roll2d6:diceroll',
+        fields: {
+            type: types.attribute('type'),
+            value: types.text()
+        }
+    });
+
+    stanzas.withMessage(function(Message) {
+        stanzas.extend(Message, Foo);
+    });
+
+    // 2. Add API to the Stanza client for sending `mystanza` data
+
+    client.sendMyStanza = function(jid, foo) {
+        client.sendMessage({
+            to: jid,
+            diceroll: {
+                type: 'bar',
+                value: foo
+            }
+        });
+    };
+
+    // 3. Listen for incoming `mystanza` data and emit our own event
+
+    client.on('message', function(msg) {
+        if (msg.mystanza) {
+            client.emit('foo', msg);
+        }
+    });
+  }
+}
+
 function createChatClient() {
   const client = XMPP.createClient({
     jid: "welkin@localhost" , //data.jid,
@@ -255,6 +295,7 @@ function createChatClient() {
     useStreamManagement: true,
     resource: "web"
   });
+  // client.use(xmpp_plugins.diceroll);
 
   client.enableKeepAlive({ interval: 45, timeout: 120 });
 
@@ -282,11 +323,11 @@ function createChatClient() {
   });
 
   client.on("raw:incoming", function (name, data) {
-    console.log(name, data);
+    console.log("xml incoming", name, data);
   });
 
   client.on("raw:outgoing", function (name, data) {
-    console.log(name, data);
+    console.log("xml outgoing", name, data);
   });
 
   client.on("session:started", function() {

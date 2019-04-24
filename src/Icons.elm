@@ -24,6 +24,7 @@ module Icons
     , gameSettings
     , instantInvite
     , players
+    , xCircle
     , diceDefs
     , dFatePlus
     , dFateBlank
@@ -40,6 +41,8 @@ import Svg.Styled
     , symbol
     , defs
     , use
+    , circle
+    , line
     )
 import Svg.Styled.Attributes
     exposing
@@ -52,6 +55,13 @@ import Svg.Styled.Attributes
     , visibility
     , xlinkHref
     , id
+    , stroke
+    , strokeWidth
+    , strokeLinecap
+    , strokeLinejoin
+    , cx, cy, r
+    , x1, x2, y1, y2
+    , class
     )
 
 import Css
@@ -109,6 +119,24 @@ players =
         ]
     [ path [ d "M17 9c0-1.381-0.56-2.631-1.464-3.535s-2.155-1.465-3.536-1.465-2.631 0.56-3.536 1.465c-0.904 0.904-1.464 2.154-1.464 3.535s0.56 2.631 1.464 3.535c0.905 0.905 2.155 1.465 3.536 1.465s2.631-0.56 3.536-1.465c0.904-0.904 1.464-2.154 1.464-3.535z"] []
     , path [ d "M6 19c0 1 2.25 2 6 2 3.518 0 6-1 6-2 0-2-2.354-4-6-4-3.75 0-6 2-6 4z"] []
+    ]
+
+xCircle : Html msg
+xCircle =
+    svg [ width "24"
+        , height "24"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , class "feather feather-x-circle"
+        , display "block"
+        ]
+    [ circle [ cx "12", cy "12", r "10" ] []
+    , line [ x1"15", y1 "9", x2 "9", y2 "15" ] []
+    , line [ x1 "9", y1 "9", x2 "15", y2 "15" ] []
     ]
 
 --------------------------------------------------

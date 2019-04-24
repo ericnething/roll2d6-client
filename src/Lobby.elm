@@ -512,7 +512,7 @@ formInputLabel : String -> Html msg
 formInputLabel title =
     div
         [ css
-            [ fontSize (Css.em 1)
+            [ fontSize (Css.em 0.9)
             , color (hex "eee")
             ]
         ]

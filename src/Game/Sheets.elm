@@ -709,23 +709,25 @@ fullSheetCard { myPlayer
             div [] [ text "Not Found" ]
         Just sheet ->
             div [ css
-                  [ Css.property "grid-template-columns" "12em 32em"
-                  , Css.property "display" "grid"
-                  , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-                  , Css.property "grid-gap" "1em"
-                  , padding2 (px 0) (Css.em 1)
+                  [ -- Css.property "grid-template-columns" "12em 32em"
+                  -- , Css.property "display" "grid"
+                  -- , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+                  -- , Css.property "grid-gap" "1em"
+                  -- ,
+                      padding2 (px 0) (Css.em 1)
                   , margin2 (px 0) auto
                   ]
                 ]
-                [ editSheetToolbarView
-                      { myPlayer = myPlayer
-                      , fullSheet = fullSheet
-                      , permissions = permissions
-                      }
-                , div [ css
+                [ -- editSheetToolbarView
+                  --     { myPlayer = myPlayer
+                  --     , fullSheet = fullSheet
+                  --     , permissions = permissions
+                  --     }
+                -- ,
+                    div [ css
                         [ backgroundColor (hex "fff")
                         , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
-                        , Css.width (Css.em 32)
+                        -- , Css.width (Css.em 32)
                         , borderRadius (Css.em 0.2)
                         ]
                       ]
@@ -750,14 +752,17 @@ fullSheetCard { myPlayer
                                   _ ->
                                       editToggle
                             ]
-                      , Html.Styled.map
-                            (SheetMsg sheetId)
-                            (if editing
-                             then
-                                 Sheet.editView sheet
+                      , Html.Styled.map (SheetMsg sheetId) <|
+                          div [ css
+                                [ Css.property "column-count" "2"
+                                , Css.property "column-gap" "2rem"
+                                ]
+                              ]
+                            [ if editing then
+                                  Sheet.editView sheet
                              else
                                  Sheet.view sheet
-                            )
+                            ]
                       ]
                 ]
 

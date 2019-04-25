@@ -1109,13 +1109,25 @@ sectionLabel title =
     div
         [ css
             [ fontSize (Css.em 1)
-            , color (hex "555")
-            , Css.property "font-variant" "small-caps"
-            , Css.property "letter-spacing" "0.1em"
-            , fontWeight bold
+            , color (hex "302633")
+            , Css.property "font-variant" "all-small-caps"
+            , letterSpacing (Css.em 0.1)
+            , fontWeight (int 600)
             ]
         ]
         [ text title ]
+
+
+sheetSection : String -> List (Html msg) -> Html msg
+sheetSection title children =
+    div
+    [ css
+      [ marginTop (Css.em 1)
+      , Css.width (pct 100)
+      , display inlineBlock
+      ]
+    ]
+    (sectionLabel title :: children)
 
 
 nameView : String -> Html Msg
@@ -1171,12 +1183,8 @@ aspectView aspects =
         text ""
 
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
-            ]
-            [ sectionLabel "Aspects"
-            , div [] <|
+        sheetSection "Aspects"
+            [ div [] <|
                 Array.toList <|
                     Array.indexedMap
                         aspectView_
@@ -1256,12 +1264,8 @@ skillsView skills =
         text ""
 
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
-            ]
-            [ sectionLabel "Skills"
-            , div [] <|
+        sheetSection "Skills"
+            [ div [] <|
                 Array.toList <|
                     Array.map
                         skillView_
@@ -1275,7 +1279,7 @@ stuntsView stunts =
         stuntView_ (Stunt title description) =
             div
                 [ css
-                    [ marginBottom (Css.em 0.85)
+                    [ textIndent (Css.rem 2) -- marginBottom (Css.em 0.85)
                     ]
                 ]
                 [ span
@@ -1291,12 +1295,8 @@ stuntsView stunts =
         text ""
 
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
-            ]
-            [ sectionLabel "Stunts"
-            , div [] <|
+        sheetSection "Stunts"
+            [ div [] <|
                 Array.toList <|
                     Array.map
                         stuntView_
@@ -1310,12 +1310,8 @@ stressView stressTracks =
         text ""
 
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
-            ]
-            [ sectionLabel "Stress"
-            , div []
+        sheetSection "Stress"
+            [ div []
                 (Array.toList
                     (Array.indexedMap
                         stressTrackView
@@ -1331,11 +1327,8 @@ consequencesView consequences =
         text ""
 
     else
-        div [ css
-              [ marginTop (Css.em 1) ]
-            ]
-        [ sectionLabel "Consequences"
-        , div [] <|
+        sheetSection "Consequences"
+        [ div [] <|
             Array.toList <|
                 Array.indexedMap
                     consequenceView
@@ -1378,21 +1371,9 @@ conditionsView : Array Condition -> Html Msg
 conditionsView conditions =
     if Array.isEmpty conditions then
         text ""
-
     else
-        div
-            [ css
-                [ marginTop (Css.em 1) ]
-            ]
-            [ sectionLabel "Conditions"
-            , div []
-                (Array.toList
-                    (Array.indexedMap
-                        conditionView
-                        conditions
-                    )
-                )
-            ]
+        sheetSection "Conditions"
+        [ div [] (Array.toList (Array.indexedMap conditionView conditions)) ]
 
 
 refreshView : Int -> Html Msg
@@ -1415,16 +1396,8 @@ refreshView points =
 
 notesView : String -> Html Msg
 notesView notes =
-    div
-        [ css
-            [ marginTop (Css.em 1)
-            ]
-        ]
-        [ sectionLabel "Notes"
-        , div [ css
-                [ whiteSpace preWrap
-                ]
-              ]
+    sheetSection "Notes"
+        [ div [ css [ whiteSpace preWrap ] ]
               [ text notes ]
         ]
 

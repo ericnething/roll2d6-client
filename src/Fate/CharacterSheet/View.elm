@@ -42,6 +42,7 @@ import Util
         , stringToNatWithDefault
         , stringToNatWithDefaultNonZero
         )
+import Icons
 
 
 editView : Model -> Html Msg
@@ -245,12 +246,12 @@ aspectInput index (Aspect title invokes) =
             , placeholder <| "Aspect #" ++ String.fromInt (index + 1)
             ]
             []
-        , defaultButton
+        , iconButton
             [ onClick (RemoveAspect index)
             , css
                 [ marginLeft (Css.em 0.5) ]
             ]
-            [ text "Remove" ]
+            [ Icons.xCircle ]
         ]
 
 
@@ -342,12 +343,12 @@ skillInput index (Skill rating title) =
             , value title
             ]
             []
-        , defaultButton
+        , iconButton
             [ onClick (RemoveSkill index)
             , css
                 [ marginLeft (Css.em 0.5) ]
             ]
-            [ text "Remove" ]
+            [ Icons.xCircle ]
         ]
 
 
@@ -380,21 +381,34 @@ stuntInput index (Stunt title description) =
             [ marginBottom (Css.em 1.25)
             ]
         ]
-        [ input
-            [ type_ "text"
-            , css
-                [ display block
-                , inputStyles
+        [ div [ css
+                [ displayFlex
+                , alignItems center
                 ]
-            , onInput
-                (\newTitle ->
-                    UpdateStunt
-                        index
-                        (Stunt newTitle description)
-                )
-            , value title
-            ]
-            []
+              ]
+              [ input
+                    [ type_ "text"
+                    , css
+                          [ display block
+                          , inputStyles
+                          ]
+                    , onInput
+                          (\newTitle ->
+                               UpdateStunt
+                               index
+                               (Stunt newTitle description)
+                          )
+                    , value title
+                    ]
+                    []
+              , iconButton
+                    [ onClick (RemoveStunt index)
+                    , css
+                          [ marginLeft (Css.em 0.5)
+                          ]
+                    ]
+                    [ Icons.xCircle ]
+              ]
         , textarea
             [ onInput
                 (\newDescription ->
@@ -413,13 +427,6 @@ stuntInput index (Stunt title description) =
                 ]
             ]
             []
-        , defaultButton
-            [ onClick (RemoveStunt index)
-            , css
-                [ marginTop (Css.em 0.5)
-                ]
-            ]
-            [ text "Remove" ]
         ]
 
 
@@ -553,28 +560,35 @@ editStressTrackView trackIndex (StressTrack title stressBoxes) =
         [ css
             [ marginBottom (Css.em 1) ]
         ]
-        [ input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , value title
-            , onInput
-                (\newTitle ->
-                    UpdateStressTrack
-                        trackIndex
-                        (StressTrack newTitle stressBoxes)
-                )
-            ]
-            []
+        [ div [ css
+                [ displayFlex
+                , alignItems center
+                ]
+              ]
+              [ input
+                    [ type_ "text"
+                    , css [ inputStyles ]
+                    , value title
+                    , onInput
+                          (\newTitle ->
+                               UpdateStressTrack
+                               trackIndex
+                               (StressTrack newTitle stressBoxes)
+                          )
+                    ]
+                    []
+              , iconButton
+                    [ onClick (RemoveStressTrack trackIndex)
+                    , css [ marginLeft (Css.em 0.5) ]
+                    ]
+                    [ Icons.xCircle ]
+              ]
         , editStressBoxView
             AddStressBox
             RemoveStressBox
             UpdateStressBox
             trackIndex
             stressBoxes
-        , defaultButton
-            [ onClick (RemoveStressTrack trackIndex)
-            ]
-            [ text "Remove" ]
         ]
 
 
@@ -829,12 +843,12 @@ consequenceInput index (Consequence severity title invokes) =
             , value title
             ]
             []
-        , defaultButton
+        , iconButton
             [ onClick (RemoveConsequence index)
             , css
                 [ marginLeft (Css.em 0.5) ]
             ]
-            [ text "Remove" ]
+            [ Icons.xCircle ]
         ]
 
 
@@ -932,28 +946,35 @@ editConditionView trackIndex (Condition title stressBoxes) =
         [ css
             [ marginBottom (Css.em 1) ]
         ]
-        [ input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , value title
-            , onInput
-                (\newTitle ->
-                    UpdateCondition
-                        trackIndex
-                        (Condition newTitle stressBoxes)
-                )
-            ]
-            []
+        [ div [ css
+                [ displayFlex
+                , alignItems center
+                ]
+              ]
+              [ input
+                    [ type_ "text"
+                    , css [ inputStyles ]
+                    , value title
+                    , onInput
+                          (\newTitle ->
+                               UpdateCondition
+                               trackIndex
+                               (Condition newTitle stressBoxes)
+                          )
+                    ]
+                    []
+              , iconButton
+                    [ onClick (RemoveCondition trackIndex)
+                    , css [ marginLeft (Css.em 0.5) ]
+                    ]
+                    [ Icons.xCircle ]
+              ]
         , editStressBoxView
             AddConditionBox
             RemoveConditionBox
             UpdateConditionBox
             trackIndex
             stressBoxes
-        , defaultButton
-            [ onClick (RemoveCondition trackIndex)
-            ]
-            [ text "Remove" ]
         ]
 
 
@@ -1000,6 +1021,20 @@ defaultButton =
             [ backgroundColor (hex "eee") ]
         ]
 
+iconButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding (px 0)
+        , margin (px 0)
+        , backgroundColor transparent
+        , border (px 0)
+        , borderRadius (px 4)
+        , color (hex "888")
+        , cursor pointer
+        , hover
+            [ color (hex "302633")
+            ]
+        ]
 
 
 -- Read Only Views

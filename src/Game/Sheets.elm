@@ -33,6 +33,7 @@ import Html.Styled.Lazy exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Css exposing (..)
+import Css.Media
 import Common exposing (defaultButton, inputStyles)
 
 import Game.Sheet as Sheet
@@ -756,6 +757,9 @@ fullSheetCard { myPlayer
                           div [ css
                                 [ Css.property "column-count" "2"
                                 , Css.property "column-gap" "2rem"
+                                , Css.Media.withMediaQuery
+                                      [ "screen and (max-width: 68.27rem)" ]
+                                      [ Css.property "column-count" "1" ]
                                 ]
                               ]
                             [ if editing then

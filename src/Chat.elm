@@ -334,7 +334,7 @@ messageView { from, body, timestamp } =
             []
             [ img [ css
                     [ borderRadius (pct 50)
-                    , Css.height (px 32)
+                    , Css.height (Css.rem 2.133) -- 32px when base is 15px
                     , Css.width auto
                     , marginRight (Css.em 0.5)
                     ]

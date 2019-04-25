@@ -5,7 +5,6 @@
 }
 
 html {
-    /* font-size: 18px; */
     font-size: 15px;
     font-family: "Fira Sans", sans-serif;
 }
@@ -14,12 +13,10 @@ body {
     background-color: #ffffff;
     color: #333333;
     line-height: 1.4;
-    /* max-width: 1440px; */
-    /* margin: 0px auto 0px auto; */
-    /* padding: 4.8vh 4.8vw; */
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;
     scroll-behavior: smooth;
+    min-width: 800px;
 }
 
 input, textarea, button {

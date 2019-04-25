@@ -165,9 +165,12 @@ update navkey msg model =
         SwitchTab ->
             (model, Cmd.none)
 
+        ResumeGame ->
+            (model, Cmd.none)
 
-view : Model r -> Html Msg
-view model =
+
+view : Bool -> Model r -> Html Msg
+view hasActiveGame model =
     div
         [ css
             [ Css.property "display" "grid"
@@ -177,7 +180,7 @@ view model =
             , Css.minHeight (vh 100)
             ]
         ]
-        [ topNavigation model
+        [ topNavigation hasActiveGame model
         , div [ css
                 [ displayFlex
                 , justifyContent center
@@ -362,8 +365,8 @@ topNavigationSection =
         , justifyContent center
         ]
 
-topNavigation : Model r -> Html Msg
-topNavigation model =
+topNavigation : Bool -> Model r -> Html Msg
+topNavigation hasActiveGame model =
     header
         [ css
             [ displayFlex
@@ -376,8 +379,16 @@ topNavigation model =
             ]
         ]
         [ topNavigationSection []
-          [ span [ css [ marginRight auto ] ]
-                [ userBadge ]
+          [ span [ css [ displayFlex, marginRight auto ] ]
+                [ userBadge
+                , if hasActiveGame then
+                      defaultButton [ css [ marginLeft (Css.em 1) ]
+                                    , onClick ResumeGame
+                                    ]
+                      [ text "Resume Game" ]
+                  else
+                      text ""
+                ]
           ]
         , topNavigationSection [] [ tabsView model ]
         , topNavigationSection []

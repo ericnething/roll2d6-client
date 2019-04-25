@@ -20,11 +20,19 @@ License along with this program. If not, see
 
 module Icons
     exposing
-    ( addCharacterSheet
-    , gameSettings
-    , instantInvite
-    , players
-    , xCircle
+    ( -- General
+      xCircle
+    , plusCircle
+
+    -- Chat
+    , settings
+    , phone
+    , phoneMissed
+    , mic
+    , micOff
+    , headphones
+
+    -- Dice
     , diceDefs
     , dFatePlus
     , dFateBlank
@@ -66,60 +74,9 @@ import Svg.Styled.Attributes
 
 import Css
 
---------------------------------------------------
--- Game Menu
---------------------------------------------------
-
-addCharacterSheet : Html msg
-addCharacterSheet =
-    svg [ width "24"
-        , height "24"
-        , viewBox "0 0 24 24"
-        , fill "#fff"
-        , display "block"
-        ]
-    [ path
-          [ d "M15 12h-2v-2c0-0.553-0.447-1-1-1s-1 0.447-1 1v2h-2c-0.553 0-1 0.447-1 1s0.447 1 1 1h2v2c0 0.553 0.447 1 1 1s1-0.447 1-1v-2h2c0.553 0 1-0.447 1-1s-0.447-1-1-1z" ] []
-    , path
-        [ d "M19.707 7.293l-4-4c-0.187-0.188-0.441-0.293-0.707-0.293h-8c-1.654 0-3 1.346-3 3v12c0 1.654 1.346 3 3 3h10c1.654 0 3-1.346 3-3v-10c0-0.266-0.105-0.52-0.293-0.707zM17.586 8h-1.086c-0.827 0-1.5-0.673-1.5-1.5v-1.086l2.586 2.586zM17 19h-10c-0.552 0-1-0.448-1-1v-12c0-0.552 0.448-1 1-1h7v1.5c0 1.379 1.121 2.5 2.5 2.5h1.5v9c0 0.552-0.448 1-1 1z" ] []
-    ]
-
-gameSettings : Html msg
-gameSettings =
-    svg [ width "24"
-        , height "24"
-        , viewBox "0 0 24 24"
-        , fill "#fff"
-        , display "block"
-        ]
-    [ path [ d "M13 5l0.855 3.42 3.389-0.971 1.501 2.6-2.535 2.449 2.535 2.451-1.5 2.6-3.39-0.971-0.855 3.422h-3l-0.855-3.422-3.39 0.971-1.501-2.6 2.535-2.451-2.534-2.449 1.5-2.6 3.39 0.971 0.855-3.42h3zM13 3h-3c-0.918 0-1.718 0.625-1.939 1.516l-0.354 1.412-1.4-0.4c-0.184-0.053-0.369-0.078-0.552-0.078-0.7 0-1.368 0.37-1.731 1l-1.5 2.6c-0.459 0.796-0.317 1.802 0.342 2.438l1.047 1.011-1.048 1.015c-0.66 0.637-0.802 1.643-0.343 2.438l1.502 2.6c0.363 0.631 1.031 1 1.731 1 0.183 0 0.368-0.025 0.552-0.076l1.399-0.401 0.354 1.415c0.222 0.885 1.022 1.51 1.94 1.51h3c0.918 0 1.718-0.625 1.939-1.516l0.354-1.414 1.399 0.4c0.184 0.053 0.369 0.077 0.552 0.077 0.7 0 1.368-0.37 1.731-1l1.5-2.6c0.459-0.796 0.317-1.8-0.342-2.438l-1.047-1.013 1.047-1.013c0.66-0.637 0.801-1.644 0.342-2.438l-1.5-2.6c-0.365-0.631-1.031-1-1.732-1-0.184 0-0.368 0.025-0.551 0.076l-1.4 0.401-0.354-1.413c-0.22-0.884-1.020-1.509-1.938-1.509z" ] []
-    , path [ d "M11.5 10.5c1.104 0 2 0.895 2 2s-0.896 2-2 2-2-0.896-2-2c0-1.105 0.896-2 2-2zM11.5 9.5c-1.654 0-3 1.346-3 3s1.346 3 3 3 3-1.346 3-3-1.346-3-3-3z" ] []
-    ]
-
-instantInvite : Html msg
-instantInvite =
-    svg [ width "24"
-        , height "24"
-        , viewBox "0 0 24 24"
-        , fill "#fff"
-        , display "block"
-        ]
-    [ path [ d "M9 14c1.381 0 2.631-0.56 3.536-1.465 0.904-0.904 1.464-2.154 1.464-3.535s-0.56-2.631-1.464-3.535c-0.905-0.905-2.155-1.465-3.536-1.465s-2.631 0.56-3.536 1.465c-0.904 0.904-1.464 2.154-1.464 3.535s0.56 2.631 1.464 3.535c0.905 0.905 2.155 1.465 3.536 1.465z" ] []
-    , path [ d "M9 21c3.518 0 6-1 6-2 0-2-2.354-4-6-4-3.75 0-6 2-6 4 0 1 2.25 2 6 2z" ] []
-    , path [ d "M21 12h-2v-2c0-0.553-0.447-1-1-1s-1 0.447-1 1v2h-2c-0.553 0-1 0.447-1 1s0.447 1 1 1h2v2c0 0.553 0.447 1 1 1s1-0.447 1-1v-2h2c0.553 0 1-0.447 1-1s-0.447-1-1-1z" ] []
-    ]
-
-players : Html msg
-players =
-    svg [ width "24"
-        , height "24"
-        , viewBox "0 0 24 24"
-        , fill "#fff"
-        , display "block"
-        ]
-    [ path [ d "M17 9c0-1.381-0.56-2.631-1.464-3.535s-2.155-1.465-3.536-1.465-2.631 0.56-3.536 1.465c-0.904 0.904-1.464 2.154-1.464 3.535s0.56 2.631 1.464 3.535c0.905 0.905 2.155 1.465 3.536 1.465s2.631-0.56 3.536-1.465c0.904-0.904 1.464-2.154 1.464-3.535z"] []
-    , path [ d "M6 19c0 1 2.25 2 6 2 3.518 0 6-1 6-2 0-2-2.354-4-6-4-3.75 0-6 2-6 4z"] []
-    ]
+------------------------------------------------------------
+-- Chat Icons
+------------------------------------------------------------
 
 xCircle : Html msg
 xCircle =
@@ -131,7 +88,6 @@ xCircle =
         , strokeWidth "2"
         , strokeLinecap "round"
         , strokeLinejoin "round"
-        , class "feather feather-x-circle"
         , display "block"
         ]
     [ circle [ cx "12", cy "12", r "10" ] []
@@ -139,9 +95,128 @@ xCircle =
     , line [ x1 "9", y1 "9", x2 "15", y2 "15" ] []
     ]
 
---------------------------------------------------
+phone : Html msg
+phone =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ path [ d "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" ] []
+    ]
+
+
+phoneMissed : Html msg
+phoneMissed =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ line [ x1 "23", y1 "1", x2 "17", y2 "7" ] []
+    , line [ x1 "17", y1 "1", x2 "23", y2 "7" ] []
+    , path [ d "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" ] []
+    ]
+
+mic : Html msg
+mic =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ path [ d "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" ] []
+    , path [ d "M19 10v2a7 7 0 0 1-14 0v-2" ] []
+    , line [ x1 "12", y1 "19", x2 "12", y2 "23" ] []
+    , line [ x1 "8", y1 "23", x2 "16", y2 "23" ] []
+    ]
+
+micOff : Html msg
+micOff =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ line [ x1 "1", y1 "1", x2 "23", y2 "23" ] []
+    , path [ d "M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" ] []
+    , path [ d "M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" ] []
+    , line [ x1 "12", y1 "19", x2 "12", y2 "23" ] []
+    , line [ x1 "8", y1 "23", x2 "16", y2 "23" ] []
+    ]
+
+settings : Html msg
+settings =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ circle [ cx "12", cy "12", r "3" ] []
+    , path [ d "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" ] []
+        ]
+
+
+headphones : Html msg
+headphones =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ path [ d "M3 18v-6a9 9 0 0 1 18 0v6" ] []
+    , path [ d "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"] []
+    ]
+
+plusCircle : Html msg
+plusCircle =
+    svg [ width "20"
+        , height "20"
+        , viewBox "0 0 24 24"
+        , fill "none"
+        , stroke "currentColor"
+        , strokeWidth "2"
+        , strokeLinecap "round"
+        , strokeLinejoin "round"
+        , display "block"
+        ]
+    [ circle [ cx "12", cy "12", r "10" ] []
+    , line [ x1 "12", y1 "8", x2 "12", y2 "16" ] []
+    , line [ x1 "8", y1 "12", x2 "16", y2 "12" ] []
+    ]
+------------------------------------------------------------
 -- Dice
---------------------------------------------------
+------------------------------------------------------------
 
 diceDefs : Html msg
 diceDefs =

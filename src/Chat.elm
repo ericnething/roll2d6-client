@@ -43,6 +43,7 @@ import Chat.Types exposing (..)
 import Chat.Decode exposing (decodeStanza)
 import Chat.Encode exposing (encodeMessage)
 import Chat.XMPP as XMPP
+import Icons
 
 subscriptions : Sub Msg
 subscriptions =
@@ -198,28 +199,75 @@ updateChatInput s mRoom =
 compactRoomView : Room -> Html Msg
 compactRoomView model =
     div [ css
-          [ Css.property "display" "grid"
-          , Css.property "grid-template-rows" "1fr auto"
-          , Css.height (vh 100)
-          , padding2 (px 0) (Css.em 0.8)
+          [ -- Css.property "display" "grid"
+          -- , Css.property "grid-template-rows" "1fr auto"
+          -- , Css.height (vh 100)
+          Css.property "height" "calc(100vh - 3rem)"
+          , backgroundColor (hex "302633")
+          -- , padding2 (px 0) (Css.em 0.8)
           , displayFlex
           , flexDirection column
           , justifyContent spaceBetween
-          , fontSize (Css.em 0.95)
+          , color (hex "eee")
           ]
         ]
     -- (case mmodel of
     --     Nothing ->
     --         []
     --     Just model ->
-            [ lazy messageLogView model.messages
+            [ toolbarView
+            , lazy messageLogView model.messages
             , lazy2 inputView model.id model.input
             ]--)
+
+iconButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.45) (Css.em 0.4)
+        , marginTop (Css.em 0.35)
+        , backgroundColor transparent
+        , border (px 0)
+        , borderRadius (px 4)
+        , color (hex "eee")
+        , cursor pointer
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.20)
+            ]
+        ]
+
+toolbarView : Html Msg
+toolbarView =
+    div [ css
+          [ flex (int 0)
+          , displayFlex
+          , alignItems center
+          , justifyContent spaceBetween
+          -- , paddingTop (Css.em 0.75)
+          , paddingLeft (Css.em 1)
+          , paddingRight (Css.em 0.25)
+          ]
+        ]
+        [ roomTitleView "Call from the Deep"
+        , div [ css
+                [ displayFlex
+                , alignItems center
+                ]
+              ]
+            [ iconButton [] [ Icons.headphones ]
+            , iconButton [] [ Icons.mic ]
+            , iconButton [] [ Icons.phone ]
+            , iconButton [] [ Icons.settings ]
+            ]
+        ]
+
+roomTitleView : String -> Html Msg
+roomTitleView s =
+    div [] [ text s ]
 
 inputView : RoomId -> String -> Html Msg
 inputView to message =
     div [ css
-            [ padding2 (Css.em 0.8) (px 0)
+            [ padding (Css.em 0.8)
             ]
           ]
         [ textarea
@@ -228,9 +276,10 @@ inputView to message =
                 , Css.width (pct 100)
                 , border (px 0)
                 , borderRadius (Css.em 0.35)
-                , padding (Css.em 0.35)
+                , padding2 (Css.em 0.5) (Css.em 0.8)
+                , backgroundColor (hex "E4D6E3")
                 ]
-              , rows 4
+              , rows 1
               , placeholder "Send a message or roll dice"
               , onInput (UpdateChatInput to)
               , onEnter (EnterKeyPressed to message)
@@ -242,24 +291,29 @@ inputView to message =
 messageLogView : List Message -> Html Msg
 messageLogView messages =
     let
+        testMessages =
+            [{ timestamp = Time.millisToPosix 0
+             , from = { full = "Geronimo", bare = "Geronimo", resource = "" }
+             , body = """Welcome to the game. Make yourself at home. I have created character sheets which have been assigned to each of you already. Just click on the "edit" button to make any changes."""
+             }
+            ]
         body =
-            case messages of
-                [] ->
-                    [ messageView <|
-                          { timestamp = Time.millisToPosix 0
-                          , from = { full = "helpbot", bare = "helpbot", resource = "" }
-                          , body = "You can chat with the other players here and roll your dice."
-                          }
-                    ]
-                _ ->
+            -- case messages of
+            --     [] ->
+            --         [ text "You can chat with the other players here and roll your dice."
+            --         ]
+            --     _ ->
                     List.map
                         (lazy messageView)
-                        (List.reverse messages)
+                        (List.reverse testMessages)
     in
         div [ css
               [ overflowY auto
               , overflowX Css.hidden
-              , padding2 (Css.em 0.8) (px 0)
+              , padding2 (Css.em 1) (Css.em 1)
+              , flex (int 1)
+              , fontWeight (int 200)
+              , lineHeight (num 1.25)
               ]
             , id "chat-message-list"
             ]
@@ -267,10 +321,9 @@ messageLogView messages =
 
 styledMessage =
     styled div
-        [ backgroundColor (hex "eee")
-        , padding (Css.em 0.5)
-        , borderRadius (Css.em 0.35)
-        , marginBottom (Css.em 0.8)
+        [ padding2 (Css.em 0.5) (px 0)
+        , color (hex "eee")
+        , displayFlex
         ]
 
 messageView : Message -> Html Msg
@@ -279,8 +332,24 @@ messageView { from, body, timestamp } =
     --     Message { playerName, body } ->
             styledMessage
             []
-            [ div [] [ text from.full ]
-            , div [] [ text body ]
+            [ img [ css
+                    [ borderRadius (pct 50)
+                    , Css.height (px 32)
+                    , Css.width auto
+                    , marginRight (Css.em 0.5)
+                    ]
+                  , src "/lib/fox-avatar-2.jpg"
+                  ] []
+            , div []
+                  [ div [ css
+                          [ color (hex "FF7E1C")
+                          , fontWeight (int 300)
+                          , marginBottom (Css.em 0.3)
+                          ]
+                        ]
+                        [ text from.full ]
+                  , div [] [ text body ]
+                  ]
             ]
         -- DiceRollMessage { playerName, result } ->
         --     let

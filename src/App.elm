@@ -93,6 +93,7 @@ initialModel me =
     , me = me
     , activeGame = NoGame
     , rooms = Dict.empty
+    , showLobbyOrGame = ShowLobby
     }
 
 init : Person -> (Model, Cmd Msg)
@@ -118,6 +119,7 @@ update xmppClient navkey msg model =
                                 ({ model
                                      | activeGame =
                                          LoadingGame id updatedProgress
+                                     , showLobbyOrGame = ShowGame
                                  }
                                 , loadGameScreenIfDone updatedProgress
                                 )
@@ -220,8 +222,14 @@ update xmppClient navkey msg model =
         GameMsg (Game.ChatMsg chatmsg) ->
             (model, toCmd (ChatMsg chatmsg))
 
+        GameMsg Game.SwitchToLobby ->
+            ({ model | showLobbyOrGame = ShowLobby }, Cmd.map LobbyMsg Lobby.init)
+
         GameMsg localmsg ->
             updateGame navkey localmsg model
+
+        LobbyMsg Lobby.ResumeGame ->
+            ({ model | showLobbyOrGame = ShowGame }, Cmd.none)
 
         LobbyMsg localmsg ->
             let
@@ -295,10 +303,17 @@ view viewportSize model =
             div [] [ text "Loading game..." ]
                 
         ActiveGame game ->
-            Game.view viewportSize (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
-                |> Html.Styled.map GameMsg
+            case model.showLobbyOrGame of
+                ShowLobby ->
+                    Lobby.view True model
+                          |> Html.Styled.map LobbyMsg
+                ShowGame ->
+                    Game.view
+                    viewportSize
+                    (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
+                        |> Html.Styled.map GameMsg
                                    
         NoGame ->
-            Lobby.view model
+            Lobby.view False model
                 |> Html.Styled.map LobbyMsg 
 

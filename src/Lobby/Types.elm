@@ -55,3 +55,4 @@ type Msg
     | OpenNewGameForm
     | CloseNewGameForm
     | SwitchTab
+    | ResumeGame

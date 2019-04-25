@@ -45,8 +45,13 @@ type alias Model =
     , me : Person
     , activeGame : ActiveGame
     , rooms : Dict Chat.RoomId Chat.Room
+    , showLobbyOrGame : ShowLobbyOrGame
     }
 
+
+type ShowLobbyOrGame
+    = ShowLobby
+    | ShowGame
 
 type ActiveGame
     = ActiveGame Game.Model

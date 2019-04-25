@@ -154,6 +154,9 @@ update navkey msg model =
                 ]
             )
 
+        SwitchToLobby ->
+            (model, Cmd.none)
+
         CreateInvite ->
             ( model
             , API.createInvite model.id
@@ -222,6 +225,9 @@ update navkey msg model =
         NoOp ->
             (model, Cmd.none)
 
+        SwitchTab ->
+            (model, Cmd.none)
+
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
 updateDebouncer =
@@ -238,12 +244,12 @@ view viewportSize mChatRoom model =
         [ css
             [ Css.property "display" "grid"
             , Css.property "grid-template-rows" "3rem auto"
-            , Css.property "grid-template-columns" "1fr 23em"
-            , Css.property "grid-row-gap" "0.6rem"
+            , Css.property "grid-template-columns" "1fr 26em"
+            -- , Css.property "grid-row-gap" "0.6rem"
             , backgroundColor (hex "0079bf")
             ]
         ]
-        [ lazy topToolbar model
+        [ lazy topNavigation model
         , Sheets.view viewportSize model
             |> Html.Styled.map SheetsMsg
         , lazy sidebar mChatRoom
@@ -254,6 +260,94 @@ view viewportSize mChatRoom model =
 --------------------------------------------------
 -- Top Toolbar
 --------------------------------------------------
+
+topNavigation : Model -> Html Msg
+topNavigation model =
+    header
+        [ css
+            [ displayFlex
+            , alignItems center
+            , justifyContent spaceBetween
+            , backgroundColor transparent
+            , color (hex "fff")
+            , padding2 (Css.em 0) (Css.em 1)
+            , Css.property "grid-column" "1 / 3"
+            ]
+        ]
+        [ topNavigationSection []
+          [ span [ css [ displayFlex, marginRight auto ] ]
+                [ userBadge "Geronimo" "/lib/fox-avatar-2.jpg" ]
+          ]
+        , topNavigationSection [] [ tabsView model ]
+        , topNavigationSection []
+              [ span [ css [ marginLeft auto ] ]
+                    [ onlinePlayers model.players ]
+              ]
+        ]
+
+userBadge : String -> String -> Html Msg
+userBadge name url =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+    [ img [ css
+            [ borderRadius (pct 50)
+            , Css.height (px 32)
+            , Css.width auto
+            ]
+          , src url
+          ] []
+    , span [ css
+             [ marginLeft (Css.em 0.5)
+             ]
+           ]
+        [ text name ]
+    ]
+
+
+topNavigationSection =
+    styled div
+        [ displayFlex
+        , flex (int 1)
+        , justifyContent center
+        ]
+
+tabView : String -> Msg -> Bool -> Html Msg
+tabView name handleClick isActive =
+    div [ css
+          [ if isActive then
+                Css.batch
+                    [ backgroundColor (rgba 255 255 255 0.2)
+                    , color (hex "fff")
+                    ]
+            else
+                Css.batch
+                    [ color (rgba 255 255 255 0.70)
+                    , hover
+                        [ color (hex "fff") ]
+                    ]
+          , borderRadius (px 4)
+          , padding2 (Css.em 0.4) (Css.em 0.7)
+          , cursor pointer
+          ]
+        , onClick handleClick
+        ]
+        [ text name
+        ]
+
+tabsView : Model -> Html Msg
+tabsView model =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+        [ tabView "Public" SwitchTab True
+        , tabView "Private" SwitchTab False
+        , tabView "Canvas" SwitchTab False
+        ]
 
 topToolbar : Model -> Html Msg
 topToolbar model =
@@ -291,7 +385,7 @@ gameTitle title =
 
 exitGameButton : Html Msg
 exitGameButton =
-    toolbarButton [ onClick ExitToLobby
+    toolbarButton [ onClick SwitchToLobby -- ExitToLobby
                   , css
                         [ lineHeight (num 1.6)
                         ]
@@ -305,17 +399,17 @@ buttons player =
           , alignItems center
           , whiteSpace noWrap
           ]
-        ]
-    (case player.role of
-         PlayerRole ->
-             [ exitGameButton ]
-         _ ->
-             [ exitGameButton
-             , invitePlayerButton
-             , gameSettingsButton
-             , showPlayerListButton
-             ]
-    )
+        ] []
+    -- (case player.role of
+    --      PlayerRole ->
+    --          [ exitGameButton ]
+    --      _ ->
+    --          [ exitGameButton
+    --          , invitePlayerButton
+    --          , gameSettingsButton
+    --          , showPlayerListButton
+    --          ]
+    -- )
 
 toolbarButton =
     styled button
@@ -331,103 +425,90 @@ toolbarButton =
             ]
         ]
 
-gameSettingsButton : Html Msg
-gameSettingsButton =
-    toolbarButton
-        [ onClick (OpenOverlay EditGameSettings)
-        , css [ marginLeft (Css.em 0.5) ]
-        ]
-        [ Icons.gameSettings ]
+-- gameSettingsButton : Html Msg
+-- gameSettingsButton =
+--     toolbarButton
+--         [ onClick (OpenOverlay EditGameSettings)
+--         , css [ marginLeft (Css.em 0.5) ]
+--         ]
+--         [ Icons.gameSettings ]
 
 
-invitePlayerButton : Html Msg
-invitePlayerButton =
-    toolbarButton
-        [ onClick CreateInvite
-        , css [ marginLeft (Css.em 0.5) ]
-        ]
-        [ Icons.instantInvite ]
+-- invitePlayerButton : Html Msg
+-- invitePlayerButton =
+--     toolbarButton
+--         [ onClick CreateInvite
+--         , css [ marginLeft (Css.em 0.5) ]
+--         ]
+--         [ Icons.instantInvite ]
 
 
-showPlayerListButton : Html Msg
-showPlayerListButton =
-    toolbarButton
-        [ onClick (OpenOverlay ManagePlayers)
-        , css [ marginLeft (Css.em 0.5) ]
-        ]
-        [ Icons.players ]
+-- showPlayerListButton : Html Msg
+-- showPlayerListButton =
+--     toolbarButton
+--         [ onClick (OpenOverlay ManagePlayers)
+--         , css [ marginLeft (Css.em 0.5) ]
+--         ]
+--         [ Icons.players ]
 
-invitePlayersCircleButton : Html Msg
-invitePlayersCircleButton =
-    button
-        [ css
-            [ borderRadius (px 999)
-            , Css.width (Css.em 1.9)
-            , Css.height (Css.em 1.9)
-            , backgroundColor (rgba 255 255 255 0.2)
-            , color (hex "eee")
-            , textAlign center
-            , marginLeft (Css.em 0.35)
-            , border3 (px 2) solid (hex "eee")
-            ]
-        ]
-        [ text "+" ]
+-- invitePlayersCircleButton : Html Msg
+-- invitePlayersCircleButton =
+--     button
+--         [ css
+--             [ borderRadius (px 999)
+--             , Css.width (Css.em 1.9)
+--             , Css.height (Css.em 1.9)
+--             , backgroundColor (rgba 255 255 255 0.2)
+--             , color (hex "eee")
+--             , textAlign center
+--             , marginLeft (Css.em 0.35)
+--             , border3 (px 2) solid (hex "eee")
+--             ]
+--         ]
+--         [ text "+" ]
 
 
 onlinePlayers : List Player -> Html Msg
 onlinePlayers players =
     let
-        avatar name bg =
-            div
-                [ css
-                    [ borderRadius (px 999)
-                    , Css.width (Css.em 1.9)
-                    , Css.height (Css.em 1.9)
-                    , backgroundColor (hex bg)
-                    , color (hex "eee")
-                    , textAlign center
-                    , marginRight (Css.em 0.25)
-                    , border3 (px 2) solid transparent
-                    , lineHeight (num 1.5)
-                    ]
-                ]
-                [ text name ]
-
-        -- colors =
-        --     Array.fromList
-        --         [ "2ECC40"
-        --         , "FF851B"
-        --         , "85144b"
-        --         , "0074D9"
-        --         , "001f3f"
-        --         ]
-
-        -- chooseColor id =
-        --     let
-        --         index = modBy id (Array.length colors)
-        --     in
-        --         case Array.get index colors of
-        --             Nothing ->
-        --                 "0074D9"
-        --             Just color ->
-        --                 color
+        avatar url =
+            img [ css
+                  [ borderRadius (pct 50)
+                  , Css.height (px 32)
+                  , Css.width auto
+                  , marginLeft (Css.em 0.5)
+                  ]
+                , src url
+                ] []
     in
-    span
-        [ css
-            [ displayFlex
-            , alignItems center
-            , marginRight (Css.em 1)
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+    ( iconButton [] [ Icons.plusCircle ]
+    :: List.map avatar
+         [ "/lib/bird-avatar.jpg"
+         , "/lib/cat-avatar.jpg"
+         , "/lib/frog-avatar.jpg"
+         , "/lib/fox-avatar-2.jpg"
+         ]
+    )
+
+iconButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.45) (Css.em 0.4)
+        , marginTop (Css.em 0.35)
+        , backgroundColor transparent
+        , border (px 0)
+        , borderRadius (px 4)
+        , color (hex "eee")
+        , cursor pointer
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.20)
             ]
         ]
-        (players
-             -- |> List.filter
-             --    (\{ presence } -> presence == Online )
-             |> List.map
-                (\{ displayName, id } ->
-                     avatar
-                     (String.left 1 displayName)
-                     "0074D9")
-        )
 
 -- popOverView : { id : Int
 --               , open : msg
@@ -713,10 +794,7 @@ presenceIndicator color status =
 sidebar : Maybe Chat.Room -> Html Msg
 sidebar mChatRoom =
     div [ css
-          [ backgroundColor (hex "ddd")
-          , Css.height (vh 100)
-          , borderLeft3 (Css.em 0.15) solid (hex "aaa")
-          , Css.property "grid-row" "1 / span 2"
+          [ Css.property "grid-row" "2"
           , Css.property "grid-column" "2 / span 1"
           ]
 

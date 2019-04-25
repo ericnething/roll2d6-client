@@ -177,9 +177,11 @@ type Msg
     | CloseOverlay
     | ChangesReceived Value
     | ExitToLobby
+    | SwitchToLobby
     | CreateInvite
     | InviteCreated (WebData String)
     | RemovePlayer PlayerId
     | PlayerRemoved GameId PlayerId (Result Http.Error String)
     | PlayerRemovedSuccess
     | ChatMsg Chat.Msg
+    | SwitchTab

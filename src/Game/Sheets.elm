@@ -402,11 +402,11 @@ sheetsView (viewportWidth, _) { sheets
             , alignItems Css.start
             , padding3 (px 0) (Css.rem 0.8) (Css.rem 0.8)
             , overflowX auto
-            , Css.property "height" "calc(100vh - 3.6rem)"
+            , Css.property "height" "calc(100vh - 3rem)"
             , Css.property "display" "grid"
             , Css.property "grid-auto-columns" "23rem"
             , Css.property "grid-auto-flow" "column"
-            , Css.property "grid-column-gap" "1rem"
+            , Css.property "grid-column-gap" "0.65rem"
             , backgroundColor (hex "0079bf")
             ]
         , on "scroll" (scrollDecoder OnScroll)
@@ -539,7 +539,7 @@ sheetColumn =
     styled div
         [ displayFlex
         , Css.property "flex-direction" "column"
-        , Css.property "max-height" "calc(100vh - 3.6rem)"
+        , Css.property "max-height" "calc(100vh - 3rem)"
         , Css.property "display" "grid"
         , Css.property "grid-template-rows" "minmax(auto, 1fr)"
         , Css.property "flex" "0 0 23rem"
@@ -656,7 +656,7 @@ fullSheetWrapper =
     styled div
         [ displayFlex
         , Css.property "flex-direction" "column"
-        , Css.property "max-height" "calc(100vh - 3.6rem)"
+        , Css.property "max-height" "calc(100vh - 3rem)"
         , Css.property "display" "grid"
         , Css.property "grid-template-rows" "minmax(auto, 1fr)"
         , overflowY auto

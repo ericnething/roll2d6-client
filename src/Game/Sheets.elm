@@ -709,16 +709,7 @@ fullSheetCard { myPlayer
         Nothing ->
             div [] [ text "Not Found" ]
         Just sheet ->
-            div [ css
-                  [ -- Css.property "grid-template-columns" "12em 32em"
-                  -- , Css.property "display" "grid"
-                  -- , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-                  -- , Css.property "grid-gap" "1em"
-                  -- ,
-                      padding2 (px 0) (Css.em 1)
-                  , margin2 (px 0) auto
-                  ]
-                ]
+            div [ css [ padding2 (px 0) (Css.em 1) ] ]
                 [ -- editSheetToolbarView
                   --     { myPlayer = myPlayer
                   --     , fullSheet = fullSheet
@@ -728,8 +719,7 @@ fullSheetCard { myPlayer
                     div [ css
                         [ backgroundColor (hex "fff")
                         , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
-                        -- , Css.width (Css.em 32)
-                        , borderRadius (Css.em 0.2)
+                        , borderRadius (Css.em 0.27)
                         ]
                       ]
                       [ div [ css

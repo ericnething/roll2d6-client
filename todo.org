@@ -1,0 +1,39 @@
+* Personalized game settings
+
+Each player gets their own couchdb document to store game-specific
+settings such as sheet ordering and display name.
+
+* Canvas
+
+Use xmpp pubsub and html canvas. May need to store images externally.
+
+* Voice calls
+
+Add STUN/TURN and ICE servers for voice calls over WebRTC.
+
+* Avatars
+
+Allow uploading of profile avatars.
+
+* Character portraits
+
+Allow uploading of character sheet portraits. Stored in couchdb.
+
+* Private sheet board
+
+This is a place for the GM to create character sheets before moving
+them to the main (public) board for all the players to see, and where
+the NPC sheets can be stored when not in use.
+
+* Sheet archive
+
+Store unused character sheets. Allow searching and sorting.
+
+* Game settings overlay
+
+An opaque overlay for the game screen that contains all game settings.
+
+* Application and account settings
+
+A tab on the lobby screen for application settings and user account
+settings.

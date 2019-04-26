@@ -472,10 +472,6 @@ newGameFormSubmitButton =
              , color (hex "eee")
              , borderRadius (px 4)
              , cursor pointer
-             , hover
-                   [ backgroundColor (hex "eee")
-                   , color (hex "302633")
-                   ]
              ]
            , onClick NewGame
            ]

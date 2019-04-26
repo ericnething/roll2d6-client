@@ -35,6 +35,7 @@ import Html.Styled.Events exposing (..)
 import Css exposing (..)
 import Css.Media
 import Common exposing (defaultButton, inputStyles)
+import Util.Css exposing (appearance_none, userSelect_none)
 
 import Game.Sheet as Sheet
 import Game.Sheet.Types exposing (SheetModel, SheetMsg)
@@ -344,13 +345,10 @@ view viewportSize model =
         Just (FullSheet id editing) ->
             fullSheetView
                 { myPlayer = model.myPlayer
+                , players = model.players
                 , fullSheet = FullSheet id editing
                 , sheetModel = Dict.get id model.sheets
-                , permissions =
-                    model.sheetPermissions
-                        |> Dict.get id
-                        |> Maybe.map
-                           (\perm -> (perm, model.players))
+                , permissions = model.sheetPermissions
                 }
 
 
@@ -663,39 +661,35 @@ fullSheetWrapper =
         , overflowY auto
         ]
 
-fullSheetView : { myPlayer : Player
+fullSheetView : { r |
+                  myPlayer : Player
+                , players : List Player
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, List Player)
+                , permissions : Dict SheetId SheetPermission
                 }
               -> Html Msg
-fullSheetView { myPlayer, fullSheet, sheetModel, permissions } =
+fullSheetView model =
     fullSheetWrapper []
         [ sheetList []
-              [ fullSheetCard
-                    { myPlayer = myPlayer
-                    , fullSheet = fullSheet
-                    , sheetModel = sheetModel
-                    , permissions = permissions
-                    }
+              [ fullSheetCard model
               , spacer
               , spacer
               ]
         ]
 
-fullSheetCard : { myPlayer : Player
+fullSheetCard : { r |
+                  myPlayer : Player
+                , players : List Player
                 , fullSheet : FullSheet
                 , sheetModel : Maybe SheetModel
-                , permissions : Maybe (SheetPermission, List Player)
+                , permissions : Dict SheetId SheetPermission
                 }
               -> Html Msg
-fullSheetCard { myPlayer
-              , fullSheet
-              , sheetModel
-              , permissions
-              } =
+fullSheetCard model =
     let
         (FullSheet sheetId editing) = fullSheet
+        { myPlayer, players, fullSheet, sheetModel, permissions } = model
 
         editToggle =
             toggleSwitch
@@ -710,13 +704,7 @@ fullSheetCard { myPlayer
             div [] [ text "Not Found" ]
         Just sheet ->
             div [ css [ padding2 (px 0) (Css.em 1) ] ]
-                [ -- editSheetToolbarView
-                  --     { myPlayer = myPlayer
-                  --     , fullSheet = fullSheet
-                  --     , permissions = permissions
-                  --     }
-                -- ,
-                    div [ css
+                [ div [ css
                         [ backgroundColor (hex "fff")
                         , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0.6)
                         , borderRadius (Css.em 0.27)
@@ -734,7 +722,7 @@ fullSheetCard { myPlayer
                             , case myPlayer.role of
                                   PlayerRole ->
                                       if hasPermission
-                                          (Maybe.map Tuple.first permissions)
+                                          (Dict.get sheetId permissions)
                                           myPlayer.id
                                       then
                                           editToggle
@@ -758,94 +746,66 @@ fullSheetCard { myPlayer
                                  Sheet.view sheet
                             ]
                       ]
+                , editSheetToolbarView model
                 ]
 
 
 editSheetToolbarView :
-    { myPlayer : Player
+    { r |
+      myPlayer : Player
+    , players : List Player
     , fullSheet : FullSheet
-    , permissions : Maybe (SheetPermission, List Player)
+    , permissions : Dict SheetId SheetPermission
     }
     -> Html Msg
-editSheetToolbarView { myPlayer, fullSheet, permissions } =
+editSheetToolbarView model =
     let
         (FullSheet sheetId isActive) = fullSheet
-
-        deleteButton =
-            defaultButton
-                [ onClick (RemoveSheet sheetId)
-                , css
-                      [ backgroundColor (hex "ff0000")
-                      , color (hex "fff")
-                      , hover
-                            [ backgroundColor (hex "ee0000") ]
-                      ]
-                ]
-                [ text "Delete" ]
-
-        sectionLabel title =
-            div [ css
-                  [ Css.color (hex "fff")
-                  , margin3 (Css.em 1) (px 0) (Css.em 0.65)
-                  ]
-                ]
-                [ text title ]
+        { myPlayer, players, fullSheet, permissions } = model
     in
         div [ css
-              [ opacity (num 0.6)
-              , hover [ opacity (num 1) ]
-              , displayFlex
-              , alignItems flexStart
-              , flexDirection column
+              [ Css.property "display" "grid"
+              , Css.property "grid-template-columns" "1fr 1fr"
+              , Css.property "grid-column-gap" "2rem"
+              , Css.property "grid-row-gap" "2rem"
               , Css.color (hex "fff")
+              , marginTop (Css.em 1)
               ]
             ]
-        [ sectionLabel "Assigned to"
-        , assignedToSheetView permissions
-        , case myPlayer.role of
-              PlayerRole ->
-                  text ""
-              _ ->
-                  defaultButton
-                  [ onClick (OpenSheetPermissions sheetId) ]
-                  [ text "Manage Permissions" ]
-
-        , case myPlayer.role of
-              PlayerRole ->
-                  text ""
-              _ ->
-                  div []
-                  [ div [ css
-                          [ borderTop3 (px 1) solid (hex "fff")
-                          , paddingTop (Css.em 1)
-                          , margin3 (Css.em 1) (px 0) (Css.em 0.65)
-                          , Css.color (hex "fff")
-                          ]
-                        ]
-                        [ text "If you delete this sheet, there is no way to recover it later." ]
-                  , deleteButton
+        [ div [ css
+                [ flex (int 1) ]
+              ]
+              [ if not (myPlayer.role == PlayerRole) then
+                    sheetPermissionsView sheetId model
+                else
+                    text ""
+              ]
+        , if not (myPlayer.role == PlayerRole) then
+              div [ css
+                    [ flex (int 1) ]
                   ]
+              [ defaultButton
+                    [ onClick (RemoveSheet sheetId) ]
+                    [ text "Delete" ]
+              ]
+          else
+              text ""
         ]
 
 assignedToSheetView : Maybe (SheetPermission, List Player) -> Html Msg
 assignedToSheetView mpermissions =
     case mpermissions of
-        Just (permissions, players) ->
-            case permissions of
-                SomePlayers ids ->
-                    ul []
-                        (List.map
-                             (\player ->
-                                  if List.member player.id ids
-                                  then
-                                      li [] [ text player.displayName ]
-                                  else
-                                      text ""
-                             )
-                             players
-                        )
-                AllPlayers ->
-                    ul [] [ li [] [ text "Everyone" ] ]
+        Just (SomePlayers ids, players) ->
+            ul [] (players |> List.map (\player ->
+                if List.member player.id ids then
+                    li [] [ text player.displayName ]
+                else
+                    text ""
+            ))
+
+        Just (AllPlayers, players) ->
+            ul [] [ li [] [ text "Everyone" ] ]
+
         _ ->
             text ""
 
@@ -925,11 +885,145 @@ toggleSwitch { offTitle, onTitle, isActive, toMsg } =
             ]
         , span
             [ css
-                [ fontSize (pct 80)
+                [ fontSize (pct 90)
                 , color (hex "888")
                 ]
             ]
             [ text (if isActive then onTitle else offTitle) ]
+        ]
+
+
+toggleSwitchBlue : { offTitle : String
+                   , onTitle : String
+                   , isActive : Bool
+                   , toMsg : (Bool -> msg)
+                   }
+                 -> Html msg
+toggleSwitchBlue { offTitle, onTitle, isActive, toMsg } =
+    span
+        [ css
+            [ displayFlex
+            , alignItems center
+            ]
+        ]
+        [ label
+            [ css
+                [ position relative
+                , display inlineBlock
+                , Css.width (px 60)
+                , Css.height (px 34)
+                , Css.property "transform" "scale(0.65)"
+                ]
+            ]
+            [ input
+                [ type_ "checkbox"
+                , HA.checked isActive
+                , onCheck toMsg
+                , css [ display none ]
+                ]
+                []
+            , span
+                [ css
+                    [ position absolute
+                    , cursor pointer
+                    , top (px 0)
+                    , left (px 0)
+                    , right (px 0)
+                    , bottom (px 0)
+                    , border3 (px 2) solid (hex "fff")
+                    , if isActive then
+                        batch
+                            [ backgroundColor (hex "fff")
+                            , before
+                                [ Css.property
+                                    "-webkit-transform"
+                                    "translateX(26px)"
+                                , Css.property
+                                    "-ms-transform"
+                                    "translateX(26px)"
+                                , Css.property
+                                    "transform"
+                                    "translateX(26px)"
+                                ]
+                            ]
+
+                      else
+                        backgroundColor transparent
+                    , Css.property "-webkit-transition" "0.2s"
+                    , Css.property "transition" "0.2s ease"
+                    , borderRadius (px 34)
+                    , before
+                        [ position absolute
+                        , Css.property "content" "\"\""
+                        , Css.height (px 22)
+                        , Css.width (px 22)
+                        , left (px 4)
+                        , bottom (px 4)
+                        , if isActive then
+                              backgroundColor (hex "0079bf")
+                          else
+                              backgroundColor (hex "fff")
+                        , Css.property "-webkit-transition" "0.2s"
+                        , Css.property "transition" "0.2s ease"
+                        , borderRadius (pct 50)
+                        ]
+                    ]
+                ]
+                []
+            ]
+        , span
+            [ css
+                [ fontSize (pct 90)
+                , color (hex "eee")
+                ]
+            ]
+            [ text (if isActive then onTitle else offTitle) ]
+        ]
+
+avatarToggle : Bool -> (Bool -> msg) -> Html msg
+avatarToggle isChecked toMsg =
+    let
+        avatar srcUrl =
+            img [ css
+                  [ borderRadius (pct 50)
+                  , Css.height (Css.rem 2.133) -- 32px when base is 15px
+                  , Css.width auto
+                  , marginRight (Css.em 0.5)
+                  , if isChecked then
+                        batch
+                        [ border3 (px 2) solid (hex "eee")
+                        ]
+                    else
+                        batch
+                        [ border3 (px 2) solid transparent
+                        , Css.property "filter" "grayscale(100%)"
+                        , opacity (num 0.6)
+                        ]
+                  ]
+                , src srcUrl
+                ] []
+    in
+    label
+        [ css
+            [ display inlineBlock
+            , userSelect_none
+            , cursor pointer
+            ]
+        ]
+        [ avatar "/lib/fox-avatar-2.jpg"
+        , input
+            [ type_ "checkbox"
+            , HA.checked isChecked
+            , onCheck toMsg
+            , css
+                [ position absolute
+                , appearance_none
+                , opacity (int 0)
+                , Css.height (px 0)
+                , Css.width (px 0)
+                ]
+            ]
+            []
         ]
 
 
@@ -942,13 +1036,10 @@ sheetPermissionsView
     -> { r |
          myPlayer : Player
        , players : List Player
-       , sheetPermissions : Dict SheetId SheetPermission
+       , permissions : Dict SheetId SheetPermission
        }
     -> Html Msg
-sheetPermissionsView sheetId { myPlayer
-                             , players
-                             , sheetPermissions
-                             } =
+sheetPermissionsView sheetId { myPlayer, players, permissions } =
     let
         allPlayersToggle =
             div [ css
@@ -957,21 +1048,18 @@ sheetPermissionsView sheetId { myPlayer
                   , justifyContent spaceBetween
                   ]
                 ]
-                [ div [] [ text "Everyone" ]
-                , toggleSwitch
-                      { offTitle = ""
-                      , onTitle = ""
+                [ toggleSwitchBlue
+                      { offTitle = "Everyone"
+                      , onTitle = "Everyone"
                       , isActive =
-                          case Dict.get sheetId sheetPermissions of
+                          case Dict.get sheetId permissions of
                               Just AllPlayers ->
                                   True
                               _ ->
                                   False
                       , toMsg =
                           \isActive ->
-                              if
-                                  isActive
-                              then
+                              if isActive then
                                   UpdateSheetPermissions
                                   sheetId
                                   AllPlayers
@@ -982,11 +1070,9 @@ sheetPermissionsView sheetId { myPlayer
                       }
                 ]
         toSheetPermission playerId isActive =
-            case Dict.get sheetId sheetPermissions of
+            case Dict.get sheetId permissions of
                 Just (SomePlayers ids) ->
-                    if
-                        isActive
-                    then
+                    if isActive then
                         SomePlayers (playerId :: ids)
                     else
                         SomePlayers (List.filter ((/=) playerId) ids)
@@ -995,9 +1081,7 @@ sheetPermissionsView sheetId { myPlayer
                     SomePlayers [ playerId ]
 
                 Nothing ->
-                    if
-                        isActive
-                    then
+                    if isActive then
                         SomePlayers [playerId]
                     else
                         SomePlayers []
@@ -1006,31 +1090,32 @@ sheetPermissionsView sheetId { myPlayer
             div [ css
                   [ displayFlex
                   , alignItems center
-                  , justifyContent spaceBetween
                   ]
                 ]
-                [ div [] [ text player.displayName ]
-                , toggleSwitch
-                      { offTitle = ""
-                      , onTitle = ""
-                      , isActive =
-                          case Dict.get sheetId sheetPermissions of
+                [ let isChecked =
+                          case Dict.get sheetId permissions of
                               Just (SomePlayers ids) ->
-                                  if List.member player.id ids
-                                  then
-                                      True
-                                  else
-                                      False
+                                  List.member player.id ids
                               _ ->
                                   False
-                      , toMsg =
-                          UpdateSheetPermissions sheetId
-                          << toSheetPermission player.id
-                      }
+                  in
+                      avatarToggle isChecked
+                          (UpdateSheetPermissions sheetId <<
+                               toSheetPermission player.id)
+                , div [] [ text player.displayName ]
                 ]
     in
         div []
-            (allPlayersToggle :: List.map playerView players)
+            [ div [ css
+                    [ displayFlex
+                    , alignItems center
+                    ]
+                  ]
+                  [ div [] [ text "Players who can edit this sheet" ]
+                  , allPlayersToggle
+                  ]
+            , div [] (List.map playerView players)
+            ]
 
 
 hasPermission : Maybe SheetPermission

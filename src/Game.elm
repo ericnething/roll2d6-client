@@ -608,23 +608,24 @@ overlayView model =
             overlay [] [ playerListView model.players ]
 
         ManageSheetPermissions sheetId ->
-            overlay []
-                [ div [ css
-                        [ margin2 (Css.em 4) auto
-                        , backgroundColor (hex "fff")
-                        , padding (Css.em 2)
-                        , Css.width (Css.em 32)
-                        , borderRadius (Css.em 0.2)
-                        ]
-                      ]
-                      [ h1 [] [ text "Players who can edit this sheet" ]
-                      , Sheets.sheetPermissionsView sheetId model
-                            |> Html.Styled.map SheetsMsg
-                      , defaultButton
-                            [ onClick CloseOverlay ]
-                            [ text "Done" ]
-                      ]
-                ]
+            text ""
+            -- overlay []
+            --     [ div [ css
+            --             [ margin2 (Css.em 4) auto
+            --             , backgroundColor (hex "fff")
+            --             , padding (Css.em 2)
+            --             , Css.width (Css.em 32)
+            --             , borderRadius (Css.em 0.2)
+            --             ]
+            --           ]
+            --           [ h1 [] [ text "Players who can edit this sheet" ]
+            --           , Sheets.sheetPermissionsView sheetId model
+            --                 |> Html.Styled.map SheetsMsg
+            --           , defaultButton
+            --                 [ onClick CloseOverlay ]
+            --                 [ text "Done" ]
+            --           ]
+            --     ]
 
 
 --------------------------------------------------

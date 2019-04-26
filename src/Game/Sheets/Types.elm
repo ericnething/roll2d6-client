@@ -34,6 +34,10 @@ import Ports exposing (PouchDBRef)
 type alias Index = Int
 
 type FullSheet = FullSheet SheetId Bool
+    -- { id : SheetId
+    -- , isEditing : Bool
+    -- , showPermissionsForm : Bool
+    -- }
 
 type alias SheetId = String
 

@@ -256,10 +256,6 @@ changeRouteTo route model =
                         , Cmd.map AppMsg cmd)
 
                 _ -> initAppWithGame gameId model
-
-        Just (Route.Invite inviteId) ->
-            ({ model | screen = InviteScreen Invite.initialModel }
-            , Cmd.map InviteMsg (API.joinGame inviteId))
             
         Nothing ->
             (model, Cmd.none)

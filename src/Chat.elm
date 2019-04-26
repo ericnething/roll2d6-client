@@ -159,6 +159,10 @@ update xmppClient msg model =
         --              (NewDiceRollMessage rollResult))
         --     )
 
+        OpenOverlay ->
+            -- This is handled in App.elm
+            (model, Cmd.none)
+
 
 resetChatInput : BareJID -> Msg
 resetChatInput id = UpdateChatInput id ""
@@ -256,7 +260,7 @@ toolbarView =
             [ iconButton [] [ Icons.headphones ]
             , iconButton [] [ Icons.mic ]
             , iconButton [] [ Icons.phone ]
-            , iconButton [] [ Icons.settings ]
+            , iconButton [ onClick OpenOverlay ] [ Icons.settings ]
             ]
         ]
 

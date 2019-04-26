@@ -54,11 +54,8 @@ import Chat.Types as Chat
 type alias Index = Int
 
 type Overlay
-    = EditGameSettings
-    | InstantInvite (WebData String)
-    | ManagePlayers
-    | ManageSheetPermissions SheetId
-    | OverlayNone
+    = ShowOverlay
+    | HideOverlay
 
 type alias Model =
     { ref : PouchDBRef
@@ -95,7 +92,7 @@ emptyGameModel : { ref : PouchDBRef
 emptyGameModel { ref, gameId, gameData, sheets } myPlayer players =
     { ref = ref
     , debouncer = debounce (fromSeconds 1) |> toDebouncer
-    , overlay = OverlayNone
+    , overlay = HideOverlay
 
     -- Game Info
     , gameType = gameData.gameType
@@ -173,13 +170,11 @@ type Msg
     | UpdateGameTitle String
     | UpdateGameTitleInDB
     | GameTitleUpdated
-    | OpenOverlay Overlay
+    | OpenOverlay
     | CloseOverlay
     | ChangesReceived Value
     | ExitToLobby
     | SwitchToLobby
-    | CreateInvite
-    | InviteCreated (WebData String)
     | RemovePlayer PlayerId
     | PlayerRemoved GameId PlayerId (Result Http.Error String)
     | PlayerRemovedSuccess

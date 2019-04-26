@@ -90,11 +90,6 @@ update : Navigation.Key
        -> (Model, Cmd Msg)
 update navkey msg model =
     case msg of
-        SheetsMsg (Sheets.OpenSheetPermissions sheetId) ->
-            ( model
-            , toCmd (OpenOverlay (ManageSheetPermissions sheetId))
-            )
-
         SheetsMsg submsg ->
             let
                 (newModel, cmd) = Sheets.update submsg model
@@ -116,11 +111,11 @@ update navkey msg model =
         GameTitleUpdated ->
             (model, Cmd.none)
 
-        OpenOverlay overlay_ ->
-            ({ model | overlay = overlay_ }, Cmd.none)
+        OpenOverlay ->
+            ({ model | overlay = ShowOverlay }, Cmd.none)
 
         CloseOverlay ->
-            ({ model | overlay = OverlayNone }, Cmd.none)
+            ({ model | overlay = HideOverlay }, Cmd.none)
 
         ChangesReceived changes ->
             case decodeChanges model.gameType changes of
@@ -156,15 +151,6 @@ update navkey msg model =
 
         SwitchToLobby ->
             (model, Cmd.none)
-
-        CreateInvite ->
-            ( model
-            , API.createInvite model.id
-            )
-
-        InviteCreated result ->
-            ({ model | overlay = InstantInvite result }
-            , Cmd.none)
 
         RemovePlayer playerId ->
             (model, API.removePlayer model.id playerId)
@@ -275,7 +261,16 @@ topNavigation model =
             ]
         ]
         [ topNavigationSection []
-          [ span [ css [ displayFlex, marginRight auto ] ]
+          [ button [ css
+                     [ displayFlex
+                     , marginRight auto
+                     , backgroundColor transparent
+                     , border (px 0)
+                     , color inherit
+                     , cursor pointer
+                     ]
+                 , onClick SwitchToLobby
+                 ]
                 [ userBadge "Geronimo" "/lib/fox-avatar-2.jpg" ]
           ]
         , topNavigationSection [] [ tabsView model ]
@@ -383,15 +378,6 @@ gameTitle title =
         ]
         [ text title ]
 
-exitGameButton : Html Msg
-exitGameButton =
-    toolbarButton [ onClick SwitchToLobby -- ExitToLobby
-                  , css
-                        [ lineHeight (num 1.6)
-                        ]
-                  ]
-    [ text "Exit Game" ]
-
 buttons : Player -> Html Msg
 buttons player =
     div [ css
@@ -400,72 +386,6 @@ buttons player =
           , whiteSpace noWrap
           ]
         ] []
-    -- (case player.role of
-    --      PlayerRole ->
-    --          [ exitGameButton ]
-    --      _ ->
-    --          [ exitGameButton
-    --          , invitePlayerButton
-    --          , gameSettingsButton
-    --          , showPlayerListButton
-    --          ]
-    -- )
-
-toolbarButton =
-    styled button
-        [ whiteSpace noWrap
-        , padding2 (Css.em 0.35) (Css.em 0.5)
-        , backgroundColor (rgba 255 255 255 0.2)
-        , color (hex "fff")
-        , borderRadius (px 4)
-        , cursor pointer
-        , border (px 0)
-        , hover
-            [ backgroundColor (rgba 255 255 255 0.3)
-            ]
-        ]
-
--- gameSettingsButton : Html Msg
--- gameSettingsButton =
---     toolbarButton
---         [ onClick (OpenOverlay EditGameSettings)
---         , css [ marginLeft (Css.em 0.5) ]
---         ]
---         [ Icons.gameSettings ]
-
-
--- invitePlayerButton : Html Msg
--- invitePlayerButton =
---     toolbarButton
---         [ onClick CreateInvite
---         , css [ marginLeft (Css.em 0.5) ]
---         ]
---         [ Icons.instantInvite ]
-
-
--- showPlayerListButton : Html Msg
--- showPlayerListButton =
---     toolbarButton
---         [ onClick (OpenOverlay ManagePlayers)
---         , css [ marginLeft (Css.em 0.5) ]
---         ]
---         [ Icons.players ]
-
--- invitePlayersCircleButton : Html Msg
--- invitePlayersCircleButton =
---     button
---         [ css
---             [ borderRadius (px 999)
---             , Css.width (Css.em 1.9)
---             , Css.height (Css.em 1.9)
---             , backgroundColor (rgba 255 255 255 0.2)
---             , color (hex "eee")
---             , textAlign center
---             , marginLeft (Css.em 0.35)
---             , border3 (px 2) solid (hex "eee")
---             ]
---         ]
---         [ text "+" ]
 
 
 onlinePlayers : List Player -> Html Msg
@@ -510,71 +430,6 @@ iconButton =
             ]
         ]
 
--- popOverView : { id : Int
---               , open : msg
---               , close : msg
---               , popoverState : PopOver
---               , openTrigger : String
---               , closeTrigger : String
---               , menu : Html msg
---               }
---             -> Html msg
--- popOverView { id
---             , open
---             , close
---             , popoverState
---             , openTrigger
---             , closeTrigger
---             , menu
---             } =
---     div [ css
---           [ display inlineFlex
---           , position relative
---           , verticalAlign top
---           ]
---         ]
---         [ div [ ]
---               [ case popoverState of
---                     PopOverNone ->
---                         defaultButton
---                         [ onClick open ]
---                         [ text openTrigger ]
---                     PopOver id_ ->
---                         if id_ == id
---                         then
---                             defaultButton
---                             [ onClick close ]
---                             [ text closeTrigger ]
---                         else
---                             defaultButton
---                             [ onClick open ]
---                             [ text openTrigger ]
---               ]
---         , div [ css
---                 [ left (px 0)
---                 , position absolute
---                 , top (pct 100)
---                 , zIndex (int 20)
---                 , Css.width (Css.em 12)
---                 , backgroundColor (hex "eee")
---                 ]
---               ]
---             [ case popoverState of
---                     PopOverNone ->
---                         text ""
---                     PopOver id_ ->
---                         if id_ == id
---                         then
---                             menu
---                         else
---                             text ""
---             ]
---         ]
-
-
-
-
-
 
 --------------------------------------------------
 -- Overlay
@@ -588,44 +443,37 @@ overlay =
         , Css.height (vh 100)
         , Css.width (vw 100)
         , Css.property "pointer-events" "all"
-        , backgroundColor (rgba 0 0 0 0.5)
-        , overflowY scroll
+        , backgroundColor (hex "302633")
+        , color (hex "eee")
         ]
 
 overlayView : Model -> Html Msg
 overlayView model =
     case model.overlay of
-        OverlayNone ->
+        HideOverlay ->
             text ""
+        ShowOverlay ->
+            overlay []
+                [ div [ css
+                        [ Css.maxWidth (Css.rem 60)
+                        , marginLeft auto
+                        , marginRight auto
+                        ]
+                      ]
+                      [ iconButton
+                            [ css
+                              [ Css.float right ]
+                            , onClick CloseOverlay
+                            ]
+                            [ Icons.xCircleBig ]
+                      , div [ css
+                              [ overflowY scroll
+                              ]
+                            ]
+                            [ text "hello" ]
+                      ]
+                ]
 
-        EditGameSettings ->
-            overlay [] [ gameSettingsView model ]
-
-        InstantInvite mInvite ->
-            overlay [] [ instantInviteView mInvite ]
-
-        ManagePlayers ->
-            overlay [] [ playerListView model.players ]
-
-        ManageSheetPermissions sheetId ->
-            text ""
-            -- overlay []
-            --     [ div [ css
-            --             [ margin2 (Css.em 4) auto
-            --             , backgroundColor (hex "fff")
-            --             , padding (Css.em 2)
-            --             , Css.width (Css.em 32)
-            --             , borderRadius (Css.em 0.2)
-            --             ]
-            --           ]
-            --           [ h1 [] [ text "Players who can edit this sheet" ]
-            --           , Sheets.sheetPermissionsView sheetId model
-            --                 |> Html.Styled.map SheetsMsg
-            --           , defaultButton
-            --                 [ onClick CloseOverlay ]
-            --                 [ text "Done" ]
-            --           ]
-            --     ]
 
 
 --------------------------------------------------
@@ -657,59 +505,6 @@ gameSettingsView model =
             [ onClick UpdateGameTitleInDB ]
             [ text "Done" ]
         ]
-
-
---------------------------------------------------
--- Instant Invite
---------------------------------------------------
-
-instantInviteView : WebData String -> Html Msg
-instantInviteView mInvite =
-    div
-    [ css
-      [ margin2 (Css.em 4) auto
-      , backgroundColor (hex "fff")
-      , padding (Css.em 2)
-      , Css.width (Css.em 32)
-      , borderRadius (Css.em 0.2)
-      ]
-    ]
-    [ case mInvite of
-          RemoteData.NotAsked ->
-              text ""
-          RemoteData.Loading ->
-              text "Creating your invitation now"
-          RemoteData.Failure err ->
-              text "Something went wrong."
-          RemoteData.Success invite ->
-              div []
-                  [ label [ css
-                            [ display block
-                            ]
-                          ]
-                        [ text "Players can join your game by following this link" ]
-                  , input
-                        [ type_ "text"
-                        , readonly True
-                        , value
-                              ("https://localhost:4430" ++
-                                   Route.toUrlString
-                                       (Route.Invite invite))
-                        , css
-                              [ inputStyles
-                              , backgroundColor (hex "eee")
-                              ]
-                        ]
-                        []
-                  , div []
-                      [ text "This invite will expire in 24 hours" ]
-                  ]
-    , button
-          [ type_ "button"
-          , onClick CloseOverlay
-          ]
-          [ text "Close" ]
-    ]
             
 --------------------------------------------------
 -- Player List

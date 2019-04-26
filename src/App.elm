@@ -237,6 +237,9 @@ update xmppClient navkey msg model =
             in
                 (newModel, Cmd.map LobbyMsg cmd)
 
+        ChatMsg Chat.OpenOverlay ->
+            (model, toCmd (GameMsg Game.OpenOverlay))
+
         ChatMsg localmsg ->
             let
                 (newModel, cmd) = Chat.update xmppClient localmsg model

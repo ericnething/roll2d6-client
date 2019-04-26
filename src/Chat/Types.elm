@@ -170,3 +170,4 @@ type Msg
     | ClientConnected
     | JoinRoom RoomId
     | LeaveRoom RoomId
+    | OpenOverlay

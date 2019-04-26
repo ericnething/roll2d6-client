@@ -25,8 +25,6 @@ module API
     , logout
     , getAllGames
     , newGame
-    , createInvite
-    , joinGame
     , getPlayers
     , removePlayer
     , getMyPlayerInfo
@@ -150,38 +148,6 @@ logout =
     in
         Http.send Lobby.LogoutResponse request
 
-createInvite : Game.GameId -> Cmd Game.Msg
-createInvite gameId =
-    let
-        request =
-            Http.request
-                { method = "PUT"
-                , headers = []
-                , url = domain ++ "/games/" ++ gameId ++ "/invite"
-                , body = Http.emptyBody
-                , expect = Http.expectJson Json.Decode.string
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        RemoteData.sendRequest request
-            |> Cmd.map Game.InviteCreated
-
-joinGame : String -> Cmd Invite.Msg
-joinGame inviteId =
-    let
-        request =
-            Http.request
-                { method = "POST"
-                , headers = []
-                , url = domain ++ "/invite/" ++ inviteId
-                , body = Http.emptyBody
-                , expect = Http.expectJson gameIdDecoder
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (Invite.JoinGame inviteId) request
 
 getPlayers : Game.GameId -> Cmd App.Msg
 getPlayers gameId =

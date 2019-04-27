@@ -213,6 +213,9 @@ update navkey msg model =
 
         SwitchTab ->
             (model, Cmd.none)
+                
+        SwitchSettingsTab tab ->
+            ({ model | settingsTab = tab }, Cmd.none)
 
 
 updateDebouncer : Debouncer.UpdateConfig Msg Model
@@ -239,7 +242,7 @@ view viewportSize mChatRoom model =
         , Sheets.view viewportSize model
             |> Html.Styled.map SheetsMsg
         , lazy sidebar mChatRoom
-        , lazy overlayView model
+        , lazy maybeOverlayView model
         ]
 
 
@@ -290,7 +293,7 @@ userBadge name url =
     [ img [ css
             [ borderRadius (pct 50)
             , Css.height (Css.rem 2.133) -- 32px when base is 15px
-            , Css.width auto
+            , Css.width (Css.rem 2.133)
             ]
           , src url
           ] []
@@ -344,50 +347,6 @@ tabsView model =
         , tabView "Canvas" SwitchTab False
         ]
 
-topToolbar : Model -> Html Msg
-topToolbar model =
-    header
-        [ css
-            [ displayFlex
-            , alignItems center
-            , justifyContent spaceBetween
-            , backgroundColor transparent
-            , color (hex "fff")
-            , padding3 (Css.em 0.6) (Css.em 1) (Css.em 0)
-            , Css.property "grid-column" "1 / 2"
-            ]
-        ]
-        [ buttons model.myPlayer
-        , gameTitle model.title
-        , div [ css [ displayFlex ] ]
-            [ onlinePlayers model.players
-            ]
-        ]
-
-
-gameTitle : String -> Html Msg
-gameTitle title =
-    div
-        [ css
-            [ margin2 (Css.em 0) (Css.em 1)
-            , overflow Css.hidden
-            , textOverflow ellipsis
-            , whiteSpace noWrap
-            , maxWidth (Css.vw 32)
-            ]
-        ]
-        [ text title ]
-
-buttons : Player -> Html Msg
-buttons player =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          , whiteSpace noWrap
-          ]
-        ] []
-
-
 onlinePlayers : List Player -> Html Msg
 onlinePlayers players =
     let
@@ -431,9 +390,9 @@ iconButton =
         ]
 
 
---------------------------------------------------
--- Overlay
---------------------------------------------------
+------------------------------------------------------------
+-- Game Settings Overlay
+------------------------------------------------------------
 
 overlay =
     styled div
@@ -447,145 +406,334 @@ overlay =
         , color (hex "eee")
         ]
 
-overlayView : Model -> Html Msg
-overlayView model =
+overlayIconButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.45) (Css.em 0.4)
+        , backgroundColor transparent
+        , border (px 0)
+        , borderRadius (px 4)
+        , color (hex "eee")
+        , cursor pointer
+        , Css.float right
+        , Css.property "transform" "translateY(-0.45rem)"
+        , hover
+            [ backgroundColor (rgba 255 255 255 0.20)
+            ]
+        ]
+
+maybeOverlayView : Model -> Html Msg
+maybeOverlayView model =
     case model.overlay of
         HideOverlay ->
             text ""
         ShowOverlay ->
-            overlay []
-                [ div [ css
-                        [ Css.maxWidth (Css.rem 60)
-                        , marginLeft auto
-                        , marginRight auto
+            overlayView model
+
+overlayView : Model -> Html Msg
+overlayView model =
+    overlay []
+        [ div [ css
+                [ Css.maxWidth (Css.rem 66)
+                , margin3 (Css.rem 4.27) auto (px 0)
+                ]
+              ]
+              [ overlayIconButton
+                    [ onClick CloseOverlay ]
+                    [ Icons.xCircleBig ]
+              , div [ css
+                      [ Css.property "display" "grid"
+                      , Css.property "grid-template-columns" "13.33rem 1fr auto"
+                      , Css.property "grid-column-gap" "4.27rem"
+                      ]
+                    ]
+                    [ gameSettingsTabListView model
+                    , div [ css [ overflowY scroll ] ]
+                        [ case model.settingsTab of
+                              ManagePlayersTab submodel ->
+                                managePlayersView model submodel
+                              
+                              ChangeGameTitleTab ->
+                                  text "Change game title"
+
+                              LeaveGameTab ->
+                                  text " Leave game"
                         ]
-                      ]
-                      [ iconButton
-                            [ css
-                              [ Css.float right ]
-                            , onClick CloseOverlay
-                            ]
-                            [ Icons.xCircleBig ]
-                      , div [ css
-                              [ overflowY scroll
-                              ]
-                            ]
-                            [ text "hello" ]
-                      ]
-                ]
-
-
-
---------------------------------------------------
--- Game Settings
---------------------------------------------------
-
-gameSettingsView : Model -> Html Msg
-gameSettingsView model =
-    div
-        [ css
-            [ margin2 (Css.em 4) auto
-            , backgroundColor (hex "fff")
-            , padding (Css.em 2)
-            , Css.width (Css.em 32)
-            , borderRadius (Css.em 0.2)
-            ]
+                    ]
+              ]
         ]
-        [ h1 [] [ text "Game Settings" ]
-        , div []
-            [ label [] [ text "Game Title" ]
-            , input
-                [ type_ "text"
-                , onInput UpdateGameTitle
-                , value model.title
-                ]
-                []
-            ]
+
+------------------------------------------------------------
+-- Game Settings Tabs
+------------------------------------------------------------
+
+gameSettingsTabView : String -> Msg -> Bool -> Html Msg
+gameSettingsTabView name handleClick isActive =
+    div [ css
+          [ if isActive then
+                Css.batch
+                    [ backgroundColor (rgba 255 255 255 0.2)
+                    , color (hex "fff")
+                    ]
+            else
+                Css.batch
+                    [ color (rgba 255 255 255 0.70)
+                    , hover
+                        [ color (hex "fff") ]
+                    ]
+          , borderRadius (px 4)
+          , padding2 (Css.em 0.4) (Css.em 0.7)
+          , cursor pointer
+          ]
+        , onClick handleClick
+        ]
+        [ text name
+        ]
+
+gameSettingsTabListView : { r | settingsTab : SettingsTab } -> Html Msg
+gameSettingsTabListView { settingsTab } =
+    let
+        tab title ctor =
+            gameSettingsTabView
+            title
+            (SwitchSettingsTab ctor)
+            (settingsTab == ctor)
+    in
+    div [ css
+          [ displayFlex
+          , flexDirection column
+          ]
+        ]
+        [ gameSettingsTabView "Manage Players"
+              (SwitchSettingsTab (ManagePlayersTab defaultAddPlayerModel))
+              (case settingsTab of
+                   ManagePlayersTab _ ->
+                       True
+
+                   _ ->
+                       False
+              )
+        , tab "Change Game Title" ChangeGameTitleTab
+        , gameSettingsTabView "Quit To Lobby" ExitToLobby False
+        , tab "Leave Game" LeaveGameTab
+        ]
+
+------------------------------------------------------------
+-- Change Game Title
+------------------------------------------------------------
+
+changeGameTitleView : { r | title : String } -> Html Msg
+changeGameTitleView { title } =
+    div [ css
+          [ Css.maxWidth (Css.rem 30) ]
+        ]
+        [ label [] [ text "Game Title" ]
+        , input
+              [ type_ "text"
+              , onInput UpdateGameTitle
+              , value title
+              ]
+              []
         , defaultButton
-            [ onClick UpdateGameTitleInDB ]
-            [ text "Done" ]
+              [ onClick UpdateGameTitleInDB ]
+              [ text "Done" ]
         ]
-            
---------------------------------------------------
--- Player List
---------------------------------------------------
+
+------------------------------------------------------------
+-- Manage Players
+------------------------------------------------------------
+
+managePlayersView : { r | players : List Player }
+                  -> ManagePlayersModel
+                  -> Html Msg
+managePlayersView { players } screen =
+    case screen of
+        AddPlayerScreen model ->
+            div []
+                [ playerListView players
+                , addPlayerView
+                ]
+        RemovePlayerScreen model ->
+            div []
+                [ removePlayerView
+                ]            
 
 playerListView : List Player -> Html Msg
 playerListView players =
+    let
+        rows = tbody []
+            (players
+            |> List.reverse
+            |> List.map playerRow
+            )
+        styledTh =
+            styled th
+                [ borderBottom3 (px 1) solid (rgba 255 255 255 0.70) ]
+        headers =
+            tr [ css
+                 [ fontSize (Css.em 0.9)
+                 , textAlign left
+                 , color (rgba 255 255 255 0.70)
+                 ]
+               ]
+                [ styledTh [] [ text "Player" ]
+                , styledTh [] [ text "Username" ]
+                , styledTh [] [ text "Role"]
+                , styledTh [] [ text ""]
+                ]
+    in
     div [ css
-          [ margin2 (Css.em 4) auto
-          , backgroundColor (hex "fff")
-          , padding (Css.em 2)
-          , Css.width (Css.em 32)
-          , borderRadius (Css.em 0.2)
-          ]
+          [ Css.width (pct 100) ]
         ]
-    [ div []
-          [ h2 [ css [ marginTop (px 0) ] ]
-                [ text "Manage Players" ]
-          , div [] (List.map playerListItemView players)
-          , defaultButton
-                [ onClick CloseOverlay ]
-                [ text "Close" ]
-          ]
-    ]
-
-
-playerListItemView : Player -> Html Msg
-playerListItemView player =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          , justifyContent spaceBetween
-          ]
-        , class "reveal-buttons-on-hover"
+        [ Html.Styled.table
+              [ css
+                [ Css.width (pct 100)
+                , borderSpacing2 (px 0) (Css.em 1)
+                , Css.property "transform" "translateY(-1rem)"
+                ]
+              ]
+              [ colgroup []
+                    [ col [ css [ Css.width (pct 35)] ] []
+                    , col [ css [ Css.width (pct 30)] ] []
+                    , col [ css [ Css.width (pct 25)] ] []
+                    , col [ css [ Css.width (pct 10)] ] []
+                    ]
+              , headers
+              , rows
+              ]
         ]
+
+playerRow : Player -> Html Msg
+playerRow { id, displayName, role } =
+    tr [ css [ margin2 (Css.em 1) (Css.em 0) ] ]
+        [ td
+              [ css
+                [ marginRight (Css.em 1)
+                , paddingRight (Css.em 1)
+                ]
+              ]
+              [ userBadge "Geronimo" "/lib/fox-avatar-2.jpg"]
+        , td [ css [ paddingRight (Css.em 1) ] ]
+            [ text displayName ]
+        , td [ css [ paddingRight (Css.em 1) ] ]
+            [ text (showRole role) ]
+        , td [ css [ textAlign right ] ]
+            [ darkButton
+                  [ onClick (switchToRemovePlayer id) ]
+                  [ text "Remove" ]
+            ]
+        ]
+
+addPlayerView : Html Msg
+addPlayerView =
+    div [ css [ Css.maxWidth (Css.rem 20) ] ]
+        [ label [ css
+                  [ display block
+                  , marginBottom (Css.rem 0.25)
+                  ]
+                ]
+              [ text "Add a player by username" ]
+        , input
+              [ type_ "text"
+              , css [ inputStyles ]
+              -- , onInput UpdateNewPlayerFormInput
+              -- , value username
+              ]
+              []
+        , div [ css
+                [ marginTop (Css.rem 1) ]
+              ]
+            [ addPlayerButton ]
+        ]
+
+removePlayerView : Html Msg
+removePlayerView =
+    div [ css [ Css.maxWidth (Css.rem 20) ] ]
         [ div [ css
-                [ flex2 (int 1) (int 1)
-                -- , case player.presence of
-                --       Online ->
-                --           Css.batch []
-                --       Offline ->
-                --           opacity (num 0.6)
+                [ marginBottom (Css.rem 0.9) ]
+              ]
+              [ text "Remove this player from the game?" ]
+        , userBadge "Geronimo" "/lib/fox-avatar-2.jpg"
+        , label [ css
+                  [ display block
+                  , margin3 (Css.rem 1) (px 0) (Css.rem 0.5)
+                  ]
                 ]
+              [ text "Type the player's name to confirm." ]
+        , input
+              [ type_ "text"
+              , css [ inputStyles ]
+              -- , onInput UpdateRemovePlayerFormInput
+              -- , value username
               ]
-              [ text player.displayName
-              -- , case player.presence of
-              --       Online ->
-              --           presenceIndicator "19b419" "online"
-              --       Offline ->
-              --           presenceIndicator "d71b1b" "offline"
+              []
+        , div [ css
+                [ marginTop (Css.rem 1) ]
               ]
-        , defaultButton
-              [ onClick (RemovePlayer player.id)
-              , css
-                [ backgroundColor (hex "ff0000")
-                , color (hex "fff")
-                , opacity (int 0)
-                , hover
-                    [ backgroundColor (hex "ee0000") ]
-                ]
-              ]
-              [ text "Remove" ]
+            [ div [ css
+                    [ displayFlex
+                    , alignItems center
+                    ]
+                  ]
+                  [ darkButton
+                        [ onClick switchToAddPlayer ]
+                        [ text "Cancel" ]
+                  , removePlayerButton
+                  ]
+            ]
+        ]
+
+addPlayerButton : Html Msg
+addPlayerButton =
+    button [ css
+             [ whiteSpace noWrap
+             , padding2 (Css.em 0.25) (Css.em 0.5)
+             , backgroundColor (hex "0D8624")
+             , border (px 0)
+             , color (hex "eee")
+             , borderRadius (px 4)
+             , cursor pointer
+             ]
+           -- , onClick AddPlayer
+           ]
+    [ text "Add Player" ]
+
+removePlayerButton : Html Msg
+removePlayerButton =
+    button [ css
+             [ whiteSpace noWrap
+             , padding2 (Css.em 0.25) (Css.em 0.5)
+             , backgroundColor (rgba 237 66 66 0.75)
+             , border (px 0)
+             , color (hex "eee")
+             , borderRadius (px 4)
+             , cursor pointer
+             , marginLeft (Css.rem 1)
+             ]
+           -- , onClick RemovePlayer
+           ]
+    [ text "Remove Player" ]
+
+
+darkButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor transparent
+        , border3 (px 1) solid (hex "eee")
+        , color (hex "eee")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+            [ backgroundColor (hex "eee")
+            , color (hex "302633")
+            ]
         ]
 
 
-presenceIndicator : String -> String -> Html msg
-presenceIndicator color status =
-    span [ css
-           [ borderRadius (Css.em 0.25)
-           , backgroundColor (hex color)
-           , Css.color (hex "fff")
-           , margin2 (Css.em 0) (Css.em 0.5)
-           , padding2 (px 0) (Css.em 0.25)
-           ]
-         ]
-        [ text status ]
-
-
---------------------------------------------------
+------------------------------------------------------------
 -- Side Menu
---------------------------------------------------
+------------------------------------------------------------
 
 sidebar : Maybe Chat.Room -> Html Msg
 sidebar mChatRoom =
@@ -619,7 +767,9 @@ jumpToBottom id =
     |> Task.attempt (\_ -> NoOp)
 
 
-
+------------------------------------------------------------
+-- PouchDB
+------------------------------------------------------------
 
 maybeWriteToPouchDB : Msg -> Model -> Cmd Msg
 maybeWriteToPouchDB msg newGame =

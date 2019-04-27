@@ -57,6 +57,28 @@ type Overlay
     = ShowOverlay
     | HideOverlay
 
+type SettingsTab
+    = ManagePlayersTab ManagePlayersModel
+    | ChangeGameTitleTab
+    | LeaveGameTab
+
+type ManagePlayersModel
+    = AddPlayerScreen { input : String }
+    | RemovePlayerScreen { displayName : String, input : String }
+
+defaultAddPlayerModel =
+    AddPlayerScreen { input = "" }
+
+defaultRemovePlayerModel displayName =
+    RemovePlayerScreen { displayName = displayName, input = "" }
+
+switchToAddPlayer =
+    SwitchSettingsTab (ManagePlayersTab defaultAddPlayerModel)
+
+switchToRemovePlayer displayName =
+    SwitchSettingsTab (ManagePlayersTab (defaultRemovePlayerModel displayName))
+
+
 type alias Model =
     { ref : PouchDBRef
     , debouncer : Debouncer Msg
@@ -66,6 +88,7 @@ type alias Model =
     , gameType : GameType
     , id : GameId
     , title : String
+    , settingsTab : SettingsTab
 
     -- Players
     , players : List Player
@@ -98,6 +121,7 @@ emptyGameModel { ref, gameId, gameData, sheets } myPlayer players =
     , gameType = gameData.gameType
     , id = gameId
     , title = gameData.title
+    , settingsTab = ManagePlayersTab defaultAddPlayerModel
 
     -- Players
     , players = players
@@ -180,3 +204,5 @@ type Msg
     | PlayerRemovedSuccess
     | ChatMsg Chat.Msg
     | SwitchTab
+    | SwitchSettingsTab SettingsTab
+

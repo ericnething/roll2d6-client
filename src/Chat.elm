@@ -266,7 +266,13 @@ toolbarView =
 
 roomTitleView : String -> Html Msg
 roomTitleView s =
-    div [] [ text s ]
+    div [ css
+          [ overflow Css.hidden
+          , textOverflow ellipsis
+          , whiteSpace noWrap
+          ]
+        ]
+        [ text s ]
 
 inputView : RoomId -> String -> Html Msg
 inputView to message =

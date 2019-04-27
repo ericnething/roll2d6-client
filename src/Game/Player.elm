@@ -37,3 +37,10 @@ type Role
     = OwnerRole
     | GameMasterRole
     | PlayerRole
+
+showRole : Role -> String
+showRole role =
+    case role of
+        OwnerRole -> "Game Master"
+        GameMasterRole -> "Game Master"
+        PlayerRole -> "Player"

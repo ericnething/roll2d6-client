@@ -42,12 +42,12 @@ import RemoteData exposing (RemoteData(..), WebData)
 type alias Model =
     { games : WebData (List Game.GameSummary)
     , newGameForm : Lobby.NewGameForm
+    , lobbyTab : Lobby.Tab
     , me : Person
     , activeGame : ActiveGame
     , rooms : Dict Chat.RoomId Chat.Room
     , showLobbyOrGame : ShowLobbyOrGame
     }
-
 
 type ShowLobbyOrGame
     = ShowLobby

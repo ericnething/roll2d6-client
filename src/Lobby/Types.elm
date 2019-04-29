@@ -31,6 +31,30 @@ type alias Model r =
     { r |
       games : WebData (List Game.GameSummary)
     , newGameForm : NewGameForm
+    , lobbyTab : Tab
+    }
+
+type Tab
+    = GamesTab
+    | InvitesTab
+    | MessagesTab
+    | SettingsTab SettingsTab
+
+type SettingsTab
+    = AccountTab AccountModel
+    | AppearanceTab
+
+type AccountModel
+    = ShowAccount
+    | EditAccount EditAccountForm
+
+defaultAccountModel = ShowAccount
+
+type alias EditAccountForm =
+    { displayName : String
+    , username : String
+    , email : String
+    , password : String
     }
 
 type NewGameForm
@@ -54,5 +78,10 @@ type Msg
     | LogoutResponse (Result Http.Error String)
     | OpenNewGameForm
     | CloseNewGameForm
-    | SwitchTab
+    | SwitchTab Tab
     | ResumeGame
+    | SwitchSettingsTab SettingsTab
+    | NoOp
+    | UpdateAccountDisplayName String
+    | UpdateAccountEmail String
+    | UpdateAccountCurrentPassword String

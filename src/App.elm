@@ -90,6 +90,7 @@ initialModel : Person -> Model
 initialModel me =
     { games = NotAsked
     , newGameForm = Lobby.NewGameFormNone
+    , lobbyTab = Lobby.GamesTab
     , me = me
     , activeGame = NoGame
     , rooms = Dict.empty
@@ -223,7 +224,10 @@ update xmppClient navkey msg model =
             (model, toCmd (ChatMsg chatmsg))
 
         GameMsg Game.SwitchToLobby ->
-            ({ model | showLobbyOrGame = ShowLobby }, Cmd.map LobbyMsg Lobby.init)
+            ({ model
+                 | showLobbyOrGame = ShowLobby
+                 , lobbyTab = Lobby.GamesTab
+             }, Cmd.map LobbyMsg Lobby.init)
 
         GameMsg localmsg ->
             updateGame navkey localmsg model

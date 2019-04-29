@@ -162,12 +162,45 @@ update navkey msg model =
         CloseNewGameForm ->
             ( { model | newGameForm = NewGameFormNone }, Cmd.none )
 
-        SwitchTab ->
-            (model, Cmd.none)
+        SwitchTab tab ->
+            ({ model | lobbyTab = tab }, Cmd.none)
 
         ResumeGame ->
             (model, Cmd.none)
 
+        SwitchSettingsTab tab ->
+            ({ model | lobbyTab = SettingsTab tab }, Cmd.none)
+
+        NoOp ->
+            (model, Cmd.none)
+
+        UpdateAccountDisplayName displayName ->
+            updateEditAccountForm model
+                (\form -> { form | displayName = displayName })
+
+        UpdateAccountEmail email ->
+            updateEditAccountForm model
+                (\form -> { form | email = email })
+
+        UpdateAccountCurrentPassword password ->
+            updateEditAccountForm model
+                (\form -> { form | password = password })
+
+
+updateEditAccountForm model updateForm =
+    case model.lobbyTab of
+        SettingsTab (AccountTab (EditAccount form)) ->
+            ({ model
+                 | lobbyTab =
+                     SettingsTab (AccountTab (EditAccount (updateForm form)))
+             }
+            , Cmd.none)
+        _ ->
+            (model, Cmd.none)
+
+------------------------------------------------------------
+-- View
+------------------------------------------------------------
 
 view : Bool -> Model r -> Html Msg
 view hasActiveGame model =
@@ -182,14 +215,117 @@ view hasActiveGame model =
         ]
         [ topNavigation hasActiveGame model
         , div [ css
-                [ displayFlex
-                , justifyContent center
-                , color (hex "fff")
+                [ -- displayFlex
+                -- , justifyContent center
+                  color (hex "fff")
                 , padding3 (Css.em 3) (Css.em 1) (Css.em 0)
                 , overflowY scroll
                 ]
               ]
-              [ maybeGameListView model ]
+              [ case model.lobbyTab of
+                    GamesTab ->
+                        maybeGameListView model
+
+                    InvitesTab ->
+                        div [] [ text "Invites" ]
+
+                    MessagesTab ->
+                        div [] [ text "Messages" ]
+
+                    SettingsTab submodel ->
+                        settingsView submodel
+              ]
+        ]
+
+
+defaultButton =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor transparent
+        , border3 (px 1) solid (hex "eee")
+        , color (hex "eee")
+        , borderRadius (px 4)
+        , cursor pointer
+        , hover
+            [ backgroundColor (hex "eee")
+            , color (hex "302633")
+            ]
+        ]
+
+primaryButton bgcolor =
+    styled button
+        [ whiteSpace noWrap
+        , padding2 (Css.em 0.1) (Css.em 0.5)
+        , backgroundColor bgcolor
+        , border (px 0)
+        , color (hex "eee")
+        , borderRadius (px 4)
+        , cursor pointer
+        ]
+
+    
+userBadge : Html Msg
+userBadge =
+    div [ css
+          [ displayFlex
+          , alignItems center
+          ]
+        ]
+    [ img [ css
+            [ borderRadius (pct 50)
+            , Css.height (Css.rem 2.133) -- 32px when base is 15px
+            , Css.width (Css.rem 2.133)
+            ]
+          , src "/lib/fox-avatar-2.jpg"
+          ] []
+    , span [ css
+             [ marginLeft (Css.em 0.5)
+             ]
+           ]
+        [ text "Geronimo" ]
+    ]
+
+
+------------------------------------------------------------
+-- Navigation
+------------------------------------------------------------
+
+topNavigationSection =
+    styled div
+        [ displayFlex
+        , flex (int 1)
+        , justifyContent center
+        ]
+
+topNavigation : Bool -> Model r -> Html Msg
+topNavigation hasActiveGame model =
+    header
+        [ css
+            [ displayFlex
+            , alignItems center
+            , justifyContent spaceBetween
+            , backgroundColor transparent
+            , color (hex "fff")
+            , padding2 (Css.em 0) (Css.em 1)
+            , Css.property "grid-column" "1 / 2"
+            ]
+        ]
+        [ topNavigationSection []
+          [ span [ css [ displayFlex, marginRight auto ] ]
+                [ userBadge
+                , if hasActiveGame then
+                      defaultButton [ css [ marginLeft (Css.em 1) ]
+                                    , onClick ResumeGame
+                                    ]
+                      [ text "Resume Game" ]
+                  else
+                      text ""
+                ]
+          ]
+        , topNavigationSection [] [ tabsView model.lobbyTab ]
+        , topNavigationSection []
+              [ span [ css [ marginLeft auto ] ] [] ]
         ]
 
 
@@ -216,18 +352,239 @@ tabView name handleClick isActive =
         [ text name
         ]
 
-tabsView : Model r -> Html Msg
-tabsView model =
+tabsView : Tab -> Html Msg
+tabsView tab =
     div [ css
           [ displayFlex
           , alignItems center
           ]
         ]
-        [ tabView "Games" SwitchTab True
-        , tabView "Invites" SwitchTab False
-        , tabView "Messages" SwitchTab False
-        , tabView "Settings" SwitchTab False
+        [ tabView "Games" (SwitchTab GamesTab) (tab == GamesTab)
+        , tabView "Invites" (SwitchTab InvitesTab) (tab == InvitesTab)
+        , tabView "Messages" (SwitchTab MessagesTab) (tab == MessagesTab)
+        , tabView "Settings"
+            (SwitchTab (SettingsTab (AccountTab defaultAccountModel)))
+            (case tab of
+                 SettingsTab _ -> True
+                 _ -> False
+            )
         ]
+
+
+------------------------------------------------------------
+-- Settings
+------------------------------------------------------------
+
+settingsView : SettingsTab -> Html Msg
+settingsView tab =
+    div [ css
+          [ Css.maxWidth (Css.rem 54)
+          , margin3 (Css.rem 1) auto (px 0)
+          ]
+        ]
+        [ div [ css
+                [ Css.property "display" "grid"
+                , Css.property "grid-template-columns" "13.33rem 1fr"
+                , Css.property "grid-column-gap" "4.27rem"
+                ]
+              ]
+              [ settingsTabListView tab
+              , div []
+                  [ case tab of
+                        AccountTab submodel ->
+                            accountSettingsView submodel
+
+                        AppearanceTab ->
+                            text "Appearance"
+                  ]
+              ]
+        ]
+
+settingsTabView : String -> Msg -> Bool -> Html Msg
+settingsTabView name handleClick isActive =
+    div [ css
+          [ if isActive then
+                Css.batch
+                    [ backgroundColor (rgba 255 255 255 0.2)
+                    , color (hex "fff")
+                    ]
+            else
+                Css.batch
+                    [ color (rgba 255 255 255 0.70)
+                    , hover
+                        [ color (hex "fff") ]
+                    ]
+          , borderRadius (px 4)
+          , padding2 (Css.em 0.4) (Css.em 0.7)
+          , cursor pointer
+          ]
+        , onClick handleClick
+        ]
+        [ text name
+        ]
+
+settingsTabListView : SettingsTab -> Html Msg
+settingsTabListView settingsTab =
+    let
+        tab title ctor =
+            settingsTabView
+            title
+            (SwitchSettingsTab ctor)
+            (settingsTab == ctor)
+    in
+    div [ css
+          [ displayFlex
+          , flexDirection column
+          ]
+        ]
+        [ settingsTabView "My Account"
+              (SwitchSettingsTab (AccountTab defaultAccountModel))
+              (case settingsTab of
+                   AccountTab _ ->
+                       True
+                   _ ->
+                       False
+              )
+        , tab "Appearance" AppearanceTab
+        , settingsTabView "Sign Out" Logout False
+        ]
+
+
+------------------------------------------------------------
+-- Account Settings
+------------------------------------------------------------
+
+accountSectionLabel s =
+    div [ css
+          [ fontVariant allSmallCaps
+          , fontSize (Css.rem 0.9)
+          , color (rgba 255 255 255 0.8)
+          ]
+        ]
+    [ text s ]
+                
+accountSectionValue s =
+    div [ css
+          [ fontSize (pct 120)
+          , marginBottom (Css.rem 1)
+          ]
+        ]
+    [ text s ]
+
+accountSectionInput { currentValue, handler } =
+    input
+    [ type_ "text"
+    , css [ inputStyles
+          , backgroundColor (hex "E4D6E3")
+          , color (hex "302633")
+          , marginBottom (Css.rem 1)
+          , Css.maxWidth (Css.rem 20)
+          ]
+    , onInput handler
+    , value currentValue
+    ] []
+
+accountSettingsView : AccountModel -> Html Msg
+accountSettingsView model =
+    div [ css
+          [ Css.property "display" "grid"
+          , Css.property "grid-template-columns" "auto 1fr"
+          , Css.property "grid-column-gap" "2.2rem"
+          -- , border3 (px 1) solid (hex "eee")
+          ]
+        ] <|
+        case model of
+            ShowAccount ->
+                viewAccountSettings
+
+            EditAccount submodel ->
+                editAccountSettings submodel
+
+
+viewAccountSettings : List (Html Msg)
+viewAccountSettings =
+    [ userAvatar
+    , div []
+        [ accountSectionLabel "Display Name"
+        , accountSectionValue "Geronimo"
+            
+        , accountSectionLabel "Username"
+        , accountSectionValue "geronimo"
+            
+        , accountSectionLabel "Email"
+        , accountSectionValue "geronimo@roll2d6.org"
+            
+        , div []
+            [ defaultButton
+                  [ onClick
+                        (SwitchSettingsTab
+                             (AccountTab
+                                  (EditAccount
+                                   { displayName = "Geronimo"
+                                   , username = "geronimo"
+                                   , email = "geronimo@roll2d6.org"
+                                   , password = ""
+                                   })))
+                  ]
+                  [ text "Edit Account" ]
+            , defaultButton
+                  [ css [ marginLeft (Css.rem 1) ] ]
+                  [ text "Change Password" ]
+            ]
+        ]
+    ]
+
+editAccountSettings : EditAccountForm -> List (Html Msg)
+editAccountSettings { displayName, username, email, password } =
+    [ userAvatar
+    , div []
+        [ accountSectionLabel "Display Name"
+        , accountSectionInput
+              { currentValue = displayName
+              , handler = UpdateAccountDisplayName
+              }
+            
+        , accountSectionLabel "Username"
+        , accountSectionValue username
+            
+        , accountSectionLabel "Email"
+        , accountSectionInput
+              { currentValue = email
+              , handler = UpdateAccountEmail
+              }
+
+        , accountSectionLabel "Current Password (Required)"
+        , accountSectionInput
+              { currentValue = password
+              , handler = UpdateAccountCurrentPassword
+              }
+            
+        , div []
+            [ defaultButton
+                  [ onClick (SwitchSettingsTab (AccountTab defaultAccountModel)) ]
+                  [ text "Cancel" ]
+            , primaryButton (hex "0D8624")
+                [ css [ marginLeft (Css.rem 1) ] ]
+                [ text "Save Changes" ]
+            ]
+        ]
+    ]
+
+userAvatar : Html Msg
+userAvatar =
+    img [ css
+          [ borderRadius (pct 50)
+          , Css.height (Css.rem 6.67) -- 100px when base is 15px
+          , Css.width (Css.rem 6.67)
+          , backgroundColor (rgba 0 0 0 0.2)
+          ]
+        , src "/lib/fox-avatar-2.jpg"
+        ] []
+
+
+------------------------------------------------------------
+-- Game List
+------------------------------------------------------------
 
 maybeGameListView :
     { r |
@@ -273,11 +630,13 @@ gameListView newGameForm games =
                 ]
     in
     div [ css
-          [ Css.width (Css.em 48) ]
+          [ Css.maxWidth (Css.em 54)
+          , margin2 (px 0) auto
+          ]
         ]
         [ Html.Styled.table
               [ css
-                [ Css.width (Css.em 48)
+                [ Css.width (pct 100)
                 , borderSpacing2 (px 0) (Css.em 1)
                 ]
               ]
@@ -314,20 +673,10 @@ gamePreview { id, title, gameType } =
             ]
         ]
 
-defaultButton =
-    styled button
-        [ whiteSpace noWrap
-        , padding2 (Css.em 0.1) (Css.em 0.5)
-        , backgroundColor transparent
-        , border3 (px 1) solid (hex "eee")
-        , color (hex "eee")
-        , borderRadius (px 4)
-        , cursor pointer
-        , hover
-            [ backgroundColor (hex "eee")
-            , color (hex "302633")
-            ]
-        ]
+
+------------------------------------------------------------
+-- New Game
+------------------------------------------------------------
 
 newGameButton =
     defaultButton
@@ -335,65 +684,6 @@ newGameButton =
     , onClick OpenNewGameForm
     ]
     [ text "Create new game" ]
-    
-userBadge : Html Msg
-userBadge =
-    div [ css
-          [ displayFlex
-          , alignItems center
-          ]
-        ]
-    [ img [ css
-            [ borderRadius (pct 50)
-            , Css.height (Css.rem 2.133) -- 32px when base is 15px
-            , Css.width auto
-            ]
-          , src "/lib/fox-avatar-2.jpg"
-          ] []
-    , span [ css
-             [ marginLeft (Css.em 0.5)
-             ]
-           ]
-        [ text "Geronimo" ]
-    ]
-
-
-topNavigationSection =
-    styled div
-        [ displayFlex
-        , flex (int 1)
-        , justifyContent center
-        ]
-
-topNavigation : Bool -> Model r -> Html Msg
-topNavigation hasActiveGame model =
-    header
-        [ css
-            [ displayFlex
-            , alignItems center
-            , justifyContent spaceBetween
-            , backgroundColor transparent
-            , color (hex "fff")
-            , padding2 (Css.em 0) (Css.em 1)
-            , Css.property "grid-column" "1 / 2"
-            ]
-        ]
-        [ topNavigationSection []
-          [ span [ css [ displayFlex, marginRight auto ] ]
-                [ userBadge
-                , if hasActiveGame then
-                      defaultButton [ css [ marginLeft (Css.em 1) ]
-                                    , onClick ResumeGame
-                                    ]
-                      [ text "Resume Game" ]
-                  else
-                      text ""
-                ]
-          ]
-        , topNavigationSection [] [ tabsView model ]
-        , topNavigationSection []
-              [ span [ css [ marginLeft auto ] ] [] ]
-        ]
 
 
 newGameView : NewGameForm -> Html Msg

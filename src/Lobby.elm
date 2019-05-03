@@ -186,6 +186,14 @@ update navkey msg model =
             updateEditAccountForm model
                 (\form -> { form | password = password })
 
+        UpdatePasswordNewPassword newPassword ->
+            updateChangePasswordForm model
+                (\form -> { form | newPassword = newPassword })
+
+        UpdatePasswordCurrentPassword currentPassword ->
+            updateChangePasswordForm model
+                (\form -> { form | currentPassword = currentPassword })
+
 
 updateEditAccountForm model updateForm =
     case model.lobbyTab of
@@ -197,6 +205,19 @@ updateEditAccountForm model updateForm =
             , Cmd.none)
         _ ->
             (model, Cmd.none)
+
+
+updateChangePasswordForm model updateForm =
+    case model.lobbyTab of
+        SettingsTab (AccountTab (ChangePassword form)) ->
+            ({ model
+                 | lobbyTab =
+                     SettingsTab (AccountTab (ChangePassword (updateForm form)))
+             }
+            , Cmd.none)
+        _ ->
+            (model, Cmd.none)
+
 
 ------------------------------------------------------------
 -- View
@@ -227,10 +248,20 @@ view hasActiveGame model =
                         maybeGameListView model
 
                     InvitesTab ->
-                        div [] [ text "Invites" ]
+                        div [ css
+                              [ Css.maxWidth (Css.rem 54)
+                              , margin3 (Css.rem 1) auto (px 0)
+                              ]
+                            ]
+                        [ text "Invites" ]
 
                     MessagesTab ->
-                        div [] [ text "Messages" ]
+                        div [ css
+                              [ Css.maxWidth (Css.rem 54)
+                              , margin3 (Css.rem 1) auto (px 0)
+                              ]
+                            ]
+                        [ text "Messages" ]
 
                     SettingsTab submodel ->
                         settingsView submodel
@@ -500,6 +531,9 @@ accountSettingsView model =
             EditAccount submodel ->
                 editAccountSettings submodel
 
+            ChangePassword submodel ->
+                changePasswordSettings submodel
+
 
 viewAccountSettings : List (Html Msg)
 viewAccountSettings =
@@ -528,7 +562,18 @@ viewAccountSettings =
                   ]
                   [ text "Edit Account" ]
             , defaultButton
-                  [ css [ marginLeft (Css.rem 1) ] ]
+                  [ css [ marginLeft (Css.rem 1) ]
+                  , onClick
+                        (SwitchSettingsTab
+                             (AccountTab
+                                  (ChangePassword
+                                   { displayName = "Geronimo"
+                                   , username = "geronimo"
+                                   , email = "geronimo@roll2d6.org"
+                                   , newPassword = ""
+                                   , currentPassword = ""
+                                   })))
+                  ]
                   [ text "Change Password" ]
             ]
         ]
@@ -566,6 +611,42 @@ editAccountSettings { displayName, username, email, password } =
             , primaryButton (hex "0D8624")
                 [ css [ marginLeft (Css.rem 1) ] ]
                 [ text "Save Changes" ]
+            ]
+        ]
+    ]
+
+changePasswordSettings : ChangePasswordForm -> List (Html Msg)
+changePasswordSettings { displayName, username, email, newPassword, currentPassword } =
+    [ userAvatar
+    , div []
+        [ accountSectionLabel "Display Name"
+        , accountSectionValue displayName
+            
+        , accountSectionLabel "Username"
+        , accountSectionValue username
+            
+        , accountSectionLabel "Email"
+        , accountSectionValue email
+
+        , accountSectionLabel "New Password"
+        , accountSectionInput
+              { currentValue = newPassword
+              , handler = UpdatePasswordNewPassword
+              }
+
+        , accountSectionLabel "Current Password (Required)"
+        , accountSectionInput
+              { currentValue = currentPassword
+              , handler = UpdatePasswordCurrentPassword
+              }
+            
+        , div []
+            [ defaultButton
+                  [ onClick (SwitchSettingsTab (AccountTab defaultAccountModel)) ]
+                  [ text "Cancel" ]
+            , primaryButton (hex "0D8624")
+                [ css [ marginLeft (Css.rem 1) ] ]
+                [ text "Change Password" ]
             ]
         ]
     ]

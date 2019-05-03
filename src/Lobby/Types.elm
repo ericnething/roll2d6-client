@@ -47,6 +47,7 @@ type SettingsTab
 type AccountModel
     = ShowAccount
     | EditAccount EditAccountForm
+    | ChangePassword ChangePasswordForm
 
 defaultAccountModel = ShowAccount
 
@@ -55,6 +56,14 @@ type alias EditAccountForm =
     , username : String
     , email : String
     , password : String
+    }
+
+type alias ChangePasswordForm =
+    { displayName : String
+    , username : String
+    , email : String
+    , newPassword : String
+    , currentPassword : String
     }
 
 type NewGameForm
@@ -85,3 +94,5 @@ type Msg
     | UpdateAccountDisplayName String
     | UpdateAccountEmail String
     | UpdateAccountCurrentPassword String
+    | UpdatePasswordNewPassword String
+    | UpdatePasswordCurrentPassword String

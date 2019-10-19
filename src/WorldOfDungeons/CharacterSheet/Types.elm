@@ -1,28 +1,32 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module WorldOfDungeons.CharacterSheet.Types exposing (..)
+
+module WorldOfDungeons.CharacterSheet.Types exposing (Ability(..), Armor(..), Attributes, CharacterSheet, Class(..), Index, Model, Msg(..), Shield(..), Skill(..), armorOptions, armorToInt, blankCharacterSheet, shieldOptions, shieldToInt, showArmor, showClass, showShield, showSkill)
 
 import Array exposing (Array)
 
-type alias Model = CharacterSheet
+
+type alias Model =
+    CharacterSheet
+
 
 type alias CharacterSheet =
     { name : String
@@ -48,15 +52,17 @@ type alias CharacterSheet =
     , notes : String
     }
 
+
 type alias Attributes r =
-    { r |
-      str : Int
-    , dex : Int
-    , con : Int
-    , int : Int
-    , wis : Int
-    , cha : Int
+    { r
+        | str : Int
+        , dex : Int
+        , con : Int
+        , int : Int
+        , wis : Int
+        , cha : Int
     }
+
 
 blankCharacterSheet : CharacterSheet
 blankCharacterSheet =
@@ -73,11 +79,11 @@ blankCharacterSheet =
     , abilities =
         Array.fromList
             [ Ability
-                  "Pet"
-                  "You have a loyal and effective animal companion."
+                "Pet"
+                "You have a loyal and effective animal companion."
             , Ability
-                  "Scout"
-                  "When you scout ahead, you always spot the target before it spots you."
+                "Scout"
+                "When you scout ahead, you always spot the target before it spots you."
             ]
     , weapons = "Bow (d6+1), Handaxe (d6)"
     , equipment = "20ft rope, travel rations, waterskin, grappling hook"
@@ -91,6 +97,7 @@ blankCharacterSheet =
     , notes = "Here are some notes."
     }
 
+
 type Class
     = Fighter
     | Thief
@@ -98,14 +105,25 @@ type Class
     | Wizard
     | Ranger
 
+
 showClass : Class -> String
 showClass class =
     case class of
-        Fighter -> "Fighter"
-        Thief   -> "Thief"
-        Cleric  -> "Cleric"
-        Wizard  -> "Wizard"
-        Ranger  -> "Ranger"
+        Fighter ->
+            "Fighter"
+
+        Thief ->
+            "Thief"
+
+        Cleric ->
+            "Cleric"
+
+        Wizard ->
+            "Wizard"
+
+        Ranger ->
+            "Ranger"
+
 
 type Skill
     = Athletics
@@ -118,20 +136,42 @@ type Skill
     | Stealth
     | Survival
 
+
 showSkill : Skill -> String
 showSkill skill =
     case skill of
-        Athletics  -> "Athletics"
-        Awareness  -> "Awareness"
-        Deception  -> "Deception"
-        Decipher   -> "Decipher"
-        Heal       -> "Heal"
-        Leadership -> "Leadership"
-        Lore       -> "Lore"
-        Stealth    -> "Stealth"
-        Survival   -> "Survival"
+        Athletics ->
+            "Athletics"
 
-type Ability = Ability String String
+        Awareness ->
+            "Awareness"
+
+        Deception ->
+            "Deception"
+
+        Decipher ->
+            "Decipher"
+
+        Heal ->
+            "Heal"
+
+        Leadership ->
+            "Leadership"
+
+        Lore ->
+            "Lore"
+
+        Stealth ->
+            "Stealth"
+
+        Survival ->
+            "Survival"
+
+
+type Ability
+    = Ability String String
+
+
 
 -- type Ability
 --     = Bless
@@ -154,7 +194,6 @@ type Ability = Ability String String
 --     | Scout
 --     | Volley
 --     | Wild
-
 -- showAbility : Ability -> String
 -- showAbility ability =
 --     case ability of
@@ -179,10 +218,12 @@ type Ability = Ability String String
 --         Volley -> "Volley"
 --         Wild -> "Wild"
 
+
 type Armor
     = NoArmor
     | LightArmor
     | FullArmor
+
 
 armorOptions =
     [ NoArmor
@@ -190,43 +231,67 @@ armorOptions =
     , FullArmor
     ]
 
+
 showArmor : Armor -> String
 showArmor armor =
     case armor of
-        NoArmor -> "None (Fast)"
-        LightArmor -> "Light (Normal)"
-        FullArmor -> "Full (Slow)"
+        NoArmor ->
+            "None (Fast)"
+
+        LightArmor ->
+            "Light (Normal)"
+
+        FullArmor ->
+            "Full (Slow)"
+
 
 armorToInt : Armor -> Int
 armorToInt armor =
     case armor of
-        NoArmor -> 0
-        LightArmor -> 1
-        FullArmor -> 2
-    
+        NoArmor ->
+            0
+
+        LightArmor ->
+            1
+
+        FullArmor ->
+            2
+
 
 type Shield
     = NoShield
     | Shield
+
 
 shieldOptions =
     [ NoShield
     , Shield
     ]
 
+
 showShield : Shield -> String
 showShield shield =
     case shield of
-        NoShield -> "None"
-        Shield -> "+1"
+        NoShield ->
+            "None"
+
+        Shield ->
+            "+1"
+
 
 shieldToInt : Shield -> Int
 shieldToInt shield =
     case shield of
-        NoShield -> 0
-        Shield -> 1
+        NoShield ->
+            0
 
-type alias Index = Int
+        Shield ->
+            1
+
+
+type alias Index =
+    Int
+
 
 type Msg
     = UpdateName String
@@ -252,4 +317,3 @@ type Msg
     | UpdateCoin (Maybe Int)
     | UpdateXp (Maybe Int)
     | UpdateNotes String
-

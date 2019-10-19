@@ -1,26 +1,27 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
+
 module Fate.CharacterSheet.Decode exposing
-    ( decodeCharacterSheet
-    , decodeAspect
+    ( decodeAspect
+    , decodeCharacterSheet
     )
 
 import Array exposing (Array)
@@ -147,36 +148,28 @@ decodeSeverity int_ =
     -- case int_ of
     --     (-2) ->
     --         succeed Mild
-
     --     (-4) ->
     --         succeed Moderate
-
     --     (-6) ->
     --         succeed Severe
-
     --     (-8) ->
     --         succeed Extreme
-
     --     _ ->
     --         fail "Not a valid Severity"
-
-    if int_ == -2
-    then
+    if int_ == -2 then
         succeed Mild
+
+    else if int_ == -4 then
+        succeed Moderate
+
+    else if int_ == -6 then
+        succeed Severe
+
+    else if int_ == -8 then
+        succeed Extreme
+
     else
-        if int_ == -4
-        then
-            succeed Moderate
-        else
-            if int_ == -6
-            then
-                succeed Severe
-            else
-                if int_ == -8
-                then
-                    succeed Extreme
-                else
-                    fail "Not a valid Severity"
+        fail "Not a valid Severity"
 
 
 decodeSkillRating : Int -> Decoder SkillRating
@@ -207,23 +200,18 @@ decodeSkillRating int_ =
             succeed Average
 
         -- 0    -> succeed Mediocre
-
         -- (-1) ->
         --     succeed Poor
-
         -- (-2) ->
         --     succeed Terrible
-
         -- _ ->
         --     fail "Not a valid SkillRating"
-
         other ->
-            if other == -1
-            then
+            if other == -1 then
                 succeed Poor
+
+            else if other == -2 then
+                succeed Terrible
+
             else
-                if other == -2
-                then
-                    succeed Terrible
-                else
-                    fail "Not a valid SkillRating"
+                fail "Not a valid SkillRating"

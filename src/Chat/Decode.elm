@@ -1,110 +1,131 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Chat.Decode
-    exposing
-    ( decodeStanza
-    , decodePerson
+
+module Chat.Decode exposing
+    ( decodePerson
+    , decodeStanza
     )
 
 import Array exposing (Array)
+import Chat.Types exposing (..)
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Time
-import Chat.Types exposing (..)
-
 
 
 decodePerson : Value -> Result Error Person
-decodePerson = decodeValue personDecoder
+decodePerson =
+    decodeValue personDecoder
+
 
 personDecoder : Decoder Person
 personDecoder =
     succeed Person
-    |> required "id" string
-    |> required "displayName" string
-    |> required "presence" presenceDecoder
+        |> required "id" string
+        |> required "displayName" string
+        |> required "presence" presenceDecoder
+
+
 
 ------------------------------------------------------------
 --| Messages and Presence
 ------------------------------------------------------------
 
+
 decodeStanza : Value -> Stanza
 decodeStanza value =
     case decodeValue stanzaDecoder value of
-        Ok result -> result
-        Err e -> StanzaDecodeError e
+        Ok result ->
+            result
+
+        Err e ->
+            StanzaDecodeError e
+
 
 stanzaDecoder : Decoder Stanza
 stanzaDecoder =
     field "stanzaType" string
         |> andThen
-           (\type_ ->
+            (\type_ ->
                 case type_ of
-                    "message" -> map MessageStanza messageStanzaDecoder
-                    "presence" -> map PresenceStanza presenceStanzaDecoder
+                    "message" ->
+                        map MessageStanza messageStanzaDecoder
+
+                    "presence" ->
+                        map PresenceStanza presenceStanzaDecoder
+
                     _ ->
                         fail ("Invalid Stanza type: " ++ type_)
-           )
+            )
+
 
 messageStanzaDecoder : Decoder Message
 messageStanzaDecoder =
     succeed Message
-    |> required "from" jidDecoder
-    |> required "body" string
-    |> required "timestamp" timestampDecoder
+        |> required "from" jidDecoder
+        |> required "body" string
+        |> required "timestamp" timestampDecoder
 
-presenceStanzaDecoder : Decoder (JID, Presence)
+
+presenceStanzaDecoder : Decoder ( JID, Presence )
 presenceStanzaDecoder =
     succeed Tuple.pair
-    |> required "from" jidDecoder
-    |> required "type" presenceDecoder
+        |> required "from" jidDecoder
+        |> required "type" presenceDecoder
+
 
 jidDecoder : Decoder JID
 jidDecoder =
     succeed JID
-    |> required "full" string
-    |> required "bare" string
-    |> required "resource" string
-    
+        |> required "full" string
+        |> required "bare" string
+        |> required "resource" string
+
+
 timestampDecoder : Decoder Time.Posix
 timestampDecoder =
     int |> andThen (succeed << Time.millisToPosix)
+
 
 presenceDecoder : Decoder Presence
 presenceDecoder =
     string
         |> andThen
-           (\type_ ->
+            (\type_ ->
                 case type_ of
-                    "available" -> succeed Online
-                    "unavailable" -> succeed Offline
+                    "available" ->
+                        succeed Online
+
+                    "unavailable" ->
+                        succeed Offline
+
                     _ ->
                         fail ("Invalid PresenceStatus: " ++ type_)
-                       
-           )
-           
+            )
+
+
+
 ------------------------------------------------------------
 --| Dice Rolls
 ------------------------------------------------------------
-
 -- diceRollDecoder : Decoder DiceRoll
 -- diceRollDecoder =
 --     succeed (\a b c d e ->
@@ -121,7 +142,6 @@ presenceDecoder =
 --         |> required "results" (list diceResultDecoder)
 --         |> optional "modifier" (map Just int) Nothing
 --         |> required "total" int
-
 -- diceTypeDecoder : String -> Decoder Game.DiceType
 -- diceTypeDecoder type_ =
 --     case type_ of
@@ -138,7 +158,6 @@ presenceDecoder =
 --                         succeed (Game.DOther sides)
 --             else
 --                 fail ("Not a valid dice type: " ++ type_)
-
 -- diceResultDecoder : Decoder Game.DiceResult
 -- diceResultDecoder =
 --     field "ctor" string
@@ -162,8 +181,6 @@ presenceDecoder =
 --                     _ ->
 --                         fail ("Not a valid DiceResult constructor: " ++ ctor)
 --            )
-
-
 -- dFateFaceDecoder : String -> Decoder Game.DFateFace
 -- dFateFaceDecoder face =
 --     case face of

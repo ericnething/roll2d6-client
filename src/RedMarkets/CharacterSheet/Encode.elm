@@ -1,29 +1,29 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module RedMarkets.CharacterSheet.Encode exposing
-    ( encodeCharacterSheet )
+
+module RedMarkets.CharacterSheet.Encode exposing (encodeCharacterSheet)
 
 import Array exposing (Array)
-import RedMarkets.CharacterSheet.Types exposing (..)
 import Json.Encode exposing (..)
+import RedMarkets.CharacterSheet.Types exposing (..)
 
 
 encodeCharacterSheet : CharacterSheet -> Value
@@ -56,12 +56,14 @@ encodeCharacterSheet model =
         , ( "notes", string model.notes )
         ]
 
+
 encodePotential : Potential -> Value
 encodePotential (Potential rating skills) =
     object
         [ ( "rating", int rating )
         , ( "skills", array encodeSkill skills )
         ]
+
 
 encodeSkill : Skill -> Value
 encodeSkill (Skill title rating) =
@@ -70,12 +72,14 @@ encodeSkill (Skill title rating) =
         , ( "rating", int rating )
         ]
 
+
 encodeRelation : Relationship -> Value
 encodeRelation (Relationship person status) =
     object
         [ ( "person", string person )
         , ( "status", encodeRelationStatus status )
         ]
+
 
 encodeRelationStatus : RelationStatus -> Value
 encodeRelationStatus status =
@@ -96,7 +100,7 @@ encodeRelationStatus status =
 
 encodeThreat : Threat -> Value
 encodeThreat (Threat isMarked) =
-    bool isMarked        
+    bool isMarked
 
 
 encodeWound : Wound -> Value
@@ -140,4 +144,3 @@ encodeGearQuality { title, description } =
         [ ( "title", string title )
         , ( "description", string description )
         ]
-

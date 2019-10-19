@@ -1,30 +1,31 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Login
-    exposing
+
+module Login exposing
     ( update
     , view
     )
 
 import API
+import Browser.Navigation as Navigation
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
@@ -32,10 +33,9 @@ import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
 import Json.Decode
 import Login.Types exposing (..)
-import Task
-import Browser.Navigation as Navigation
-import Route
 import Ports
+import Route
+import Task
 
 
 update : Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
@@ -45,9 +45,9 @@ update navkey msg model =
             ( model
             , Cmd.batch
                 [ API.login
-                      { username = model.username
-                      , password = model.password
-                      }
+                    { username = model.username
+                    , password = model.password
+                    }
                 ]
             )
 
@@ -59,8 +59,9 @@ update navkey msg model =
                         navkey
                         (Route.toUrlString Route.Lobby)
                     )
+
                 Err status ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
 
         Register ->
             ( model
@@ -91,24 +92,25 @@ update navkey msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ css
-          [ color (hex "eee")
-          , backgroundColor (hex "302633")
-          , Css.minHeight (vh 100)
-          , displayFlex
-          , justifyContent spaceAround
-          , paddingTop (vh 12)
-          ]
+    div
+        [ css
+            [ color (hex "eee")
+            , backgroundColor (hex "302633")
+            , Css.minHeight (vh 100)
+            , displayFlex
+            , justifyContent spaceAround
+            , paddingTop (vh 12)
+            ]
         ]
-    [ formView model
-    ]
-    
-    
+        [ formView model
+        ]
+
+
 tabView : String -> Tab -> Bool -> Html Msg
 tabView title tab isActive =
     button
-    [ css
-      [ padding2 (Css.em 1) (Css.em 0.8)
+        [ css
+            [ padding2 (Css.em 1) (Css.em 0.8)
             , color (hex "333")
             , border (px 0)
             , borderTopWidth (Css.em 0.2)

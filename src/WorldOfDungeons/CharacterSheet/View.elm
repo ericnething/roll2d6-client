@@ -1,83 +1,89 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module WorldOfDungeons.CharacterSheet.View
-    exposing
+
+module WorldOfDungeons.CharacterSheet.View exposing
     ( editView
     , view
     )
 
 import Array exposing (Array)
-import WorldOfDungeons.CharacterSheet.Types exposing (..)
 import Css exposing (..)
-import Util.Css exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
+import Util.Css exposing (..)
+import WorldOfDungeons.CharacterSheet.Types exposing (..)
+
 
 view : Model -> Html Msg
 view model =
-    div [ css
-          [ padding3 (px 0) (Css.em 1) (Css.em 1)
-          , overflowWrap breakWord
-          ]
+    div
+        [ css
+            [ padding3 (px 0) (Css.em 1) (Css.em 1)
+            , overflowWrap breakWord
+            ]
         ]
-    [ nameView model
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
-            , textAlign center
+        [ nameView model
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                , textAlign center
+                ]
             ]
-          ]
-          [ classAndLevelView model
-          , hitDiceView model
-          , hitPointsView model
-          ]
-    , attributesView model
-    , skillsView model
-    , abilitiesView model
-    , weaponsView model
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
-            , textAlign center
+            [ classAndLevelView model
+            , hitDiceView model
+            , hitPointsView model
             ]
-          ]
-        [ armorView model
-        , shieldView model
-        , totalArmorView model
+        , attributesView model
+        , skillsView model
+        , abilitiesView model
+        , weaponsView model
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                , textAlign center
+                ]
+            ]
+            [ armorView model
+            , shieldView model
+            , totalArmorView model
+            ]
+        , equipmentView model
+        , notesView model
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ coinView model
+            , xpView model
+            ]
         ]
-    , equipmentView model
-    , notesView model
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
-            ]
-          ]
-          [ coinView model
-          , xpView model
-          ]
-    ]
 
-nameView : {r | name : String } -> Html Msg
+
+nameView : { r | name : String } -> Html Msg
 nameView { name } =
     div
         [ css
@@ -93,7 +99,8 @@ nameView { name } =
         ]
         [ text name ]
 
-classAndLevelView : {r | class : String, level : Int } -> Html Msg
+
+classAndLevelView : { r | class : String, level : Int } -> Html Msg
 classAndLevelView { class, level } =
     div []
         [ sectionLabel "Class/Level"
@@ -102,58 +109,61 @@ classAndLevelView { class, level } =
             ]
         ]
 
+
 attributesView : Attributes r -> Html Msg
 attributesView { str, dex, con, int, wis, cha } =
     let
         attributes =
-            [ ("STR", str)
-            , ("DEX", dex)
-            , ("CON", con)
-            , ("INT", int)
-            , ("WIS", wis)
-            , ("CHA", cha)
+            [ ( "STR", str )
+            , ( "DEX", dex )
+            , ( "CON", con )
+            , ( "INT", int )
+            , ( "WIS", wis )
+            , ( "CHA", cha )
             ]
 
-        attributeView (name, attr) =
+        attributeView ( name, attr ) =
             div
-            [ css
-              [ textAlign center
-              , border3 (Css.em 0.075) solid (hex "555")
-              , padding (Css.em 0.3)
-              , borderRadius2 (Css.em 0.6) (px 0)
-              ]
-            ]
-            [ div [ css
-                    [ fontSize (Css.em 1.3)
+                [ css
+                    [ textAlign center
+                    , border3 (Css.em 0.075) solid (hex "555")
+                    , padding (Css.em 0.3)
+                    , borderRadius2 (Css.em 0.6) (px 0)
                     ]
-                  ]
-                [ text (String.fromInt attr) ]
-            , div [ css
-                    [ Css.property "font-variant" "small-caps"
-                    , letterSpacing (Css.em 0.15)
-                    , fontWeight bold
+                ]
+                [ div
+                    [ css
+                        [ fontSize (Css.em 1.3)
+                        ]
                     ]
-                  ]
-                  [ text name ]
-            ]
+                    [ text (String.fromInt attr) ]
+                , div
+                    [ css
+                        [ Css.property "font-variant" "small-caps"
+                        , letterSpacing (Css.em 0.15)
+                        , fontWeight bold
+                        ]
+                    ]
+                    [ text name ]
+                ]
     in
-        div []
-            [ sectionLabel "Attributes"
-            , div
-              [ css
+    div []
+        [ sectionLabel "Attributes"
+        , div
+            [ css
                 [ displayFlex
                 , alignItems center
                 , justifyContent spaceAround
+
                 -- , lineHeight (num 1)
                 , margin3 (Css.em 0.25) (px 0) (Css.em 1)
                 ]
-              ]
-              (List.map attributeView attributes)
             ]
+            (List.map attributeView attributes)
+        ]
 
 
-
-skillsView : {r | skills : String } -> Html Msg
+skillsView : { r | skills : String } -> Html Msg
 skillsView { skills } =
     div []
         [ sectionLabel "Skills"
@@ -161,52 +171,61 @@ skillsView { skills } =
             |> text
         ]
 
-abilitiesView : {r | abilities : Array Ability } -> Html Msg
+
+abilitiesView : { r | abilities : Array Ability } -> Html Msg
 abilitiesView { abilities } =
     div []
         [ sectionLabel "Abilities"
         , div []
             (abilities
-            |> Array.map abilityView
-            |> Array.toList)
+                |> Array.map abilityView
+                |> Array.toList
+            )
         ]
+
 
 abilityView : Ability -> Html Msg
 abilityView (Ability name description) =
-    div [ css
-          [ marginBottom (Css.em 0.5)
-          ]
+    div
+        [ css
+            [ marginBottom (Css.em 0.5)
+            ]
         ]
-        [ span [ css
-                 [ fontWeight bold
-                 ]
-               ]
-              [ text (name ++ ": ") ]
+        [ span
+            [ css
+                [ fontWeight bold
+                ]
+            ]
+            [ text (name ++ ": ") ]
         , text description
         ]
 
-weaponsView : {r | weapons : String } -> Html Msg
+
+weaponsView : { r | weapons : String } -> Html Msg
 weaponsView { weapons } =
     div []
         [ sectionLabel "Weapons"
         , text weapons
         ]
 
-equipmentView : {r | equipment : String } -> Html Msg
+
+equipmentView : { r | equipment : String } -> Html Msg
 equipmentView { equipment } =
     div []
         [ sectionLabel "Equipment"
         , text equipment
         ]
 
-armorView : {r | armor : Armor } -> Html Msg
+
+armorView : { r | armor : Armor } -> Html Msg
 armorView { armor } =
     div []
         [ sectionLabel "Armor & Speed"
         , div [] [ text (showArmor armor) ]
         ]
 
-shieldView : {r | shield : Shield } -> Html Msg
+
+shieldView : { r | shield : Shield } -> Html Msg
 shieldView { shield } =
     div []
         [ sectionLabel "Shield"
@@ -214,161 +233,189 @@ shieldView { shield } =
             [ text (showShield shield) ]
         ]
 
-totalArmorView : { r |
-                   armor : Armor
-                 , shield : Shield
-                 , bonusArmor : Int
-                 }
-               -> Html Msg
+
+totalArmorView :
+    { r
+        | armor : Armor
+        , shield : Shield
+        , bonusArmor : Int
+    }
+    -> Html Msg
 totalArmorView { armor, shield, bonusArmor } =
     div []
         [ sectionLabel "Total Armor"
-        , div [ css
+        , div
+            [ css
                 [ fontSize (Css.em 1.3) ]
-              ]
-            [ text (String.fromInt
-                        (armorToInt armor +
-                         shieldToInt shield +
-                         bonusArmor))
+            ]
+            [ text
+                (String.fromInt
+                    (armorToInt armor
+                        + shieldToInt shield
+                        + bonusArmor
+                    )
+                )
             ]
         ]
 
-hitDiceView : {r | hitDice : Int, con : Int } -> Html Msg
+
+hitDiceView : { r | hitDice : Int, con : Int } -> Html Msg
 hitDiceView { hitDice, con } =
     div []
         [ sectionLabel "Hit Dice"
         , div [] [ text (String.fromInt (hitDice + con)) ]
         ]
 
-hitPointsView : {r | hitPoints : Maybe Int } -> Html Msg
+
+hitPointsView : { r | hitPoints : Maybe Int } -> Html Msg
 hitPointsView { hitPoints } =
     div []
         [ sectionLabel "Hit Points"
-        , div [ css
+        , div
+            [ css
                 [ fontSize (Css.em 1.3) ]
-              ]
+            ]
             [ text (showMaybeInt "0" hitPoints)
             ]
         ]
 
-coinView : {r | coin : Maybe Int } -> Html Msg
+
+coinView : { r | coin : Maybe Int } -> Html Msg
 coinView { coin } =
     div [ css [ Css.width (pct 50) ] ]
         [ sectionLabel "Coin"
-        , div [ css
+        , div
+            [ css
                 [ fontSize (Css.em 1.3)
                 , backgroundColor (hex "eee")
                 , padding2 (px 0) (Css.em 0.35)
                 , Css.width (pct 90)
                 ]
-              ]
+            ]
             [ text (showMaybeInt "0" coin) ]
         ]
 
-xpView : {r | xp : Maybe Int } -> Html Msg
+
+xpView : { r | xp : Maybe Int } -> Html Msg
 xpView { xp } =
     div [ css [ Css.width (pct 50) ] ]
         [ sectionLabel "XP"
-        , div [ css
+        , div
+            [ css
                 [ fontSize (Css.em 1.3)
                 , backgroundColor (hex "eee")
                 , padding2 (px 0) (Css.em 0.35)
                 , Css.width (pct 90)
                 ]
-              ]
+            ]
             [ text (showMaybeInt "0" xp) ]
         ]
 
-notesView : {r | notes : String } -> Html Msg
+
+notesView : { r | notes : String } -> Html Msg
 notesView { notes } =
     div []
         [ sectionLabel "Notes"
-        , div [ css
+        , div
+            [ css
                 [ whiteSpace preWrap
                 ]
-              ]
+            ]
             [ text notes ]
         ]
+
 
 
 --------------------------------------------------
 -- Edit View
 --------------------------------------------------
 
+
 editView : Model -> Html Msg
 editView model =
-    div [ css
-          [ overflowWrap breakWord
-          ]
-        ]
-    [ editNameView model
-    , div [ css
-            [ displayFlex
+    div
+        [ css
+            [ overflowWrap breakWord
             ]
-          ]
-        [ editClassView model
-        , editLevelView model
         ]
-    , div [ css
-            [ displayFlex
+        [ editNameView model
+        , div
+            [ css
+                [ displayFlex
+                ]
             ]
-          ]
-          [ editHitPointsView model
-          , editHitDiceView model
-          ]
-    , editAttributesView model
-    , editSkillsView model
-    , editAbilitiesView model
-    , editWeaponsView model
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
+            [ editClassView model
+            , editLevelView model
             ]
-          ]
-        [ editArmorView model
-        , editShieldView model
-        , editBonusArmorView model
+        , div
+            [ css
+                [ displayFlex
+                ]
+            ]
+            [ editHitPointsView model
+            , editHitDiceView model
+            ]
+        , editAttributesView model
+        , editSkillsView model
+        , editAbilitiesView model
+        , editWeaponsView model
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ editArmorView model
+            , editShieldView model
+            , editBonusArmorView model
+            ]
+        , editEquipmentView model
+        , editNotesView model
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ editCoinView model
+            , editXpView model
+            ]
         ]
-    , editEquipmentView model
-    , editNotesView model
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
-            ]
-          ]
-        [ editCoinView model
-        , editXpView model
-        ]
-    ]
 
-editNameView : {r | name : String } -> Html Msg
+
+editNameView : { r | name : String } -> Html Msg
 editNameView { name } =
     div []
-    [ sectionLabel "Name"
-    , input
-          [ type_ "text"
+        [ sectionLabel "Name"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput UpdateName
             , value name
-          ] []
-    ]
-
-editClassView : {r | class : String } -> Html Msg
-editClassView { class } =
-    div [ css
-          [ Css.width (pct 50)
-          ]
+            ]
+            []
         ]
-    [ sectionLabel "Class"
-    , input
-          [ type_ "text"
+
+
+editClassView : { r | class : String } -> Html Msg
+editClassView { class } =
+    div
+        [ css
+            [ Css.width (pct 50)
+            ]
+        ]
+        [ sectionLabel "Class"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput UpdateClass
             , value class
-          ] []
-    ]
+            ]
+            []
+        ]
 
-editLevelView : {r | level : Int } -> Html Msg
+
+editLevelView : { r | level : Int } -> Html Msg
 editLevelView { level } =
     div
         [ css
@@ -379,14 +426,15 @@ editLevelView { level } =
         ]
         [ sectionLabel "Level"
         , integerInput
-              { toMsg = UpdateLevel
-              , mMinBound = Just 1
-              , mMaxBound = Just 10
-              , currentValue = level
-              }
+            { toMsg = UpdateLevel
+            , mMinBound = Just 1
+            , mMaxBound = Just 10
+            , currentValue = level
+            }
         ]
 
-editHitDiceView : {r | hitDice : Int, con : Int } -> Html Msg
+
+editHitDiceView : { r | hitDice : Int, con : Int } -> Html Msg
 editHitDiceView { hitDice, con } =
     div
         [ css
@@ -398,47 +446,52 @@ editHitDiceView { hitDice, con } =
         ]
         [ sectionLabel "Base Hit Dice"
         , integerInput
-              { toMsg = UpdateHitDice
-              , mMinBound = Just 1
-              , mMaxBound = Just 6
-              , currentValue = hitDice
-              }
+            { toMsg = UpdateHitDice
+            , mMinBound = Just 1
+            , mMaxBound = Just 6
+            , currentValue = hitDice
+            }
         ]
 
 
-editHitPointsView : {r | hitPoints : Maybe Int } -> Html Msg
+editHitPointsView : { r | hitPoints : Maybe Int } -> Html Msg
 editHitPointsView { hitPoints } =
-    div [ css
-          [ Css.width (pct 50)
-          ]
+    div
+        [ css
+            [ Css.width (pct 50)
+            ]
         ]
-    [ sectionLabel "Hit Points"
-    , input
-          [ type_ "text"
+        [ sectionLabel "Hit Points"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput (UpdateHitPoints << filterToDigits)
             , value (showMaybeInt "" hitPoints)
-          ] []
-    ]
+            ]
+            []
+        ]
+
 
 editAttributesView : Attributes r -> Html Msg
 editAttributesView { str, dex, con, int, wis, cha } =
     div []
-    [ sectionLabel "Attributes"
-    , div [ css
-            [ displayFlex
-            , justifyContent spaceBetween
-            , flexWrap Css.wrap
+        [ sectionLabel "Attributes"
+        , div
+            [ css
+                [ displayFlex
+                , justifyContent spaceBetween
+                , flexWrap Css.wrap
+                ]
             ]
-          ]
-          [ editAttributeView "STR" str UpdateStr
-          , editAttributeView "DEX" dex UpdateDex
-          , editAttributeView "CON" con UpdateCon
-          , editAttributeView "INT" int UpdateInt
-          , editAttributeView "WIS" wis UpdateWis
-          , editAttributeView "CHA" cha UpdateCha
-          ]
-    ]
+            [ editAttributeView "STR" str UpdateStr
+            , editAttributeView "DEX" dex UpdateDex
+            , editAttributeView "CON" con UpdateCon
+            , editAttributeView "INT" int UpdateInt
+            , editAttributeView "WIS" wis UpdateWis
+            , editAttributeView "CHA" cha UpdateCha
+            ]
+        ]
+
 
 editAttributeView : String -> Int -> (Int -> Msg) -> Html Msg
 editAttributeView name value updateAttr =
@@ -452,47 +505,53 @@ editAttributeView name value updateAttr =
         , class "reveal-buttons-on-hover"
         ]
         [ integerInput
-              { toMsg = updateAttr
-              , mMinBound = Just 0
-              , mMaxBound = Just 3
-              , currentValue = value
-              }
-        , div [ css
+            { toMsg = updateAttr
+            , mMinBound = Just 0
+            , mMaxBound = Just 3
+            , currentValue = value
+            }
+        , div
+            [ css
                 [ Css.property "font-variant" "small-caps"
                 , letterSpacing (Css.em 0.15)
                 , fontWeight bold
                 ]
-              ]
-              [ text name ]
+            ]
+            [ text name ]
         ]
 
 
-editSkillsView : {r | skills : String } -> Html Msg
+editSkillsView : { r | skills : String } -> Html Msg
 editSkillsView { skills } =
     div []
-    [ sectionLabel "Skills"
-    , input
-          [ type_ "text"
+        [ sectionLabel "Skills"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput UpdateSkills
             , value skills
-          ] []
-    ]
+            ]
+            []
+        ]
 
-editAbilitiesView : {r | abilities : Array Ability } -> Html Msg
+
+editAbilitiesView : { r | abilities : Array Ability } -> Html Msg
 editAbilitiesView { abilities } =
     div []
-    [ sectionLabel "Abilities"
-    , div []
-        (Array.toList
-             (Array.indexedMap
-                  editAbilityView
-                  abilities))
-    , defaultButton
-        [ onClick (AddNewAbility (Ability "" ""))
+        [ sectionLabel "Abilities"
+        , div []
+            (Array.toList
+                (Array.indexedMap
+                    editAbilityView
+                    abilities
+                )
+            )
+        , defaultButton
+            [ onClick (AddNewAbility (Ability "" ""))
+            ]
+            [ text "Add new ability" ]
         ]
-        [ text "Add new ability" ]
-    ]
+
 
 editAbilityView : Index -> Ability -> Html Msg
 editAbilityView index (Ability title description) =
@@ -543,120 +602,140 @@ editAbilityView index (Ability title description) =
             [ text "Remove" ]
         ]
 
-editWeaponsView : {r | weapons : String } -> Html Msg
+
+editWeaponsView : { r | weapons : String } -> Html Msg
 editWeaponsView { weapons } =
     div []
-    [ sectionLabel "Weapons"
-    , textarea
-          [ rows 3
-          , css [ inputStyles ]
-          , onInput UpdateWeapons
-          , value weapons
-          ] []
-    ]
+        [ sectionLabel "Weapons"
+        , textarea
+            [ rows 3
+            , css [ inputStyles ]
+            , onInput UpdateWeapons
+            , value weapons
+            ]
+            []
+        ]
 
-editArmorView : {r | armor : Armor } -> Html Msg
+
+editArmorView : { r | armor : Armor } -> Html Msg
 editArmorView { armor } =
-    div [ css
-          [ Css.width (pct 30)
-          ]
+    div
+        [ css
+            [ Css.width (pct 30)
+            ]
         ]
-    [ sectionLabel "Armor & Speed"
-    , radioInputList
-          { toMsg = UpdateArmor
-          , options = armorOptions
-          , selected = armor
-          , showOption = showArmor
-          }
-    ]
+        [ sectionLabel "Armor & Speed"
+        , radioInputList
+            { toMsg = UpdateArmor
+            , options = armorOptions
+            , selected = armor
+            , showOption = showArmor
+            }
+        ]
 
-editShieldView : {r | shield : Shield } -> Html Msg
+
+editShieldView : { r | shield : Shield } -> Html Msg
 editShieldView { shield } =
-    div [ css
-          [ Css.width (pct 25)
-          ]
+    div
+        [ css
+            [ Css.width (pct 25)
+            ]
         ]
-    [ sectionLabel "Shield"
-    , radioInputList
-          { toMsg = UpdateShield
-          , options = shieldOptions
-          , selected = shield
-          , showOption = showShield
-          }
-    ]
+        [ sectionLabel "Shield"
+        , radioInputList
+            { toMsg = UpdateShield
+            , options = shieldOptions
+            , selected = shield
+            , showOption = showShield
+            }
+        ]
 
-editBonusArmorView : {r | bonusArmor : Int } -> Html Msg
+
+editBonusArmorView : { r | bonusArmor : Int } -> Html Msg
 editBonusArmorView { bonusArmor } =
-    div [ css [ Css.width (pct 30) ]
+    div
+        [ css [ Css.width (pct 30) ]
         , class "reveal-buttons-on-hover"
         ]
-    [ sectionLabel "Armor Bonus"
-    , integerInput
-          { toMsg = UpdateBonusArmor
-          , mMinBound = Just 0
-          , mMaxBound = Nothing
-          , currentValue = bonusArmor
-          }
-    ]
+        [ sectionLabel "Armor Bonus"
+        , integerInput
+            { toMsg = UpdateBonusArmor
+            , mMinBound = Just 0
+            , mMaxBound = Nothing
+            , currentValue = bonusArmor
+            }
+        ]
 
 
-editEquipmentView : {r | equipment : String } -> Html Msg
+editEquipmentView : { r | equipment : String } -> Html Msg
 editEquipmentView { equipment } =
     div []
-    [ sectionLabel "Equipment"
-    , textarea
-          [ rows 5
-          , css [ inputStyles ]
-          , onInput UpdateEquipment
-          , value equipment
-          ] []
-    ]
+        [ sectionLabel "Equipment"
+        , textarea
+            [ rows 5
+            , css [ inputStyles ]
+            , onInput UpdateEquipment
+            , value equipment
+            ]
+            []
+        ]
 
-editNotesView : {r | notes : String } -> Html Msg
+
+editNotesView : { r | notes : String } -> Html Msg
 editNotesView { notes } =
     div []
-    [ sectionLabel "Notes"
-    , textarea
-          [ rows 5
-          , css [ inputStyles ]
-          , onInput UpdateNotes
-          , value notes
-          ] []
-    ]
-
-editCoinView : {r | coin : Maybe Int } -> Html Msg
-editCoinView { coin } =
-    div [ css
-          [ Css.width (pct 45)
-          ]
+        [ sectionLabel "Notes"
+        , textarea
+            [ rows 5
+            , css [ inputStyles ]
+            , onInput UpdateNotes
+            , value notes
+            ]
+            []
         ]
-    [ sectionLabel "Coin"
-    , input
-          [ type_ "text"
+
+
+editCoinView : { r | coin : Maybe Int } -> Html Msg
+editCoinView { coin } =
+    div
+        [ css
+            [ Css.width (pct 45)
+            ]
+        ]
+        [ sectionLabel "Coin"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput (UpdateCoin << filterToDigits)
             , value (showMaybeInt "" coin)
-          ] []
-    ]
-
-editXpView : {r | xp : Maybe Int } -> Html Msg
-editXpView { xp } =
-    div [ css
-          [ Css.width (pct 45)
-          ]
+            ]
+            []
         ]
-    [ sectionLabel "XP"
-    , input
-          [ type_ "text"
+
+
+editXpView : { r | xp : Maybe Int } -> Html Msg
+editXpView { xp } =
+    div
+        [ css
+            [ Css.width (pct 45)
+            ]
+        ]
+        [ sectionLabel "XP"
+        , input
+            [ type_ "text"
             , css [ inputStyles ]
             , onInput (UpdateXp << filterToDigits)
             , value (showMaybeInt "" xp)
-          ] []
-    ]
+            ]
+            []
+        ]
+
+
 
 --------------------------------------------------
 -- Styles and Helpers
 --------------------------------------------------
+
 
 sectionLabel : String -> Html msg
 sectionLabel title =
@@ -671,6 +750,7 @@ sectionLabel title =
             ]
         ]
         [ text title ]
+
 
 inputStyles : Css.Style
 inputStyles =
@@ -695,27 +775,31 @@ defaultButton =
             [ backgroundColor (hex "eee") ]
         ]
 
-integerInput : { toMsg : Int -> msg
-               , mMinBound : Maybe Int
-               , mMaxBound : Maybe Int
-               , currentValue : Int
-               }
-             -> Html msg
-integerInput { toMsg
-             , mMinBound
-             , mMaxBound
-             , currentValue
-             } =
+
+integerInput :
+    { toMsg : Int -> msg
+    , mMinBound : Maybe Int
+    , mMaxBound : Maybe Int
+    , currentValue : Int
+    }
+    -> Html msg
+integerInput { toMsg, mMinBound, mMaxBound, currentValue } =
     let
         minBound =
             case mMinBound of
-                Just min -> min
-                Nothing -> Basics.round (-1/0)
+                Just min ->
+                    min
+
+                Nothing ->
+                    Basics.round (-1 / 0)
 
         maxBound =
             case mMaxBound of
-                Just max -> max
-                Nothing -> Basics.round (1/0)
+                Just max ->
+                    max
+
+                Nothing ->
+                    Basics.round (1 / 0)
 
         decrementButton =
             defaultButton
@@ -725,6 +809,7 @@ integerInput { toMsg
                     )
                 , if currentValue <= minBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
@@ -733,44 +818,49 @@ integerInput { toMsg
         incrementButton =
             defaultButton
                 [ onClick
-                      (toMsg
-                           (Basics.min maxBound (currentValue + 1))
-                      )
+                    (toMsg
+                        (Basics.min maxBound (currentValue + 1))
+                    )
                 , if currentValue >= maxBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
                 [ text "+" ]
     in
-        div [ css
-              [ whiteSpace noWrap
-              , userSelect_none
-              , textAlign center
-              ]
-            , class "reveal-buttons-on-hover"
+    div
+        [ css
+            [ whiteSpace noWrap
+            , userSelect_none
+            , textAlign center
             ]
+        , class "reveal-buttons-on-hover"
+        ]
         [ decrementButton
         , span
-              [ css
+            [ css
                 [ fontSize (Css.em 1.3)
                 , margin2 (px 0) (Css.em 0.25)
                 ]
-              ]
-              [ text (String.fromInt currentValue) ]
+            ]
+            [ text (String.fromInt currentValue) ]
         , incrementButton
         ]
 
-radioInputList : { toMsg : a -> msg
-                 , options : List a
-                 , selected : a
-                 , showOption : a -> String
-                 }
-               -> Html msg
+
+radioInputList :
+    { toMsg : a -> msg
+    , options : List a
+    , selected : a
+    , showOption : a -> String
+    }
+    -> Html msg
 radioInputList { toMsg, options, selected, showOption } =
     let
         optionView option =
-            label [ css
+            label
+                [ css
                     [ display block
                     , marginBottom (Css.em 0.25)
                     , fontSize (Css.em 1)
@@ -778,49 +868,56 @@ radioInputList { toMsg, options, selected, showOption } =
                     , borderRadius (Css.em 0.25)
                     , userSelect_none
                     , cursor pointer
-                    , if (selected == option) then
-                          batch
-                          [ backgroundColor (hex "333")
-                          , color (hex "fff")
-                          ]
-                      else
-                          batch
-                          [ hover
-                            [ backgroundColor (hex "eee")
+                    , if selected == option then
+                        batch
+                            [ backgroundColor (hex "333")
+                            , color (hex "fff")
                             ]
-                          ]
+
+                      else
+                        batch
+                            [ hover
+                                [ backgroundColor (hex "eee")
+                                ]
+                            ]
                     ]
-                  ]
-            [ input
-                  [ type_ "radio"
-                  , name "option"
-                  , onInput (always (toMsg option))
-                  , HA.checked (selected == option)
-                  , css
+                ]
+                [ input
+                    [ type_ "radio"
+                    , name "option"
+                    , onInput (always (toMsg option))
+                    , HA.checked (selected == option)
+                    , css
                         [ position absolute
                         , appearance_none
                         , opacity (int 0)
                         , Css.height (px 0)
                         , Css.width (px 0)
                         ]
-                  ] []
-            , text (showOption option)
-            ]
+                    ]
+                    []
+                , text (showOption option)
+                ]
     in
-        div [] (List.map optionView options)
+    div [] (List.map optionView options)
+
 
 
 --------------------------------------------------
 -- Utils
 --------------------------------------------------
 
+
 filterToDigits : String -> Maybe Int
 filterToDigits string =
     String.toInt (String.filter Char.isDigit string)
 
+
 showMaybeInt : String -> Maybe Int -> String
 showMaybeInt def mInt =
     case mInt of
-        Just int -> String.fromInt int
-        Nothing -> def
+        Just int ->
+            String.fromInt int
 
+        Nothing ->
+            def

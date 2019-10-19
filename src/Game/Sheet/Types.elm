@@ -1,36 +1,38 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Game.Sheet.Types exposing (..)
+
+module Game.Sheet.Types exposing (SheetModel(..), SheetMsg(..))
 
 import Fate
-import WorldOfDungeons
 import RedMarkets
+import WorldOfDungeons
+
 
 type SheetMsg
     = FateMsg Fate.Msg
     | WorldOfDungeonsMsg WorldOfDungeons.Msg
     | RedMarketsMsg RedMarkets.Msg
 
+
 type SheetModel
     = FateSheet Fate.Sheet
     | WorldOfDungeonsSheet WorldOfDungeons.Sheet
     | RedMarketsSheet RedMarkets.Sheet
-

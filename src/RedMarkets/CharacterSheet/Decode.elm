@@ -1,30 +1,30 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module RedMarkets.CharacterSheet.Decode exposing
-    ( decodeCharacterSheet )
+
+module RedMarkets.CharacterSheet.Decode exposing (decodeCharacterSheet)
 
 import Array exposing (Array)
-import RedMarkets.CharacterSheet.Types exposing (..)
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+import RedMarkets.CharacterSheet.Types exposing (..)
 
 
 decodeCharacterSheet : Decoder CharacterSheet
@@ -82,7 +82,7 @@ decodeRelationStatus : Decoder RelationStatus
 decodeRelationStatus =
     string
         |> andThen
-           (\status ->
+            (\status ->
                 case status of
                     "Normal" ->
                         succeed Normal
@@ -98,8 +98,8 @@ decodeRelationStatus =
 
                     err ->
                         fail (err ++ " is not a valid RelationStatus")
-    
-           )
+            )
+
 
 decodeThreat : Decoder Threat
 decodeThreat =
@@ -110,7 +110,7 @@ decodeWound : Decoder Wound
 decodeWound =
     string
         |> andThen
-           (\wound ->
+            (\wound ->
                 case wound of
                     "NoWound" ->
                         succeed NoWound
@@ -122,20 +122,20 @@ decodeWound =
                         succeed Kill
 
                     err ->
-                        fail ( err ++ " is not a valid Wound")
-           )
+                        fail (err ++ " is not a valid Wound")
+            )
 
 
 decodeGear : Decoder Gear
 decodeGear =
     Decode.succeed
         (\title charges upkeep effect qualities ->
-             { title = title
-             , charges = charges
-             , upkeep = upkeep
-             , effect = effect
-             , qualities = qualities
-             }
+            { title = title
+            , charges = charges
+            , upkeep = upkeep
+            , effect = effect
+            , qualities = qualities
+            }
         )
         |> required "title" string
         |> required "charges" (array decodeCharge)
@@ -148,9 +148,9 @@ decodeGearQuality : Decoder GearQuality
 decodeGearQuality =
     Decode.succeed
         (\title description ->
-             { title = title
-             , description = description
-             }
+            { title = title
+            , description = description
+            }
         )
         |> required "title" string
         |> required "description" string
@@ -160,7 +160,7 @@ decodeCharge : Decoder Charge
 decodeCharge =
     string
         |> andThen
-           (\charge ->
+            (\charge ->
                 case charge of
                     "Charge" ->
                         succeed Charge
@@ -169,5 +169,5 @@ decodeCharge =
                         succeed NoCharge
 
                     err ->
-                        fail ( err ++ " is not a valid Charge")
-           )
+                        fail (err ++ " is not a valid Charge")
+            )

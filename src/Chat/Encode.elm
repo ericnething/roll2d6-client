@@ -1,53 +1,60 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Chat.Encode exposing (..)
+
+module Chat.Encode exposing (encodeJID, encodeMessage, encodeRoomConn)
 
 import Array exposing (Array)
+import Chat.Types exposing (..)
 import Dict exposing (Dict)
 import Json.Encode exposing (..)
 import Maybe
-import Chat.Types exposing (..)
 
 
 encodeRoomConn : RoomConn -> Value
-encodeRoomConn { room, displayName } = 
+encodeRoomConn { room, displayName } =
     object
-    [ ("room", string room)
-    , ("displayName", string displayName)
-    ]
+        [ ( "room", string room )
+        , ( "displayName", string displayName )
+        ]
+
+
 
 --------------------------------------------------
 -- Chat Messages and Dice Rolls
 --------------------------------------------------
 
+
 encodeMessage : NewMessage -> Value
 encodeMessage { to, body } =
     object
-        [ ("to", encodeJID to)
-        , ("body", string body)
+        [ ( "to", encodeJID to )
+        , ( "body", string body )
         ]
+
 
 encodeJID : BareJID -> Value
 encodeJID bare =
     string bare
+
+
 
 -- encodeDiceRoll : DiceRoll -> Value
 -- encodeDiceRoll (DiceRoll roll) =
@@ -58,7 +65,6 @@ encodeJID bare =
 --         , ( "modifier", Maybe.withDefault null (Maybe.map int roll.modifier) )
 --         , ( "total", int roll.total )
 --         ]
-
 -- encodeDiceType : DiceType -> Value
 -- encodeDiceType type_ =
 --     case type_ of
@@ -66,7 +72,6 @@ encodeJID bare =
 --         D20 -> string "d20"
 --         D6 -> string "d6"
 --         DOther n -> string ("d" ++ String.fromInt n)
-
 -- encodeDiceResult : DiceResult -> Value
 -- encodeDiceResult result =
 --     case result of
@@ -91,11 +96,9 @@ encodeJID bare =
 --             , ( "sides", int sides )
 --             , ( "face", int n )
 --             ]
-
 -- encodeDFateFace : DFateFace -> Value
 -- encodeDFateFace face =
 --     case face of
 --         DFatePlus -> string "+"
 --         DFateBlank -> string "b"
 --         DFateMinus -> string "-"
-

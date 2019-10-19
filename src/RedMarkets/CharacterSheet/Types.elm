@@ -1,60 +1,65 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module RedMarkets.CharacterSheet.Types exposing (..)
+
+module RedMarkets.CharacterSheet.Types exposing (CharacterSheet, Charge(..), Gear, GearQuality, Index, Model, Msg(..), Potential(..), PotentialType(..), RelationStatus(..), Relationship(..), Skill(..), Threat(..), Wound(..), WoundLocation(..), relationStatusPred, relationStatusSucc, showRelationStatus, showWoundLocation, woundSucc)
 
 import Array exposing (Array)
 
 
-type alias Model = CharacterSheet
+type alias Model =
+    CharacterSheet
+
 
 type alias CharacterSheet =
-    { name           : String
-    , description    : String
-    , crew           : String
-    , weakSpot       : String
-    , softSpot       : String
-    , toughSpot      : String
-    , str            : Potential
-    , spd            : Potential
-    , adp            : Potential
-    , int            : Potential
-    , cha            : Potential
-    , wil            : Potential
-    , dependents     : Array Relationship
-    , references     : Array Relationship
-    , detachment     : Array Threat
-    , stress         : Array Threat
-    , trauma         : Array Threat
+    { name : String
+    , description : String
+    , crew : String
+    , weakSpot : String
+    , softSpot : String
+    , toughSpot : String
+    , str : Potential
+    , spd : Potential
+    , adp : Potential
+    , int : Potential
+    , cha : Potential
+    , wil : Potential
+    , dependents : Array Relationship
+    , references : Array Relationship
+    , detachment : Array Threat
+    , stress : Array Threat
+    , trauma : Array Threat
     , rightLegWounds : Array Wound
-    , leftLegWounds  : Array Wound
+    , leftLegWounds : Array Wound
     , rightArmWounds : Array Wound
-    , leftArmWounds  : Array Wound
-    , torsoWounds    : Array Wound
-    , headWounds     : Array Wound
-    , gear           : Array Gear
-    , notes          : String
+    , leftArmWounds : Array Wound
+    , torsoWounds : Array Wound
+    , headWounds : Array Wound
+    , gear : Array Gear
+    , notes : String
     }
+
 
 type Potential
     = Potential Int (Array Skill)
+
 
 type PotentialType
     = Strength
@@ -64,11 +69,14 @@ type PotentialType
     | Charm
     | Will
 
+
 type Skill
     = Skill String Int
 
+
 type Relationship
     = Relationship String RelationStatus
+
 
 type RelationStatus
     = Normal
@@ -76,8 +84,10 @@ type RelationStatus
     | Strained
     | Severed
 
+
 type Threat
     = Threat Bool
+
 
 showRelationStatus : RelationStatus -> String
 showRelationStatus status =
@@ -109,6 +119,7 @@ relationStatusSucc status =
 
         Severed ->
             Severed
+
 
 relationStatusPred : RelationStatus -> RelationStatus
 relationStatusPred status =
@@ -144,6 +155,7 @@ woundSucc wound =
         Kill ->
             NoWound
 
+
 type WoundLocation
     = RightLeg
     | LeftLeg
@@ -151,6 +163,7 @@ type WoundLocation
     | LeftArm
     | Torso
     | Head
+
 
 showWoundLocation : WoundLocation -> String
 showWoundLocation location =
@@ -173,6 +186,7 @@ showWoundLocation location =
         Head ->
             "Head (10)"
 
+
 type alias Gear =
     { title : String
     , charges : Array Charge
@@ -181,14 +195,17 @@ type alias Gear =
     , qualities : Array GearQuality
     }
 
+
 type Charge
     = Charge
     | NoCharge
+
 
 type alias GearQuality =
     { title : String
     , description : String
     }
+
 
 type alias Index =
     Int
@@ -228,10 +245,10 @@ type Msg
     | AddNewGear
     | RemoveGear Index
     | UpdateGearCharge
-      { gearIndex : Index
-      , chargeIndex : Index
-      , charge : Charge
-      }
+        { gearIndex : Index
+        , chargeIndex : Index
+        , charge : Charge
+        }
     | UpdateGearQuality Index Index GearQuality
     | AddNewGearQuality Index
     | RemoveGearQuality Index Index

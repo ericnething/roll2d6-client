@@ -1,65 +1,71 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Game.Sheet exposing (..)
+
+module Game.Sheet exposing (blank, compactView, editView, initialModel, updateSheet, view)
 
 import Array exposing (Array)
-import Html.Styled exposing (Html)
-import Game.GameType exposing (GameType(..))
-import Game.Sheet.Types exposing (SheetMsg(..), SheetModel(..))
-
 import Fate
-import WorldOfDungeons
+import Game.GameType exposing (GameType(..))
+import Game.Sheet.Types exposing (SheetModel(..), SheetMsg(..))
+import Html.Styled exposing (Html)
 import RedMarkets
+import WorldOfDungeons
 
-updateSheet : SheetMsg
-            -> SheetModel
-            -> (SheetModel, Cmd (SheetMsg))
+
+updateSheet :
+    SheetMsg
+    -> SheetModel
+    -> ( SheetModel, Cmd SheetMsg )
 updateSheet sheetMsg sheetModel =
-    case (sheetMsg, sheetModel) of
-        (FateMsg msg, FateSheet model) ->
+    case ( sheetMsg, sheetModel ) of
+        ( FateMsg msg, FateSheet model ) ->
             let
-                (updatedModel, cmd) = Fate.update msg model
+                ( updatedModel, cmd ) =
+                    Fate.update msg model
             in
-                ( FateSheet updatedModel
-                , Cmd.map FateMsg cmd
-                )
+            ( FateSheet updatedModel
+            , Cmd.map FateMsg cmd
+            )
 
-        (WorldOfDungeonsMsg msg, WorldOfDungeonsSheet model) ->
+        ( WorldOfDungeonsMsg msg, WorldOfDungeonsSheet model ) ->
             let
-                (updatedModel, cmd) = WorldOfDungeons.update msg model
+                ( updatedModel, cmd ) =
+                    WorldOfDungeons.update msg model
             in
-                ( WorldOfDungeonsSheet updatedModel
-                , Cmd.map WorldOfDungeonsMsg cmd
-                )
+            ( WorldOfDungeonsSheet updatedModel
+            , Cmd.map WorldOfDungeonsMsg cmd
+            )
 
-        (RedMarketsMsg msg, RedMarketsSheet model) ->
+        ( RedMarketsMsg msg, RedMarketsSheet model ) ->
             let
-                (updatedModel, cmd) = RedMarkets.update msg model
+                ( updatedModel, cmd ) =
+                    RedMarkets.update msg model
             in
-                ( RedMarketsSheet updatedModel
-                , Cmd.map RedMarketsMsg cmd
-                )
+            ( RedMarketsSheet updatedModel
+            , Cmd.map RedMarketsMsg cmd
+            )
 
         _ ->
-            (sheetModel, Cmd.none)
+            ( sheetModel, Cmd.none )
+
 
 compactView : SheetModel -> Html SheetMsg
 compactView sheetModel =
@@ -109,7 +115,7 @@ editView sheetModel =
                 |> Html.Styled.map RedMarketsMsg
 
 
-blank : GameType -> List (String, SheetModel)
+blank : GameType -> List ( String, SheetModel )
 blank gameType =
     case gameType of
         Fate ->
@@ -124,14 +130,14 @@ blank gameType =
         WorldOfDungeons ->
             [ ( "Character Sheet"
               , WorldOfDungeonsSheet
-                  WorldOfDungeons.blankCharacterSheet
+                    WorldOfDungeons.blankCharacterSheet
               )
             ]
 
         RedMarkets ->
             [ ( "Character Sheet"
               , RedMarketsSheet
-                  RedMarkets.blankCharacterSheet
+                    RedMarkets.blankCharacterSheet
               )
             ]
 

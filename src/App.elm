@@ -1,67 +1,67 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module App
-    exposing
+
+module App exposing
     ( init
-    , view
-    , update
-    , subscriptions
     , routeToGame
     , routeToLobby
+    , subscriptions
+    , update
+    , view
     )
 
+import API
 import App.Types exposing (..)
-import Browser exposing (UrlRequest(..))
-import Browser.Navigation as Navigation
-import Browser.Events
-import Url exposing (Url)
 import Array exposing (Array)
+import Browser exposing (UrlRequest(..))
+import Browser.Events
+import Browser.Navigation as Navigation
+import Chat
+import Chat.Types as Chat exposing (Person)
 import Dict exposing (Dict)
 import Game
-import Game.Types as Game exposing (GameId)
-import Game.GameType as Game
-import Game.Sheets.Types as Sheets
-import Game.Sheet.Types as Sheet
-import Html
-import Html.Styled exposing (..)
-import Html.Styled.Lazy exposing (lazy)
-import Json.Decode
-import Lobby
-import Lobby.Types as Lobby
-import Ports exposing (PouchDBRef, XMPPClient)
 import Game.Decode
     exposing
         ( decodeGame
         , decodeGameData
         , decodeGameList
         )
-import Chat
-import Chat.Types as Chat exposing (Person)
-import Task
-import Route exposing (Route)
-import Http
-import API
+import Game.GameType as Game
 import Game.Player
-import Util exposing (toCmd)
+import Game.Sheet.Types as Sheet
+import Game.Sheets.Types as Sheets
+import Game.Types as Game exposing (GameId)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Lazy exposing (lazy)
+import Http
+import Json.Decode
+import Lobby
+import Lobby.Types as Lobby
+import Ports exposing (PouchDBRef, XMPPClient)
 import RemoteData exposing (RemoteData(..))
+import Route exposing (Route)
+import Task
+import Url exposing (Url)
+import Util exposing (toCmd)
 
 
 subscriptions : Sub Msg
@@ -97,13 +97,15 @@ initialModel me =
     , showLobbyOrGame = ShowLobby
     }
 
-init : Person -> (Model, Cmd Msg)
+
+init : Person -> ( Model, Cmd Msg )
 init me =
     ( initialModel me
     , Cmd.none
     )
 
-update : XMPPClient -> Navigation.Key -> Msg -> Model -> (Model, Cmd Msg)
+
+update : XMPPClient -> Navigation.Key -> Msg -> Model -> ( Model, Cmd Msg )
 update xmppClient navkey msg model =
     case msg of
         GameLoaded value ->
@@ -117,20 +119,23 @@ update xmppClient navkey msg model =
                                         | toGameModel = Just toGameModel
                                     }
                             in
-                                ({ model
-                                     | activeGame =
-                                         LoadingGame id updatedProgress
-                                     , showLobbyOrGame = ShowGame
-                                 }
-                                , loadGameScreenIfDone updatedProgress
-                                )
+                            ( { model
+                                | activeGame =
+                                    LoadingGame id updatedProgress
+                                , showLobbyOrGame = ShowGame
+                              }
+                            , loadGameScreenIfDone updatedProgress
+                            )
 
                         _ ->
-                            (model, Cmd.none)
+                            ( model, Cmd.none )
 
                 Err err ->
-                    let _ = Debug.log "Game Load Failed" err in
-                    (model, toCmd GameLoadFailed)
+                    let
+                        _ =
+                            Debug.log "Game Load Failed" err
+                    in
+                    ( model, toCmd GameLoadFailed )
 
         GameLoadFailed ->
             ( model
@@ -150,21 +155,21 @@ update xmppClient navkey msg model =
                                         | myPlayerInfo = Just playerInfo
                                     }
                             in
-                                ({ model
-                                     | activeGame =
-                                       LoadingGame id updatedProgress
-                                 }
-                                , loadGameScreenIfDone updatedProgress
-                                )
+                            ( { model
+                                | activeGame =
+                                    LoadingGame id updatedProgress
+                              }
+                            , loadGameScreenIfDone updatedProgress
+                            )
 
                         _ ->
-                            (model, Cmd.none)
+                            ( model, Cmd.none )
 
                 Err err ->
                     ( model
                     , Navigation.replaceUrl
                         navkey
-                            (Route.toUrlString Route.Lobby)
+                        (Route.toUrlString Route.Lobby)
                     )
 
         PlayerListLoaded result ->
@@ -178,40 +183,41 @@ update xmppClient navkey msg model =
                                         | players = Just players
                                     }
                             in
-                                ({ model
-                                     | activeGame =
-                                       LoadingGame id updatedProgress
-                                 }
-                                , loadGameScreenIfDone updatedProgress
-                                )
+                            ( { model
+                                | activeGame =
+                                    LoadingGame id updatedProgress
+                              }
+                            , loadGameScreenIfDone updatedProgress
+                            )
 
                         _ ->
-                            (model, Cmd.none)
+                            ( model, Cmd.none )
 
                 Err err ->
                     ( model
                     , Navigation.replaceUrl
                         navkey
-                            (Route.toUrlString Route.Lobby)
+                        (Route.toUrlString Route.Lobby)
                     )
 
         LoadGameScreen { toGameModel, myPlayerInfo, players } ->
             let
-                game = toGameModel myPlayerInfo players
+                game =
+                    toGameModel myPlayerInfo players
             in
-                ({ model
-                     | activeGame = ActiveGame game
-                     , rooms =
-                         Dict.insert (game.id ++ "@muc.localhost")
-                         { id = game.id ++ "@muc.localhost"
-                         , input = ""
-                         , messages = []
-                         , roster = Dict.empty
-                         }
-                         model.rooms
-                 }
-                , Cmd.map ChatMsg <| toCmd (Chat.JoinRoom game.id)
-                )
+            ( { model
+                | activeGame = ActiveGame game
+                , rooms =
+                    Dict.insert (game.id ++ "@muc.localhost")
+                        { id = game.id ++ "@muc.localhost"
+                        , input = ""
+                        , messages = []
+                        , roster = Dict.empty
+                        }
+                        model.rooms
+              }
+            , Cmd.map ChatMsg <| toCmd (Chat.JoinRoom game.id)
+            )
 
         AuthFailed ->
             ( model
@@ -221,74 +227,80 @@ update xmppClient navkey msg model =
             )
 
         GameMsg (Game.ChatMsg chatmsg) ->
-            (model, toCmd (ChatMsg chatmsg))
+            ( model, toCmd (ChatMsg chatmsg) )
 
         GameMsg Game.SwitchToLobby ->
-            ({ model
-                 | showLobbyOrGame = ShowLobby
-                 , lobbyTab = Lobby.GamesTab
-             }, Cmd.map LobbyMsg Lobby.init)
+            ( { model
+                | showLobbyOrGame = ShowLobby
+                , lobbyTab = Lobby.GamesTab
+              }
+            , Cmd.map LobbyMsg Lobby.init
+            )
 
         GameMsg localmsg ->
             updateGame navkey localmsg model
 
         LobbyMsg Lobby.ResumeGame ->
-            ({ model | showLobbyOrGame = ShowGame }, Cmd.none)
+            ( { model | showLobbyOrGame = ShowGame }, Cmd.none )
 
         LobbyMsg localmsg ->
             let
-                (newModel, cmd) = Lobby.update navkey localmsg model
+                ( newModel, cmd ) =
+                    Lobby.update navkey localmsg model
             in
-                (newModel, Cmd.map LobbyMsg cmd)
+            ( newModel, Cmd.map LobbyMsg cmd )
 
         ChatMsg Chat.OpenOverlay ->
-            (model, toCmd (GameMsg Game.OpenOverlay))
+            ( model, toCmd (GameMsg Game.OpenOverlay) )
 
         ChatMsg localmsg ->
             let
-                (newModel, cmd) = Chat.update xmppClient localmsg model
+                ( newModel, cmd ) =
+                    Chat.update xmppClient localmsg model
             in
-                (newModel, Cmd.map ChatMsg cmd)
+            ( newModel, Cmd.map ChatMsg cmd )
 
 
-updateGame : Navigation.Key -> Game.Msg -> Model -> (Model, Cmd Msg)
+updateGame : Navigation.Key -> Game.Msg -> Model -> ( Model, Cmd Msg )
 updateGame navkey localmsg model =
     case model.activeGame of
         ActiveGame game ->
             let
-                (newGame, cmd) = Game.update navkey localmsg game
+                ( newGame, cmd ) =
+                    Game.update navkey localmsg game
             in
-                ({ model | activeGame = ActiveGame newGame }
-                , Cmd.batch
-                    [ Cmd.map GameMsg
-                          (Game.maybeWriteToPouchDB localmsg newGame)
-                    , Cmd.map GameMsg cmd
-                    ]
-                )
+            ( { model | activeGame = ActiveGame newGame }
+            , Cmd.batch
+                [ Cmd.map GameMsg
+                    (Game.maybeWriteToPouchDB localmsg newGame)
+                , Cmd.map GameMsg cmd
+                ]
+            )
 
         _ ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
 
 loadGameScreenIfDone : LoadingProgress -> Cmd Msg
 loadGameScreenIfDone { toGameModel, myPlayerInfo, players } =
-    case (toGameModel, myPlayerInfo, players) of
-        (Just toGameModel_, Just myPlayerInfo_, Just players_) ->
+    case ( toGameModel, myPlayerInfo, players ) of
+        ( Just toGameModel_, Just myPlayerInfo_, Just players_ ) ->
             toCmd <|
                 LoadGameScreen
-                { toGameModel = toGameModel_
-                , myPlayerInfo = myPlayerInfo_
-                , players = players_
-                }
+                    { toGameModel = toGameModel_
+                    , myPlayerInfo = myPlayerInfo_
+                    , players = players_
+                    }
+
         _ ->
             Cmd.none
 
 
-routeToGame : Model -> GameId -> (Model, Cmd Msg)
+routeToGame : Model -> GameId -> ( Model, Cmd Msg )
 routeToGame model gameId =
-    ({ model
-         | activeGame = LoadingGame gameId emptyLoadingProgress
-     }
+    ( { model
+        | activeGame = LoadingGame gameId emptyLoadingProgress
+      }
     , Cmd.batch
         [ Ports.loadGame gameId
         , API.getMyPlayerInfo gameId
@@ -296,31 +308,33 @@ routeToGame model gameId =
         ]
     )
 
-    
-routeToLobby : Model -> (Model, Cmd Msg)
+
+routeToLobby : Model -> ( Model, Cmd Msg )
 routeToLobby model =
-    ({ model | activeGame = NoGame }
-    , Cmd.map LobbyMsg Lobby.init)
-        
-        
-view : (Int, Int) -> Model -> Html Msg
+    ( { model | activeGame = NoGame }
+    , Cmd.map LobbyMsg Lobby.init
+    )
+
+
+view : ( Int, Int ) -> Model -> Html Msg
 view viewportSize model =
     case model.activeGame of
         LoadingGame _ _ ->
             div [] [ text "Loading game..." ]
-                
+
         ActiveGame game ->
             case model.showLobbyOrGame of
                 ShowLobby ->
                     Lobby.view True model
-                          |> Html.Styled.map LobbyMsg
+                        |> Html.Styled.map LobbyMsg
+
                 ShowGame ->
                     Game.view
-                    viewportSize
-                    (Dict.get (game.id ++ "@muc.localhost") model.rooms) game
+                        viewportSize
+                        (Dict.get (game.id ++ "@muc.localhost") model.rooms)
+                        game
                         |> Html.Styled.map GameMsg
-                                   
+
         NoGame ->
             Lobby.view False model
-                |> Html.Styled.map LobbyMsg 
-
+                |> Html.Styled.map LobbyMsg

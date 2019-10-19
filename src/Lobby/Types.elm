@@ -1,38 +1,40 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Lobby.Types exposing (..)
 
-import Game.Types as Game
+module Lobby.Types exposing (AccountModel(..), ChangePasswordForm, EditAccountForm, Model, Msg(..), NewGameForm(..), NewGameFormModel, SettingsTab(..), Tab(..), defaultAccountModel)
+
 import Game.GameType as Game
 import Game.Player exposing (Player)
-import RemoteData exposing (RemoteData(..), WebData)
+import Game.Types as Game
 import Http
+import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias Model r =
-    { r |
-      games : WebData (List Game.GameSummary)
-    , newGameForm : NewGameForm
-    , lobbyTab : Tab
+    { r
+        | games : WebData (List Game.GameSummary)
+        , newGameForm : NewGameForm
+        , lobbyTab : Tab
     }
+
 
 type Tab
     = GamesTab
@@ -40,16 +42,21 @@ type Tab
     | MessagesTab
     | SettingsTab SettingsTab
 
+
 type SettingsTab
     = AccountTab AccountModel
     | AppearanceTab
+
 
 type AccountModel
     = ShowAccount
     | EditAccount EditAccountForm
     | ChangePassword ChangePasswordForm
 
-defaultAccountModel = ShowAccount
+
+defaultAccountModel =
+    ShowAccount
+
 
 type alias EditAccountForm =
     { displayName : String
@@ -57,6 +64,7 @@ type alias EditAccountForm =
     , email : String
     , password : String
     }
+
 
 type alias ChangePasswordForm =
     { displayName : String
@@ -66,14 +74,17 @@ type alias ChangePasswordForm =
     , currentPassword : String
     }
 
+
 type NewGameForm
     = NewGameFormNone
     | NewGameForm NewGameFormModel
+
 
 type alias NewGameFormModel =
     { title : String
     , gameType : Game.GameType
     }
+
 
 type Msg
     = NewGame

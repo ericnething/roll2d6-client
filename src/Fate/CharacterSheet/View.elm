@@ -1,48 +1,48 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Fate.CharacterSheet.View
-    exposing
-    ( editView
-    , view
-    , compactView
+
+module Fate.CharacterSheet.View exposing
+    ( compactView
+    , defaultButton
+    , editView
     , inputStyles
     , sectionLabel
-    , defaultButton
+    , view
     )
 
 import Array exposing (Array)
-import Fate.CharacterSheet.Types exposing (..)
 import Css exposing (..)
-import Util.Css exposing (..)
+import Fate.CharacterSheet.Types exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
+import Icons
 import Util
     exposing
         ( listDifference
         , stringToNatWithDefault
         , stringToNatWithDefaultNonZero
         )
-import Icons
+import Util.Css exposing (..)
 
 
 editView : Model -> Html Msg
@@ -381,34 +381,35 @@ stuntInput index (Stunt title description) =
             [ marginBottom (Css.em 1.25)
             ]
         ]
-        [ div [ css
+        [ div
+            [ css
                 [ displayFlex
                 , alignItems center
                 ]
-              ]
-              [ input
-                    [ type_ "text"
-                    , css
-                          [ display block
-                          , inputStyles
-                          ]
-                    , onInput
-                          (\newTitle ->
-                               UpdateStunt
-                               index
-                               (Stunt newTitle description)
-                          )
-                    , value title
+            ]
+            [ input
+                [ type_ "text"
+                , css
+                    [ display block
+                    , inputStyles
                     ]
-                    []
-              , iconButton
-                    [ onClick (RemoveStunt index)
-                    , css
-                          [ marginLeft (Css.em 0.5)
-                          ]
+                , onInput
+                    (\newTitle ->
+                        UpdateStunt
+                            index
+                            (Stunt newTitle description)
+                    )
+                , value title
+                ]
+                []
+            , iconButton
+                [ onClick (RemoveStunt index)
+                , css
+                    [ marginLeft (Css.em 0.5)
                     ]
-                    [ Icons.xCircle ]
-              ]
+                ]
+                [ Icons.xCircle ]
+            ]
         , textarea
             [ onInput
                 (\newDescription ->
@@ -437,32 +438,35 @@ stuntInput index (Stunt title description) =
 editStressView : Array StressTrack -> Html Msg
 editStressView stressTracks =
     div []
-    [ div [ css
-            [ displayFlex
-            , alignItems center
-            , marginTop (Css.em 1)
+        [ div
+            [ css
+                [ displayFlex
+                , alignItems center
+                , marginTop (Css.em 1)
+                ]
             ]
-          ] 
-          [ sectionLabel "Stress" ]
-    , p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a stress box." ]
-    , div []
-        (Array.toList
-             (Array.indexedMap
-                  editStressTrackView
-                  stressTracks))
-    , defaultButton
-          [ onClick
-                (AddNewStressTrack
-                     (StressTrack
-                          "New Stress Track"
-                          (Array.fromList
-                               [ StressBox 1 False ]
-                          )
-                     )
+            [ sectionLabel "Stress" ]
+        , p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a stress box." ]
+        , div []
+            (Array.toList
+                (Array.indexedMap
+                    editStressTrackView
+                    stressTracks
                 )
-          ]
-          [ text "Add new stress track" ] 
-    ]
+            )
+        , defaultButton
+            [ onClick
+                (AddNewStressTrack
+                    (StressTrack
+                        "New Stress Track"
+                        (Array.fromList
+                            [ StressBox 1 False ]
+                        )
+                    )
+                )
+            ]
+            [ text "Add new stress track" ]
+        ]
 
 
 stressTrackView : Int -> StressTrack -> Html Msg
@@ -560,29 +564,30 @@ editStressTrackView trackIndex (StressTrack title stressBoxes) =
         [ css
             [ marginBottom (Css.em 1) ]
         ]
-        [ div [ css
+        [ div
+            [ css
                 [ displayFlex
                 , alignItems center
                 ]
-              ]
-              [ input
-                    [ type_ "text"
-                    , css [ inputStyles ]
-                    , value title
-                    , onInput
-                          (\newTitle ->
-                               UpdateStressTrack
-                               trackIndex
-                               (StressTrack newTitle stressBoxes)
-                          )
-                    ]
-                    []
-              , iconButton
-                    [ onClick (RemoveStressTrack trackIndex)
-                    , css [ marginLeft (Css.em 0.5) ]
-                    ]
-                    [ Icons.xCircle ]
-              ]
+            ]
+            [ input
+                [ type_ "text"
+                , css [ inputStyles ]
+                , value title
+                , onInput
+                    (\newTitle ->
+                        UpdateStressTrack
+                            trackIndex
+                            (StressTrack newTitle stressBoxes)
+                    )
+                ]
+                []
+            , iconButton
+                [ onClick (RemoveStressTrack trackIndex)
+                , css [ marginLeft (Css.em 0.5) ]
+                ]
+                [ Icons.xCircle ]
+            ]
         , editStressBoxView
             AddStressBox
             RemoveStressBox
@@ -706,6 +711,7 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
         []
 
 
+
 -- toggleSwitch : EditMode -> Bool -> Html Msg
 -- toggleSwitch mode isActive =
 --     span
@@ -753,7 +759,6 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
 --                                     "translateX(26px)"
 --                                 ]
 --                             ]
-
 --                       else
 --                         backgroundColor (hex "ccc")
 --                     , Css.property "-webkit-transition" "0.2s"
@@ -784,15 +789,11 @@ editStressInput updateBox trackIndex index (StressBox points isChecked) =
 --             [ text
 --                 (if isActive then
 --                     "Unlocked"
-
 --                  else
 --                     "Locked"
 --                 )
 --             ]
 --         ]
-
-
-
 -- Consequences
 
 
@@ -893,32 +894,35 @@ consequenceSeverityButton severity =
 editConditionsView : Array Condition -> Html Msg
 editConditionsView conditions =
     div []
-    [ div [ css
-            [ displayFlex
-            , alignItems center
-            , marginTop (Css.em 1)
+        [ div
+            [ css
+                [ displayFlex
+                , alignItems center
+                , marginTop (Css.em 1)
+                ]
             ]
-          ]
-          [ sectionLabel "Conditions" ]
-    ,  p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a shift box." ]
-    , div []
-        (Array.toList
-             (Array.indexedMap
-                  editConditionView
-                  conditions))
-    , defaultButton
-          [ onClick
-                (AddNewCondition
-                     (Condition
-                          "New Condition"
-                          (Array.fromList
-                               [ StressBox 1 False ]
-                          )
-                     )
+            [ sectionLabel "Conditions" ]
+        , p [] [ text "Use the Up and Down arrows on your keyboard to change the value of a shift box." ]
+        , div []
+            (Array.toList
+                (Array.indexedMap
+                    editConditionView
+                    conditions
                 )
-          ]
-          [ text "Add New Condition" ]
-    ]
+            )
+        , defaultButton
+            [ onClick
+                (AddNewCondition
+                    (Condition
+                        "New Condition"
+                        (Array.fromList
+                            [ StressBox 1 False ]
+                        )
+                    )
+                )
+            ]
+            [ text "Add New Condition" ]
+        ]
 
 
 conditionView : Int -> Condition -> Html Msg
@@ -946,29 +950,30 @@ editConditionView trackIndex (Condition title stressBoxes) =
         [ css
             [ marginBottom (Css.em 1) ]
         ]
-        [ div [ css
+        [ div
+            [ css
                 [ displayFlex
                 , alignItems center
                 ]
-              ]
-              [ input
-                    [ type_ "text"
-                    , css [ inputStyles ]
-                    , value title
-                    , onInput
-                          (\newTitle ->
-                               UpdateCondition
-                               trackIndex
-                               (Condition newTitle stressBoxes)
-                          )
-                    ]
-                    []
-              , iconButton
-                    [ onClick (RemoveCondition trackIndex)
-                    , css [ marginLeft (Css.em 0.5) ]
-                    ]
-                    [ Icons.xCircle ]
-              ]
+            ]
+            [ input
+                [ type_ "text"
+                , css [ inputStyles ]
+                , value title
+                , onInput
+                    (\newTitle ->
+                        UpdateCondition
+                            trackIndex
+                            (Condition newTitle stressBoxes)
+                    )
+                ]
+                []
+            , iconButton
+                [ onClick (RemoveCondition trackIndex)
+                , css [ marginLeft (Css.em 0.5) ]
+                ]
+                [ Icons.xCircle ]
+            ]
         , editStressBoxView
             AddConditionBox
             RemoveConditionBox
@@ -998,6 +1003,7 @@ editNotesView notes =
 
 -- Extra Styles
 
+
 inputStyles : Css.Style
 inputStyles =
     batch
@@ -1021,6 +1027,7 @@ defaultButton =
             [ backgroundColor (hex "eee") ]
         ]
 
+
 iconButton =
     styled button
         [ whiteSpace noWrap
@@ -1035,6 +1042,7 @@ iconButton =
             [ color (hex "302633")
             ]
         ]
+
 
 
 -- Read Only Views
@@ -1055,21 +1063,23 @@ compactView model =
         , fatePointsView model.fatePoints
         ]
 
+
 compactConsequencesView : Array Consequence -> Html Msg
 compactConsequencesView consequences =
     let
         hasFilledSlots =
             (\length -> length > 0)
-            << Array.length
-            << Array.filter
-                (\(Consequence _ title _) -> String.length title > 0)
-            <| consequences
+                << Array.length
+                << Array.filter
+                    (\(Consequence _ title _) -> String.length title > 0)
+            <|
+                consequences
     in
-        if hasFilledSlots
-        then
-            div [ css
-                  [ marginTop (Css.em 1) ]
-                ]
+    if hasFilledSlots then
+        div
+            [ css
+                [ marginTop (Css.em 1) ]
+            ]
             [ sectionLabel "Consequences"
             , div [] <|
                 Array.toList <|
@@ -1077,34 +1087,37 @@ compactConsequencesView consequences =
                         compactConsequenceView
                         consequences
             ]
-        else
-            text ""
+
+    else
+        text ""
 
 
 compactConsequenceView : Int -> Consequence -> Html Msg
 compactConsequenceView index (Consequence severity title invokes) =
     div [ class "reveal-buttons-on-hover" ]
         [ if String.length title > 0 then
-              div [ css
+            div
+                [ css
                     [ displayFlex
                     , alignItems flexStart
                     , justifyContent spaceBetween
                     , marginBottom (Css.em 0.35)
                     ]
-                  ]
-                  [ div [ css [ flex2 (int 1) (int 1) ] ]
-                        [ text title ]
-                  , invokesView
-                        { toMsg =
-                              (\newInvokes ->
-                                   UpdateConsequence
-                                   index
-                                   (Consequence severity title newInvokes))
-                        , invokes = invokes
-                        }
-                  ]
+                ]
+                [ div [ css [ flex2 (int 1) (int 1) ] ]
+                    [ text title ]
+                , invokesView
+                    { toMsg =
+                        \newInvokes ->
+                            UpdateConsequence
+                                index
+                                (Consequence severity title newInvokes)
+                    , invokes = invokes
+                    }
+                ]
+
           else
-              text ""
+            text ""
         ]
 
 
@@ -1113,6 +1126,7 @@ view model =
     div
         [ css
             [ overflowWrap breakWord
+
             -- , padding3 (px 0) (Css.em 1) (Css.em 1)
             ]
         ]
@@ -1125,11 +1139,11 @@ view model =
         , conditionsView model.conditions
         , div
             [ css
-              [ Css.property "grid-template-columns" "1fr 1fr"
-              , Css.property "display" "grid"
-              , Css.property "grid-template-rows" "minmax(auto, 1fr)"
-              , Css.property "grid-gap" "1em"
-              ]
+                [ Css.property "grid-template-columns" "1fr 1fr"
+                , Css.property "display" "grid"
+                , Css.property "grid-template-rows" "minmax(auto, 1fr)"
+                , Css.property "grid-gap" "1em"
+                ]
             ]
             [ refreshView model.refresh
             , fatePointsView model.fatePoints
@@ -1156,13 +1170,13 @@ sectionLabel title =
 sheetSection : String -> List (Html msg) -> Html msg
 sheetSection title children =
     div
-    [ css
-      [ marginTop (Css.em 1)
-      , Css.width (pct 100)
-      , display inlineBlock
-      ]
-    ]
-    (sectionLabel title :: children)
+        [ css
+            [ marginTop (Css.em 1)
+            , Css.width (pct 100)
+            , display inlineBlock
+            ]
+        ]
+        (sectionLabel title :: children)
 
 
 nameView : String -> Html Msg
@@ -1171,6 +1185,7 @@ nameView name =
         [ css
             [ fontWeight bold
             , fontSize (Css.em 1.2)
+
             -- , position sticky
             -- , top (px 0)
             , backgroundColor (hex "fff")
@@ -1184,9 +1199,10 @@ nameView name =
 
 descriptionView : String -> Html Msg
 descriptionView description =
-    div [ css
-          [ whiteSpace preWrap
-          ]
+    div
+        [ css
+            [ whiteSpace preWrap
+            ]
         ]
         [ text description ]
 
@@ -1206,10 +1222,10 @@ aspectView aspects =
                 [ span [] [ text title ]
                 , invokesView
                     { toMsg =
-                          (\newInvokes ->
-                               UpdateAspect
-                               index
-                               (Aspect title newInvokes))
+                        \newInvokes ->
+                            UpdateAspect
+                                index
+                                (Aspect title newInvokes)
                     , invokes = invokes
                     }
                 ]
@@ -1227,10 +1243,11 @@ aspectView aspects =
             ]
 
 
-invokesView : { toMsg : Int -> msg
-              , invokes : Int
-              }
-            -> Html msg
+invokesView :
+    { toMsg : Int -> msg
+    , invokes : Int
+    }
+    -> Html msg
 invokesView { toMsg, invokes } =
     let
         invokeButton =
@@ -1363,52 +1380,58 @@ consequencesView consequences =
 
     else
         sheetSection "Consequences"
-        [ div [] <|
-            Array.toList <|
-                Array.indexedMap
-                    consequenceView
-                    consequences
-        ]
+            [ div [] <|
+                Array.toList <|
+                    Array.indexedMap
+                        consequenceView
+                        consequences
+            ]
+
 
 consequenceView : Int -> Consequence -> Html Msg
 consequenceView index (Consequence severity title invokes) =
     div [ class "reveal-buttons-on-hover" ]
-        [ div [ css
+        [ div
+            [ css
                 [ fontWeight bold
                 , marginRight (Css.em 0.5)
                 ]
-              ]
-              [ text (showSeverity severity) ]
+            ]
+            [ text (showSeverity severity) ]
         , if String.length title > 0 then
-              div [ css
+            div
+                [ css
                     [ displayFlex
                     , alignItems flexStart
                     , justifyContent spaceBetween
                     , marginBottom (Css.em 0.35)
                     ]
-                  ]
-                  [ div [ css [ flex2 (int 1) (int 1) ] ]
-                        [ text title ]
-                  , invokesView
-                        { toMsg =
-                              (\newInvokes ->
-                                   UpdateConsequence
-                                   index
-                                   (Consequence severity title newInvokes))
-                        , invokes = invokes
-                        }
-                  ]
+                ]
+                [ div [ css [ flex2 (int 1) (int 1) ] ]
+                    [ text title ]
+                , invokesView
+                    { toMsg =
+                        \newInvokes ->
+                            UpdateConsequence
+                                index
+                                (Consequence severity title newInvokes)
+                    , invokes = invokes
+                    }
+                ]
+
           else
-              text ""
+            text ""
         ]
+
 
 conditionsView : Array Condition -> Html Msg
 conditionsView conditions =
     if Array.isEmpty conditions then
         text ""
+
     else
         sheetSection "Conditions"
-        [ div [] (Array.toList (Array.indexedMap conditionView conditions)) ]
+            [ div [] (Array.toList (Array.indexedMap conditionView conditions)) ]
 
 
 refreshView : Int -> Html Msg
@@ -1433,31 +1456,34 @@ notesView : String -> Html Msg
 notesView notes =
     sheetSection "Notes"
         [ div [ css [ whiteSpace preWrap ] ]
-              [ text notes ]
+            [ text notes ]
         ]
 
 
-integerInput : { toMsg : Int -> msg
-               , mMinBound : Maybe Int
-               , mMaxBound : Maybe Int
-               , currentValue : Int
-               }
-             -> Html msg
-integerInput { toMsg
-             , mMinBound
-             , mMaxBound
-             , currentValue
-             } =
+integerInput :
+    { toMsg : Int -> msg
+    , mMinBound : Maybe Int
+    , mMaxBound : Maybe Int
+    , currentValue : Int
+    }
+    -> Html msg
+integerInput { toMsg, mMinBound, mMaxBound, currentValue } =
     let
         minBound =
             case mMinBound of
-                Just min -> min
-                Nothing -> Basics.round (-1/0)
+                Just min ->
+                    min
+
+                Nothing ->
+                    Basics.round (-1 / 0)
 
         maxBound =
             case mMaxBound of
-                Just max -> max
-                Nothing -> Basics.round (1/0)
+                Just max ->
+                    max
+
+                Nothing ->
+                    Basics.round (1 / 0)
 
         decrementButton =
             defaultButton
@@ -1467,6 +1493,7 @@ integerInput { toMsg
                     )
                 , if currentValue <= minBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
@@ -1475,30 +1502,32 @@ integerInput { toMsg
         incrementButton =
             defaultButton
                 [ onClick
-                      (toMsg
-                           (Basics.min maxBound (currentValue + 1))
-                      )
+                    (toMsg
+                        (Basics.min maxBound (currentValue + 1))
+                    )
                 , if currentValue >= maxBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
                 [ text "+" ]
     in
-        div [ css
-              [ whiteSpace noWrap
-              , userSelect_none
-              , textAlign center
-              ]
-            , class "reveal-buttons-on-hover"
+    div
+        [ css
+            [ whiteSpace noWrap
+            , userSelect_none
+            , textAlign center
             ]
+        , class "reveal-buttons-on-hover"
+        ]
         [ decrementButton
         , span
-              [ css
+            [ css
                 [ fontSize (Css.em 1.3)
                 , margin2 (px 0) (Css.em 0.25)
                 ]
-              ]
-              [ text (String.fromInt currentValue) ]
+            ]
+            [ text (String.fromInt currentValue) ]
         , incrementButton
         ]

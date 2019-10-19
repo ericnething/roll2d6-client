@@ -1,24 +1,25 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Util exposing (..)
+
+module Util exposing (arrayAll, arrayAny, catMaybes, findArrayIndexOf, listDifference, removeIndexFromArray, stringToNatWithDefault, stringToNatWithDefaultNonZero, swapArray, toCmd)
 
 import Array exposing (Array)
 import List.Extra exposing (dropWhile, takeWhile)
@@ -26,7 +27,9 @@ import Task
 
 
 toCmd : msg -> Cmd msg
-toCmd = Task.perform identity << Task.succeed
+toCmd =
+    Task.perform identity << Task.succeed
+
 
 catMaybes : List (Maybe a) -> List a
 catMaybes =
@@ -78,45 +81,52 @@ removeIndexFromArray index array =
 findArrayIndexOf : a -> Array a -> Maybe Int
 findArrayIndexOf x xs =
     Tuple.second <|
-    Array.foldl
-    (\a (index, acc) ->
-         if a == x
-         then
-             (index, Just index)
-         else
-             (index + 1, acc)
-    )
-    (0, Nothing)
-    xs
+        Array.foldl
+            (\a ( index, acc ) ->
+                if a == x then
+                    ( index, Just index )
+
+                else
+                    ( index + 1, acc )
+            )
+            ( 0, Nothing )
+            xs
+
 
 swapArray : Int -> Int -> Array a -> Array a
 swapArray indexA indexB array =
     let
-        ma = Array.get indexA array
-        mb = Array.get indexB array
+        ma =
+            Array.get indexA array
+
+        mb =
+            Array.get indexB array
     in
-        case (ma, mb) of
-            (Just a, Just b) ->
-                array
-                    |> Array.set indexA b
-                    |> Array.set indexB a
-            _ ->
-                array
+    case ( ma, mb ) of
+        ( Just a, Just b ) ->
+            array
+                |> Array.set indexA b
+                |> Array.set indexB a
+
+        _ ->
+            array
+
 
 arrayAll : (a -> Bool) -> Array a -> Bool
 arrayAll pred array =
-    if Array.isEmpty array
-    then
+    if Array.isEmpty array then
         False
+
     else
         Array.foldl
-        (\a acc -> pred a && acc)
-        True
-        array
+            (\a acc -> pred a && acc)
+            True
+            array
+
 
 arrayAny : (a -> Bool) -> Array a -> Bool
 arrayAny pred array =
     Array.foldl
-    (\a acc -> pred a || acc)
-    False
-    array
+        (\a acc -> pred a || acc)
+        False
+        array

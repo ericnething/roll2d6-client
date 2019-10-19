@@ -1,43 +1,50 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module Chat.Types exposing (..)
+
+module Chat.Types exposing (BareJID, Conversation, DFateFace(..), DiceResult(..), DiceRoll(..), DiceRollRequest(..), DiceType(..), JID, Message, Model, Msg(..), NewMessage, Person, PersonId, Presence(..), Room, RoomConn, RoomId, Stanza(..), personToJID)
 
 import Array exposing (Array)
-import Dict exposing (Dict)
 import Browser.Dom as Dom
+import Dict exposing (Dict)
 import Json.Decode
 import Ports exposing (XMPPClient)
 import Time
 
+
 type alias Model r =
-    { r |
-      rooms : Dict BareJID Room
-    , me : Person
+    { r
+        | rooms : Dict BareJID Room
+        , me : Person
     }
+
+
 
 ------------------------------------------------------------
 --| Person
 ------------------------------------------------------------
 
-type alias PersonId = String
+
+type alias PersonId =
+    String
+
 
 type alias Person =
     { id : PersonId
@@ -45,9 +52,11 @@ type alias Person =
     , presence : Presence
     }
 
+
 type Presence
     = Online
     | Offline
+
 
 personToJID : Person -> JID
 personToJID { id, displayName } =
@@ -56,9 +65,12 @@ personToJID { id, displayName } =
     , resource = displayName
     }
 
+
+
 ------------------------------------------------------------
 --| Conversation
 ------------------------------------------------------------
+
 
 type alias Conversation =
     { with : PersonId
@@ -66,16 +78,22 @@ type alias Conversation =
     , input : String
     }
 
+
+
 ------------------------------------------------------------
 --| Room
 ------------------------------------------------------------
+
 
 type alias RoomConn =
     { room : String
     , displayName : String
     }
 
-type alias RoomId = String
+
+type alias RoomId =
+    String
+
 
 type alias Room =
     { id : RoomId
@@ -84,9 +102,12 @@ type alias Room =
     , roster : Dict PersonId Person
     }
 
+
+
 ------------------------------------------------------------
 --| JID
 ------------------------------------------------------------
+
 
 type alias JID =
     { full : String
@@ -94,16 +115,22 @@ type alias JID =
     , resource : String
     }
 
-type alias BareJID = String
+
+type alias BareJID =
+    String
+
+
 
 ------------------------------------------------------------
 --| Messages
 ------------------------------------------------------------
 
+
 type alias NewMessage =
     { to : BareJID
     , body : String
     }
+
 
 type alias Message =
     { from : JID
@@ -111,18 +138,24 @@ type alias Message =
     , timestamp : Time.Posix
     }
 
+
+
 ------------------------------------------------------------
 --| Stanzas
 ------------------------------------------------------------
 
+
 type Stanza
     = MessageStanza Message
-    | PresenceStanza (JID, Presence)
+    | PresenceStanza ( JID, Presence )
     | StanzaDecodeError Json.Decode.Error
+
+
 
 ------------------------------------------------------------
 --| Dice Rolling
 ------------------------------------------------------------
+
 
 type DiceType
     = DFate
@@ -130,42 +163,50 @@ type DiceType
     | D6
     | DOther Int
 
+
 type DiceResult
     = DFateResult DFateFace
     | D20Result Int
     | D6Result Int
     | DOtherResult Int Int
 
+
 type DFateFace
     = DFatePlus
     | DFateBlank
     | DFateMinus
 
-type DiceRoll =
-    DiceRoll
-    { type_ : DiceType
-    , request : String
-    , results : List DiceResult
-    , modifier : Maybe Int
-    , total : Int
-    }
 
-type DiceRollRequest =
-    DiceRollRequest
-    { size : Int
-    , type_ : DiceType
-    , modifier : Maybe Int
-    }
+type DiceRoll
+    = DiceRoll
+        { type_ : DiceType
+        , request : String
+        , results : List DiceResult
+        , modifier : Maybe Int
+        , total : Int
+        }
+
+
+type DiceRollRequest
+    = DiceRollRequest
+        { size : Int
+        , type_ : DiceType
+        , modifier : Maybe Int
+        }
+
+
 
 ------------------------------------------------------------
 --| Msg
 ------------------------------------------------------------
+
+
 type Msg
     = StanzaReceived Stanza
     | UpdateChatInput BareJID String
     | SendMessage NewMessage
     | EnterKeyPressed BareJID String
-    -- | DiceRollResult DiceRoll
+      -- | DiceRollResult DiceRoll
     | NoOp
     | ClientConnected
     | JoinRoom RoomId

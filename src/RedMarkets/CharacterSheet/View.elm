@@ -1,49 +1,49 @@
 {-
-Roll2d6 Virtual Tabletop Project
+   Roll2d6 Virtual Tabletop Project
 
-Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
+   Copyright (C) 2018-2019 Eric Nething <eric@roll2d6.org>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Affero General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public
-License along with this program. If not, see
-<https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU Affero General Public
+   License along with this program. If not, see
+   <https://www.gnu.org/licenses/>.
 -}
 
-module RedMarkets.CharacterSheet.View
-    exposing
-    ( editView
-    , view
-    , compactView
+
+module RedMarkets.CharacterSheet.View exposing
+    ( compactView
+    , defaultButton
+    , editView
     , inputStyles
     , sectionLabel
-    , defaultButton
+    , view
     )
 
 import Array exposing (Array)
-import RedMarkets.CharacterSheet.Types exposing (..)
 import Css exposing (..)
-import Util.Css exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as HA exposing (..)
 import Html.Styled.Events exposing (..)
+import RedMarkets.CharacterSheet.Types exposing (..)
 import Util
     exposing
-        ( listDifference
+        ( arrayAll
+        , arrayAny
+        , listDifference
         , stringToNatWithDefault
         , stringToNatWithDefaultNonZero
-        , arrayAll
-        , arrayAny
         )
+import Util.Css exposing (..)
 
 
 editView : Model -> Html Msg
@@ -96,6 +96,7 @@ editDescriptionView description =
             []
         ]
 
+
 editCrewView : String -> Html Msg
 editCrewView crew =
     div
@@ -113,53 +114,56 @@ editCrewView crew =
         ]
 
 
-editSpotsView : { r |
-                  weakSpot : String
-                , softSpot : String
-                , toughSpot : String
-                }
-              -> Html Msg
+editSpotsView :
+    { r
+        | weakSpot : String
+        , softSpot : String
+        , toughSpot : String
+    }
+    -> Html Msg
 editSpotsView { weakSpot, softSpot, toughSpot } =
-    div [ css
-          [ marginTop (Css.em 1) ]
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
         ]
-    [ sectionLabel "Spots"
-    , inputLabel "Weak Spot"
-    , input
-          [ type_ "text"
-          , css [ inputStyles ]
-          , onInput UpdateWeakSpot
-          , value weakSpot
-          ]
-          []
-    , inputLabel "Soft Spot"
-    , input
-          [ type_ "text"
-          , css [ inputStyles ]
-          , onInput UpdateSoftSpot
-          , value softSpot
-          ]
-          []
-    , inputLabel "Tough Spot"
-    , input
-          [ type_ "text"
-          , css [ inputStyles ]
-          , onInput UpdateToughSpot
-          , value toughSpot
-          ]
-          []
-    ]
+        [ sectionLabel "Spots"
+        , inputLabel "Weak Spot"
+        , input
+            [ type_ "text"
+            , css [ inputStyles ]
+            , onInput UpdateWeakSpot
+            , value weakSpot
+            ]
+            []
+        , inputLabel "Soft Spot"
+        , input
+            [ type_ "text"
+            , css [ inputStyles ]
+            , onInput UpdateSoftSpot
+            , value softSpot
+            ]
+            []
+        , inputLabel "Tough Spot"
+        , input
+            [ type_ "text"
+            , css [ inputStyles ]
+            , onInput UpdateToughSpot
+            , value toughSpot
+            ]
+            []
+        ]
 
 
-editPotentialsView : { r |
-                       str : Potential
-                     , spd : Potential
-                     , adp : Potential
-                     , int : Potential
-                     , cha : Potential
-                     , wil : Potential
-                     }
-                   -> Html Msg
+editPotentialsView :
+    { r
+        | str : Potential
+        , spd : Potential
+        , adp : Potential
+        , int : Potential
+        , cha : Potential
+        , wil : Potential
+    }
+    -> Html Msg
 editPotentialsView { str, spd, adp, int, cha, wil } =
     div
         [ css
@@ -197,82 +201,80 @@ editGearListView gear =
         ]
         [ sectionLabel "Gear"
         , div [] (Array.toList (Array.indexedMap editGearView gear))
-        , div [ css
+        , div
+            [ css
                 [ marginTop (Css.em 1)
                 , borderTop3 (px 1) solid (hex "ccc")
                 , paddingTop (Css.em 1)
                 ]
-              ]
-              [ defaultButton
-                    [ onClick (AddNewGear) ]
-                    [ text "Add New Gear" ]
-              ]
+            ]
+            [ defaultButton
+                [ onClick AddNewGear ]
+                [ text "Add New Gear" ]
+            ]
         ]
 
 
 editGearView : Index -> Gear -> Html Msg
-editGearView gearIndex ({ title
-                   , charges
-                   , upkeep
-                   , effect
-                   , qualities
-                   } as gear) =
+editGearView gearIndex ({ title, charges, upkeep, effect, qualities } as gear) =
     let
         gearNameInput =
             input
-            [ type_ "text"
-            , css [ inputStyles ]
-            , onInput
-                  (\newTitle ->
-                       UpdateGear
-                       gearIndex
-                       { gear | title = newTitle }
-                  )
-            , value title
-            ] []
+                [ type_ "text"
+                , css [ inputStyles ]
+                , onInput
+                    (\newTitle ->
+                        UpdateGear
+                            gearIndex
+                            { gear | title = newTitle }
+                    )
+                , value title
+                ]
+                []
 
         gearEffectInput =
             textarea
-            [ rows 3
-            , css [ inputStyles ]
-            , onInput
-                  (\newEffect ->
-                       UpdateGear
-                       gearIndex
-                       { gear | effect = newEffect }
-                  )
-            , value effect
-            ] []
+                [ rows 3
+                , css [ inputStyles ]
+                , onInput
+                    (\newEffect ->
+                        UpdateGear
+                            gearIndex
+                            { gear | effect = newEffect }
+                    )
+                , value effect
+                ]
+                []
 
         gearChargesInput =
             integerInput
-            { toMsg =
-                  (\n ->
-                       let
-                           diff = n - Array.length charges
-                       in
-                       if diff > 0
-                       then
-                           UpdateGear
-                           gearIndex
-                           { gear
-                               | charges
-                                   = Array.append
-                                     charges
-                                     (Array.repeat diff NoCharge)
-                           }
-                       else
-                           UpdateGear
-                           gearIndex
-                           { gear
-                               | charges
-                                   = Array.slice 0 n charges
-                           }
-                  )
-            , mMinBound = Just 0
-            , mMaxBound = Just 10
-            , currentValue = Array.length charges
-            }
+                { toMsg =
+                    \n ->
+                        let
+                            diff =
+                                n - Array.length charges
+                        in
+                        if diff > 0 then
+                            UpdateGear
+                                gearIndex
+                                { gear
+                                    | charges =
+                                        Array.append
+                                            charges
+                                            (Array.repeat diff NoCharge)
+                                }
+
+                        else
+                            UpdateGear
+                                gearIndex
+                                { gear
+                                    | charges =
+                                        Array.slice 0 n charges
+                                }
+                , mMinBound = Just 0
+                , mMaxBound = Just 10
+                , currentValue = Array.length charges
+                }
     in
     div
         [ css
@@ -282,31 +284,31 @@ editGearView gearIndex ({ title
         ]
         [ inputLabel "Name"
         , gearNameInput
-        , div [ css
+        , div
+            [ css
                 [ Css.property "display" "grid"
                 , Css.property "grid-template-columns" "1fr 1fr"
                 , Css.property "grid-column-gap" "1em"
                 ]
-              ]
+            ]
             [ div [ css [ textAlign center ] ]
-              [ inputLabel "Maximum Charges"
-              , gearChargesInput
-              ]
+                [ inputLabel "Maximum Charges"
+                , gearChargesInput
+                ]
             , div [ css [ textAlign center ] ]
                 [ inputLabel "Upkeep"
                 , integerInput
-                      { toMsg =
-                            (\newUpkeep ->
-                                 UpdateGear
-                                 gearIndex
-                                 { gear
-                                     | upkeep = newUpkeep
-                                 }
-                            )
-                      , mMinBound = Just 0
-                      , mMaxBound = Nothing
-                      , currentValue = upkeep
-                      }
+                    { toMsg =
+                        \newUpkeep ->
+                            UpdateGear
+                                gearIndex
+                                { gear
+                                    | upkeep = newUpkeep
+                                }
+                    , mMinBound = Just 0
+                    , mMaxBound = Nothing
+                    , currentValue = upkeep
+                    }
                 ]
             ]
         , inputLabel "Effect"
@@ -314,68 +316,75 @@ editGearView gearIndex ({ title
         , inputLabel "Qualities"
         , div []
             (Array.toList
-                 (Array.indexedMap
-                      (editGearQualityView gearIndex)
-                      qualities))
+                (Array.indexedMap
+                    (editGearQualityView gearIndex)
+                    qualities
+                )
+            )
         , defaultButton
             [ css [ marginTop (Css.em 0.65) ]
-            , onClick (AddNewGearQuality gearIndex) ]
+            , onClick (AddNewGearQuality gearIndex)
+            ]
             [ text "Add New Quality" ]
-        , div [ css
+        , div
+            [ css
                 [ marginTop (Css.em 1) ]
-              ]
+            ]
             [ dangerButton
-                  [ onClick (RemoveGear gearIndex) ]
-                  [ text "Delete Gear" ]
+                [ onClick (RemoveGear gearIndex) ]
+                [ text "Delete Gear" ]
             ]
         ]
 
 
 editGearQualityView : Index -> Index -> GearQuality -> Html Msg
-editGearQualityView gearIndex qualityIndex ({ title
-                                            , description
-                                            } as quality) =
-    div [ css
-          [ marginTop (Css.em 0.8) ]
+editGearQualityView gearIndex qualityIndex ({ title, description } as quality) =
+    div
+        [ css
+            [ marginTop (Css.em 0.8) ]
         ]
-    [ input
-          [ type_ "text"
-          , css [ inputStyles ]
-          , onInput
+        [ input
+            [ type_ "text"
+            , css [ inputStyles ]
+            , onInput
                 (\newTitle ->
-                     UpdateGearQuality
-                     gearIndex
-                     qualityIndex
-                     { quality | title = newTitle }
+                    UpdateGearQuality
+                        gearIndex
+                        qualityIndex
+                        { quality | title = newTitle }
                 )
-          , value title
-          ] []
-    , textarea
-          [ rows 3
-          , css [ inputStyles ]
-          , onInput
+            , value title
+            ]
+            []
+        , textarea
+            [ rows 3
+            , css [ inputStyles ]
+            , onInput
                 (\newDescription ->
-                     UpdateGearQuality
-                     gearIndex
-                     qualityIndex
-                     { quality | description = newDescription }
+                    UpdateGearQuality
+                        gearIndex
+                        qualityIndex
+                        { quality | description = newDescription }
                 )
-          , value description
-          ] []
-    , defaultButton
-        [ onClick (RemoveGearQuality gearIndex qualityIndex )]
-        [ text "Remove" ]
-    ]
+            , value description
+            ]
+            []
+        , defaultButton
+            [ onClick (RemoveGearQuality gearIndex qualityIndex) ]
+            [ text "Remove" ]
+        ]
 
 
 inputLabel : String -> Html Msg
 inputLabel title =
-    div [ css
+    div
+        [ css
             [ marginTop (Css.em 0.5)
             , Css.property "font-variant" "small-caps"
             ]
-          ]
+        ]
         [ text title ]
+
 
 editNotesView : String -> Html Msg
 editNotesView notes =
@@ -396,6 +405,7 @@ editNotesView notes =
 
 
 -- Extra Styles
+
 
 inputStyles : Css.Style
 inputStyles =
@@ -449,14 +459,15 @@ compactView model =
         ]
         [ nameView model.name
         , descriptionView model.description
-        , div [ css
+        , div
+            [ css
                 [ marginTop (Css.em 1) ]
-              ]
-              [ crewView model.crew
-              , weakSpotView model.weakSpot
-              , softSpotView model.softSpot
-              , toughSpotView model.toughSpot
-              ]
+            ]
+            [ crewView model.crew
+            , weakSpotView model.weakSpot
+            , softSpotView model.softSpot
+            , toughSpotView model.toughSpot
+            ]
         ]
 
 
@@ -469,14 +480,15 @@ view model =
         ]
         [ nameView model.name
         , descriptionView model.description
-        , div [ css
+        , div
+            [ css
                 [ marginTop (Css.em 1) ]
-              ]
-              [ crewView model.crew
-              , weakSpotView model.weakSpot
-              , softSpotView model.softSpot
-              , toughSpotView model.toughSpot
-              ]
+            ]
+            [ crewView model.crew
+            , weakSpotView model.weakSpot
+            , softSpotView model.softSpot
+            , toughSpotView model.toughSpot
+            ]
         , potentialsView model
         , dependentsView model.dependents
         , referencesView model.references
@@ -518,9 +530,10 @@ nameView name =
 
 descriptionView : String -> Html Msg
 descriptionView description =
-    div [ css
-          [ whiteSpace preWrap
-          ]
+    div
+        [ css
+            [ whiteSpace preWrap
+            ]
         ]
         [ text description ]
 
@@ -528,86 +541,97 @@ descriptionView description =
 crewView : String -> Html Msg
 crewView crew =
     div []
-    [ span [ css [ fontWeight bold ]
-           ] [ text "Crew: " ]
-    , text crew
-    ]
+        [ span
+            [ css [ fontWeight bold ]
+            ]
+            [ text "Crew: " ]
+        , text crew
+        ]
 
 
 weakSpotView : String -> Html Msg
 weakSpotView weakSpot =
     div []
-    [ span [ css [ fontWeight bold ]
-           ] [ text "Weak Spot: " ]
-    , text weakSpot
-    ]
+        [ span
+            [ css [ fontWeight bold ]
+            ]
+            [ text "Weak Spot: " ]
+        , text weakSpot
+        ]
 
 
 softSpotView : String -> Html Msg
 softSpotView softSpot =
     div []
-    [ span [ css [ fontWeight bold ]
-           ] [ text "Soft Spot: " ]
-    , text softSpot
-    ]
+        [ span
+            [ css [ fontWeight bold ]
+            ]
+            [ text "Soft Spot: " ]
+        , text softSpot
+        ]
 
 
 toughSpotView : String -> Html Msg
 toughSpotView toughSpot =
     div []
-    [ span [ css [ fontWeight bold ]
-           ] [ text "Tough Spot: " ]
-    , text toughSpot
-    ]
+        [ span
+            [ css [ fontWeight bold ]
+            ]
+            [ text "Tough Spot: " ]
+        , text toughSpot
+        ]
 
 
-potentialsView : { r |
-                   str : Potential
-                 , spd : Potential
-                 , adp : Potential
-                 , int : Potential
-                 , cha : Potential
-                 , wil : Potential
-                 }
-               -> Html Msg
+potentialsView :
+    { r
+        | str : Potential
+        , spd : Potential
+        , adp : Potential
+        , int : Potential
+        , cha : Potential
+        , wil : Potential
+    }
+    -> Html Msg
 potentialsView { str, spd, adp, int, cha, wil } =
     let
         potentials =
-            [ ("Strength" , str)
-            , ("Speed", spd)
-            , ("Adaptability", adp)
-            , ("Intelligence", int)
-            , ("Charm", cha)
-            , ("Will", wil)
+            [ ( "Strength", str )
+            , ( "Speed", spd )
+            , ( "Adaptability", adp )
+            , ( "Intelligence", int )
+            , ( "Charm", cha )
+            , ( "Will", wil )
             ]
     in
-        div [ css
-              [ marginTop (Css.em 1)
-              , Css.property "display" "grid"
-              , Css.property "grid-template-columns" "repeat(2, 1fr)"
-              , Css.property "grid-gap" "0.65em"
-              ]
+    div
+        [ css
+            [ marginTop (Css.em 1)
+            , Css.property "display" "grid"
+            , Css.property "grid-template-columns" "repeat(2, 1fr)"
+            , Css.property "grid-gap" "0.65em"
             ]
-        (List.map (\(name, p) -> potentialView name p) potentials)
+        ]
+        (List.map (\( name, p ) -> potentialView name p) potentials)
 
 
 potentialView : String -> Potential -> Html Msg
 potentialView name (Potential rating skills) =
     div []
-    [ div [ css
-            [ fontSize (Css.em 1.1)
-            , fontWeight bold
+        [ div
+            [ css
+                [ fontSize (Css.em 1.1)
+                , fontWeight bold
+                ]
             ]
-          ]
-          [ text (name ++ " " ++ (String.fromInt rating)) ]
-    , div []
-        (Array.toList (Array.map skillView skills))
-    ]
+            [ text (name ++ " " ++ String.fromInt rating) ]
+        , div []
+            (Array.toList (Array.map skillView skills))
+        ]
 
 
 skillView : Skill -> Html Msg
 skillView (Skill name rating) =
-    div [] [ text (name ++ " " ++ (String.fromInt rating)) ]
+    div [] [ text (name ++ " " ++ String.fromInt rating) ]
 
 
 dependentsView : Array Relationship -> Html Msg
@@ -622,21 +646,27 @@ referencesView references =
 
 relationshipsView : String -> Array Relationship -> Html Msg
 relationshipsView title relationships =
-    div [ css
-          [ marginTop (Css.em 1) ]
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
         ]
-    [ sectionLabel title
-    , div [ css
-            [ Css.property "display" "grid"
-            , Css.property "grid-template-columns" "auto 1fr"
-            , Css.property "grid-column-gap" "1em"
+        [ sectionLabel title
+        , div
+            [ css
+                [ Css.property "display" "grid"
+                , Css.property "grid-template-columns" "auto 1fr"
+                , Css.property "grid-column-gap" "1em"
+                ]
             ]
-          ]
-          (List.concat <| Array.toList
-               (Array.map
-                    relationshipView
-                    relationships))
-    ]
+            (List.concat <|
+                Array.toList
+                    (Array.map
+                        relationshipView
+                        relationships
+                    )
+            )
+        ]
+
 
 relationshipView : Relationship -> List (Html Msg)
 relationshipView (Relationship person status) =
@@ -645,22 +675,24 @@ relationshipView (Relationship person status) =
     ]
 
 
-threatsView : { r |
-                detachment : Array Threat
-              , stress : Array Threat
-              , trauma : Array Threat
-              }
-            -> Html Msg
+threatsView :
+    { r
+        | detachment : Array Threat
+        , stress : Array Threat
+        , trauma : Array Threat
+    }
+    -> Html Msg
 threatsView { detachment, stress, trauma } =
     let
         threats =
-            [ ("Detachment", detachment, UpdateDetachment)
-            , ("Stress", stress, UpdateStress)
-            , ("Trauma", trauma, UpdateTrauma)
+            [ ( "Detachment", detachment, UpdateDetachment )
+            , ( "Stress", stress, UpdateStress )
+            , ( "Trauma", trauma, UpdateTrauma )
             ]
 
         tags =
-            [ div [ css
+            [ div
+                [ css
                     [ Css.property "grid-row" "1/4"
                     , Css.property "grid-column" "7/8"
                     , Css.property
@@ -670,8 +702,10 @@ threatsView { detachment, stress, trauma } =
                     , Css.width (Css.em 1.3)
                     , Css.property "word-wrap" "normal"
                     ]
-                  ] [ text "Crack" ]
-            , div [ css
+                ]
+                [ text "Crack" ]
+            , div
+                [ css
                     [ Css.property "grid-row" "1/4"
                     , Css.property "grid-column" "13/14"
                     , Css.property
@@ -681,9 +715,10 @@ threatsView { detachment, stress, trauma } =
                     , Css.width (Css.em 1.3)
                     , Css.property "word-wrap" "normal"
                     ]
-                  ]
-                  [ text "Crumble" ]
-            , div [ css
+                ]
+                [ text "Crumble" ]
+            , div
+                [ css
                     [ Css.property "grid-row" "1/4"
                     , Css.property "grid-column" "19/20"
                     , Css.property
@@ -693,15 +728,17 @@ threatsView { detachment, stress, trauma } =
                     , Css.width (Css.em 1.3)
                     , Css.property "word-wrap" "normal"
                     ]
-                  ]
-                  [ text "Break" ]
+                ]
+                [ text "Break" ]
             ]
     in
-        div [ css
-              [ marginTop (Css.em 1) ]
-            ]
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
+        ]
         [ sectionLabel "Threats"
-        , div [ css
+        , div
+            [ css
                 [ Css.property "display" "grid"
                 , Css.property
                     "grid-template-columns"
@@ -709,23 +746,27 @@ threatsView { detachment, stress, trauma } =
                 , Css.property "grid-template-rows" "repeat(3, 1.1em)"
                 , Css.property "grid-gap" "0.2em"
                 ]
-              ]
-              (tags ++
-               List.concatMap
-                   (\(name, t, toMsg) -> threatView name toMsg t)
-                   threats)
+            ]
+            (tags
+                ++ List.concatMap
+                    (\( name, t, toMsg ) -> threatView name toMsg t)
+                    threats
+            )
         ]
 
-threatView : String
-           -> (Index -> Threat -> Msg)
-           -> Array Threat
-           -> List (Html Msg)
+
+threatView :
+    String
+    -> (Index -> Threat -> Msg)
+    -> Array Threat
+    -> List (Html Msg)
 threatView title toMsg threats =
-    [ div [] [ text title ] ] ++
-    (Array.toList
-         (Array.indexedMap
-              (threatInputView << toMsg)
-              threats))
+    [ div [] [ text title ] ]
+        ++ Array.toList
+            (Array.indexedMap
+                (threatInputView << toMsg)
+                threats
+            )
 
 
 threatInputView : (Threat -> Msg) -> Threat -> Html Msg
@@ -736,16 +777,17 @@ threatInputView toMsg (Threat isMarked) =
             , borderRadius (pct 50)
             , cursor pointer
             , case isMarked of
-                  True ->
-                      batch
-                      [ backgroundColor (hex "333")
-                      , border3 (px 1) solid transparent
-                      ]
-                  False ->
-                      batch
-                      [ backgroundColor transparent
-                      , border3 (px 1) solid (hex "888")
-                      ]
+                True ->
+                    batch
+                        [ backgroundColor (hex "333")
+                        , border3 (px 1) solid transparent
+                        ]
+
+                False ->
+                    batch
+                        [ backgroundColor transparent
+                        , border3 (px 1) solid (hex "888")
+                        ]
             ]
         ]
         [ text ""
@@ -767,38 +809,36 @@ threatInputView toMsg (Threat isMarked) =
         ]
 
 
-woundsView : { isEditing : Bool }
-           -> { r |
-                rightLegWounds : Array Wound
-              , leftLegWounds : Array Wound
-              , rightArmWounds : Array Wound
-              , leftArmWounds : Array Wound
-              , torsoWounds : Array Wound
-              , headWounds : Array Wound
-              }
-           -> Html Msg
-woundsView editing { rightLegWounds
-                   , leftLegWounds
-                   , rightArmWounds
-                   , leftArmWounds
-                   , torsoWounds
-                   , headWounds
-                   } =
+woundsView :
+    { isEditing : Bool }
+    ->
+        { r
+            | rightLegWounds : Array Wound
+            , leftLegWounds : Array Wound
+            , rightArmWounds : Array Wound
+            , leftArmWounds : Array Wound
+            , torsoWounds : Array Wound
+            , headWounds : Array Wound
+        }
+    -> Html Msg
+woundsView editing { rightLegWounds, leftLegWounds, rightArmWounds, leftArmWounds, torsoWounds, headWounds } =
     let
         wounds =
-            [ (Head, headWounds)
-            , (RightArm, rightArmWounds)
-            , (Torso, torsoWounds)
-            , (LeftArm, leftArmWounds)
-            , (RightLeg, rightLegWounds)
-            , (LeftLeg, leftLegWounds)
+            [ ( Head, headWounds )
+            , ( RightArm, rightArmWounds )
+            , ( Torso, torsoWounds )
+            , ( LeftArm, leftArmWounds )
+            , ( RightLeg, rightLegWounds )
+            , ( LeftLeg, leftLegWounds )
             ]
     in
-        div [ css
-              [ marginTop (Css.em 1) ]
-            ]
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
+        ]
         [ sectionLabel "Wounds"
-        , div [ css
+        , div
+            [ css
                 [ Css.property "display" "grid"
                 , Css.property
                     "grid-template-columns"
@@ -808,147 +848,158 @@ woundsView editing { rightLegWounds
                     "repeat(3, auto)"
                 , Css.property "grid-row-gap" "1em"
                 ]
-              ]
+            ]
             (List.map
-                 (\(loc, w) -> woundLocationView editing loc w)
-                 wounds)
-        , div [ css
+                (\( loc, w ) -> woundLocationView editing loc w)
+                wounds
+            )
+        , div
+            [ css
                 [ marginTop (Css.em 1) ]
-              ]
+            ]
             (List.map
-                 (\(loc, w) -> woundStatusEffect loc w)
-                 wounds)
+                (\( loc, w ) -> woundStatusEffect loc w)
+                wounds
+            )
         ]
 
 
-woundLocationView : { isEditing : Bool }
-                  -> WoundLocation
-                  -> Array Wound
-                  -> Html Msg
+woundLocationView :
+    { isEditing : Bool }
+    -> WoundLocation
+    -> Array Wound
+    -> Html Msg
 woundLocationView { isEditing } location wounds =
     let
         gridPosition =
             case location of
                 Head ->
                     batch
-                    [ Css.property "grid-row" "1"
-                    , Css.property "grid-column" "2/3"
-                    ]
+                        [ Css.property "grid-row" "1"
+                        , Css.property "grid-column" "2/3"
+                        ]
 
                 RightArm ->
                     batch
-                    [ Css.property "grid-row" "2"
-                    , Css.property "grid-column" "1/2"
-                    ]
+                        [ Css.property "grid-row" "2"
+                        , Css.property "grid-column" "1/2"
+                        ]
 
                 Torso ->
                     batch
-                    [ Css.property "grid-row" "2"
-                    , Css.property "grid-column" "2/3"
-                    ]
+                        [ Css.property "grid-row" "2"
+                        , Css.property "grid-column" "2/3"
+                        ]
 
                 LeftArm ->
                     batch
-                    [ Css.property "grid-row" "2"
-                    , Css.property "grid-column" "3"
-                    ]
+                        [ Css.property "grid-row" "2"
+                        , Css.property "grid-column" "3"
+                        ]
 
                 RightLeg ->
                     batch
-                    [ Css.property "grid-row" "3"
-                    , Css.property "grid-column" "1/2"
-                    ]
+                        [ Css.property "grid-row" "3"
+                        , Css.property "grid-column" "1/2"
+                        ]
 
                 LeftLeg ->
                     batch
-                    [ Css.property "grid-row" "3"
-                    , Css.property "grid-column" "3"
-                    ]
+                        [ Css.property "grid-row" "3"
+                        , Css.property "grid-column" "3"
+                        ]
     in
     div [ css [ gridPosition ] ]
-    [ div [] [ text (showWoundLocation location) ]
-    , div [ css
-            [ Css.property "display" "grid"
-            , Css.property "grid-template-columns" "repeat(5, 1.2em)"
-            , Css.property "grid-auto-rows" "1.2em"
-            , Css.property "grid-gap" "0.2em"
+        [ div [] [ text (showWoundLocation location) ]
+        , div
+            [ css
+                [ Css.property "display" "grid"
+                , Css.property "grid-template-columns" "repeat(5, 1.2em)"
+                , Css.property "grid-auto-rows" "1.2em"
+                , Css.property "grid-gap" "0.2em"
+                ]
             ]
-          ]
-        (Array.toList
-             (Array.indexedMap (woundView location) wounds))
-    , if isEditing
-      then
-          div []
-          [ defaultButton
-                [ css [ marginTop (Css.em 0.5) ]
-                , onClick (HealKillWounds location) ]
-                [ text "Heal Kill" ]
-          ,  defaultButton
-                [ css [ marginTop (Css.em 0.5) ]
-                , onClick (HealStunWounds location) ]
-                [ text "Heal Stun" ]
-          ]
-      else
-          text ""
-    ]
+            (Array.toList
+                (Array.indexedMap (woundView location) wounds)
+            )
+        , if isEditing then
+            div []
+                [ defaultButton
+                    [ css [ marginTop (Css.em 0.5) ]
+                    , onClick (HealKillWounds location)
+                    ]
+                    [ text "Heal Kill" ]
+                , defaultButton
+                    [ css [ marginTop (Css.em 0.5) ]
+                    , onClick (HealStunWounds location)
+                    ]
+                    [ text "Heal Stun" ]
+                ]
+
+          else
+            text ""
+        ]
 
 
 woundStatusEffect : WoundLocation -> Array Wound -> Html Msg
 woundStatusEffect location wounds =
     -- if there is at least one empty wound slot
-    if arrayAny ((==) NoWound) wounds
-    then
+    if arrayAny ((==) NoWound) wounds then
         -- there are no status effects
         text ""
+
     else
-        -- if all slots are filled with kill wounds
-        if arrayAll ((==) Kill) wounds
-        then
-            -- there is a kill status effect
-            killStatusEffect location
-        else
-            -- otherwise, there is a stun status effect
-            stunStatusEffect location
+    -- if all slots are filled with kill wounds
+    if
+        arrayAll ((==) Kill) wounds
+    then
+        -- there is a kill status effect
+        killStatusEffect location
+
+    else
+        -- otherwise, there is a stun status effect
+        stunStatusEffect location
+
 
 stunStatusEffect : WoundLocation -> Html Msg
 stunStatusEffect location =
     let
         titleStyles =
             css
-            [ fontWeight bold
-            ]
+                [ fontWeight bold
+                ]
 
         hobbled at =
             [ div [ titleStyles ]
-                  [ text ("Hobbled (" ++ at ++ ")") ]
+                [ text ("Hobbled (" ++ at ++ ")") ]
             , bulletedListView
-              [ text "No athletics checks possible until partially healed, but character can still move"
-              ]
+                [ text "No athletics checks possible until partially healed, but character can still move"
+                ]
             ]
 
         winged at =
             [ div [ titleStyles ]
-                  [ text ("Winged (" ++ at ++ ")") ]
+                [ text ("Winged (" ++ at ++ ")") ]
             , bulletedListView
-              [ text "No cumbersome weapons or gear available"
-              , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
-              ]
+                [ text "No cumbersome weapons or gear available"
+                , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
+                ]
             ]
 
         gassed =
             [ div [ titleStyles ]
-                  [ text "Gassed (Torso)" ]
+                [ text "Gassed (Torso)" ]
             , bulletedListView
-              [ text "The character becomes Gassed"
-              ]
+                [ text "The character becomes Gassed"
+                ]
             ]
 
         unconscious =
             [ div [ titleStyles ]
-                  [ text "Unconscious (Head)" ]
+                [ text "Unconscious (Head)" ]
             , bulletedListView
-              [ text "The character is Unconscious"
-              ]
+                [ text "The character is Unconscious"
+                ]
             ]
     in
     case location of
@@ -976,33 +1027,33 @@ killStatusEffect location =
     let
         titleStyles =
             css
-            [ fontWeight bold
-            ]
+                [ fontWeight bold
+                ]
 
         lamed at =
             [ div [ titleStyles ]
-                  [ text ("Lamed (" ++ at ++ ")") ]
+                [ text ("Lamed (" ++ at ++ ")") ]
             , bulletedListView
-              [ text "Bleeding out"
-              , text "No athletics checks possible until partially healed, and character can't move without assistance"
-              ]
+                [ text "Bleeding out"
+                , text "No athletics checks possible until partially healed, and character can't move without assistance"
+                ]
             ]
 
         maimed at =
             [ div [ titleStyles ]
-                  [ text ("Maimed (" ++ at ++ ")") ]
+                [ text ("Maimed (" ++ at ++ ")") ]
             , bulletedListView
-              [ text "No cumbersome weapons or gear available"
-              , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
-              ]
+                [ text "No cumbersome weapons or gear available"
+                , text "If this hand is dominant, all checks with the other arm are at Precision requirements"
+                ]
             ]
 
         death at =
             [ div [ titleStyles ]
-                  [ text ("Death (" ++ at ++ ")") ]
+                [ text ("Death (" ++ at ++ ")") ]
             , bulletedListView
-              [ text "The character Dies."
-              ]
+                [ text "The character Dies."
+                ]
             ]
     in
     case location of
@@ -1027,16 +1078,20 @@ killStatusEffect location =
 
 bulletedListView : List (Html msg) -> Html msg
 bulletedListView items =
-    ul [ css
-         [ marginBottom (px 0) ]
-       ]
-    (List.map
-         (\item ->
-              li [ css
-                   [ marginBottom (Css.em 0.25) ]
-                 ]
-              [ item ])
-         items)
+    ul
+        [ css
+            [ marginBottom (px 0) ]
+        ]
+        (List.map
+            (\item ->
+                li
+                    [ css
+                        [ marginBottom (Css.em 0.25) ]
+                    ]
+                    [ item ]
+            )
+            items
+        )
 
 
 woundView : WoundLocation -> Index -> Wound -> Html Msg
@@ -1045,23 +1100,25 @@ woundView location index wound =
         [ css
             [ cursor pointer
             , case wound of
-                  NoWound ->
-                      batch
-                      [ backgroundColor transparent
-                      , border3 (px 1) solid (hex "888")
-                      ]
-                  Stun ->
-                      batch
-                      [ Css.property
-                          "background"
-                          "linear-gradient(135deg, #333 50%, transparent 50%)"
-                      , border3 (px 1) solid (hex "333")
-                      ]
-                  Kill ->
-                      batch
-                      [ backgroundColor (hex "333")
-                      , border3 (px 1) solid (hex "333")
-                      ]
+                NoWound ->
+                    batch
+                        [ backgroundColor transparent
+                        , border3 (px 1) solid (hex "888")
+                        ]
+
+                Stun ->
+                    batch
+                        [ Css.property
+                            "background"
+                            "linear-gradient(135deg, #333 50%, transparent 50%)"
+                        , border3 (px 1) solid (hex "333")
+                        ]
+
+                Kill ->
+                    batch
+                        [ backgroundColor (hex "333")
+                        , border3 (px 1) solid (hex "333")
+                        ]
             ]
         ]
         [ text ""
@@ -1070,9 +1127,10 @@ woundView location index wound =
             , onCheck
                 (always
                     (UpdateWound
-                         location
-                         index
-                         (woundSucc wound))
+                        location
+                        index
+                        (woundSucc wound)
+                    )
                 )
             , css
                 [ position absolute
@@ -1088,83 +1146,85 @@ woundView location index wound =
 
 gearListView : Array Gear -> Html Msg
 gearListView gear =
-    div [ css
-          [ marginTop (Css.em 1) ]
+    div
+        [ css
+            [ marginTop (Css.em 1) ]
         ]
-    [ sectionLabel "Gear"
-    , div [] (Array.toList (Array.indexedMap gearView gear))
-    ]
+        [ sectionLabel "Gear"
+        , div [] (Array.toList (Array.indexedMap gearView gear))
+        ]
 
 
 gearView : Index -> Gear -> Html Msg
-gearView gearIndex { title
-                   , charges
-                   , upkeep
-                   , effect
-                   , qualities
-                   } =
-    div [ css
-          [ marginBottom (Css.em 1)
-          , borderTop3 (px 1) solid (hex "ccc")
-          , paddingTop (Css.em 0.5)
-          ]
+gearView gearIndex { title, charges, upkeep, effect, qualities } =
+    div
+        [ css
+            [ marginBottom (Css.em 1)
+            , borderTop3 (px 1) solid (hex "ccc")
+            , paddingTop (Css.em 0.5)
+            ]
         ]
-    [ div [ css
-            [ fontSize (Css.em 1.1)
-            , fontWeight bold
+        [ div
+            [ css
+                [ fontSize (Css.em 1.1)
+                , fontWeight bold
+                ]
             ]
-          ]
-          [ text title ]
-    , div [ css
-            [ Css.property "display" "grid"
-            , Css.property "grid-template-columns" "auto 1fr auto"
-            , Css.property "grid-template-rows" "auto"
-            , Css.property "grid-column-gap" "0.65em"
+            [ text title ]
+        , div
+            [ css
+                [ Css.property "display" "grid"
+                , Css.property "grid-template-columns" "auto 1fr auto"
+                , Css.property "grid-template-rows" "auto"
+                , Css.property "grid-column-gap" "0.65em"
+                ]
             ]
-          ]
-          [ div [] [ text "Charges: " ]
-          , if Array.isEmpty charges
-            then
+            [ div [] [ text "Charges: " ]
+            , if Array.isEmpty charges then
                 text "Static"
-            else
+
+              else
                 gearChargesView gearIndex charges
-          , div [] [ text ("Upkeep: " ++ String.fromInt upkeep) ]
-          ]
-    , div [] [ text effect ]
-    , gearQualitiesView qualities
-    ]
+            , div [] [ text ("Upkeep: " ++ String.fromInt upkeep) ]
+            ]
+        , div [] [ text effect ]
+        , gearQualitiesView qualities
+        ]
 
 
 gearQualitiesView : Array GearQuality -> Html Msg
 gearQualitiesView qualities =
     let
         qualityView { title, description } =
-            if String.isEmpty description
-            then
+            if String.isEmpty description then
                 div [] [ strong [] [ text title ] ]
+
             else
                 div []
                     [ strong [] [ text (title ++ ": ") ]
                     , text description
                     ]
     in
-        div []
-            (Array.toList
-                 (Array.map qualityView qualities))
+    div []
+        (Array.toList
+            (Array.map qualityView qualities)
+        )
 
 
 gearChargesView : Index -> Array Charge -> Html Msg
 gearChargesView gearIndex charges =
-    div [ css
-          [ Css.property "display" "grid"
-          , Css.property "grid-template-columns" "repeat(10, 1.1em)"
-          , Css.property "grid-auto-rows" "1.1em"
-          , Css.property "grid-gap" "0.25em"
-          , Css.property "align-content" "center"
-          ]
+    div
+        [ css
+            [ Css.property "display" "grid"
+            , Css.property "grid-template-columns" "repeat(10, 1.1em)"
+            , Css.property "grid-auto-rows" "1.1em"
+            , Css.property "grid-gap" "0.25em"
+            , Css.property "align-content" "center"
+            ]
         ]
-    (Array.toList
-         (Array.indexedMap (chargeInputView gearIndex) charges))
+        (Array.toList
+            (Array.indexedMap (chargeInputView gearIndex) charges)
+        )
 
 
 chargeInputView : Index -> Index -> Charge -> Html Msg
@@ -1174,16 +1234,17 @@ chargeInputView gearIndex chargeIndex charge =
             [ borderRadius (pct 50)
             , cursor pointer
             , case charge of
-                  Charge ->
-                      batch
-                      [ backgroundColor (hex "663399")
-                      , border3 (px 1) solid transparent
-                      ]
-                  NoCharge ->
-                      batch
-                      [ backgroundColor transparent
-                      , border3 (px 1) solid (hex "888")
-                      ]
+                Charge ->
+                    batch
+                        [ backgroundColor (hex "663399")
+                        , border3 (px 1) solid transparent
+                        ]
+
+                NoCharge ->
+                    batch
+                        [ backgroundColor transparent
+                        , border3 (px 1) solid (hex "888")
+                        ]
             ]
         ]
         [ text ""
@@ -1192,10 +1253,11 @@ chargeInputView gearIndex chargeIndex charge =
             , onCheck
                 (always
                     (UpdateGearCharge
-                         { gearIndex = gearIndex
-                         , chargeIndex = chargeIndex
-                         , charge = toggleCharge charge
-                         })
+                        { gearIndex = gearIndex
+                        , chargeIndex = chargeIndex
+                        , charge = toggleCharge charge
+                        }
+                    )
                 )
             , css
                 [ position absolute
@@ -1227,35 +1289,39 @@ notesView notes =
             ]
         ]
         [ sectionLabel "Notes"
-        , div [ css
+        , div
+            [ css
                 [ whiteSpace preWrap
                 ]
-              ]
-              [ text notes ]
+            ]
+            [ text notes ]
         ]
 
 
-integerInput : { toMsg : Int -> msg
-               , mMinBound : Maybe Int
-               , mMaxBound : Maybe Int
-               , currentValue : Int
-               }
-             -> Html msg
-integerInput { toMsg
-             , mMinBound
-             , mMaxBound
-             , currentValue
-             } =
+integerInput :
+    { toMsg : Int -> msg
+    , mMinBound : Maybe Int
+    , mMaxBound : Maybe Int
+    , currentValue : Int
+    }
+    -> Html msg
+integerInput { toMsg, mMinBound, mMaxBound, currentValue } =
     let
         minBound =
             case mMinBound of
-                Just min -> min
-                Nothing -> Basics.round (-1/0)
+                Just min ->
+                    min
+
+                Nothing ->
+                    Basics.round (-1 / 0)
 
         maxBound =
             case mMaxBound of
-                Just max -> max
-                Nothing -> Basics.round (1/0)
+                Just max ->
+                    max
+
+                Nothing ->
+                    Basics.round (1 / 0)
 
         decrementButton =
             defaultButton
@@ -1265,6 +1331,7 @@ integerInput { toMsg
                     )
                 , if currentValue <= minBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
@@ -1273,30 +1340,32 @@ integerInput { toMsg
         incrementButton =
             defaultButton
                 [ onClick
-                      (toMsg
-                           (Basics.min maxBound (currentValue + 1))
-                      )
+                    (toMsg
+                        (Basics.min maxBound (currentValue + 1))
+                    )
                 , if currentValue >= maxBound then
                     css [ Css.property "visibility" "hidden" ]
+
                   else
                     css [ opacity (int 0) ]
                 ]
                 [ text "+" ]
     in
-        div [ css
-              [ whiteSpace noWrap
-              , userSelect_none
-              , textAlign center
-              ]
-            , class "reveal-buttons-on-hover"
+    div
+        [ css
+            [ whiteSpace noWrap
+            , userSelect_none
+            , textAlign center
             ]
+        , class "reveal-buttons-on-hover"
+        ]
         [ decrementButton
         , span
-              [ css
+            [ css
                 [ fontSize (Css.em 1.3)
                 , margin2 (px 0) (Css.em 0.25)
                 ]
-              ]
-              [ text (String.fromInt currentValue) ]
+            ]
+            [ text (String.fromInt currentValue) ]
         , incrementButton
         ]
